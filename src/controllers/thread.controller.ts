@@ -5,7 +5,17 @@ const prisma = new PrismaClient();
 
 export const getAllThreads = async (req: Request, res: Response) => {
     try {
+
+        const user =  (req as any).user;
+
+        if(!user) {
+            res.status(400).json({ code: 400, message: "Invalid user" });
+        }
+
         const threads = await prisma.thread.findMany({
+            where: {
+                aiOrgId: user.aiOrgId
+            },
             orderBy: {
                 createdAt: "desc",
             },

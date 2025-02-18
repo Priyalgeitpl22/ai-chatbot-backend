@@ -3,6 +3,7 @@ export interface AIResponse {
   status: number, 
   question?: string,
   answer?: string
+  task_creation?: boolean
 }
 
 export interface Organization {

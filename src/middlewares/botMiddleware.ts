@@ -1,8 +1,9 @@
+import { createTask } from "../controllers/task.controller";
 import { AIResponse } from "../interfaces";
 
-export const getAIResponse = async (message: string, organisationId=123) => {
+export const getAIResponse = async (message: string, orgId: string, aiOrgId: number, threadId: string) => {
   try {
-    const url = `http://44.208.33.109/api/organisation_chatbot/?organisation_id=${organisationId}`;
+    const url = `http://44.208.33.109/api/organisation_chatbot/?organisation_id=${aiOrgId}`;
 
     const requestBody = JSON.stringify({ user_query: message });
     console.log("Sending request:", url, requestBody);
@@ -21,6 +22,9 @@ export const getAIResponse = async (message: string, organisationId=123) => {
     }
 
     const aiResponse = await response.json() as AIResponse;
+    if (aiResponse.question ) {
+      createTask(aiOrgId, threadId, aiResponse.question, 'low');
+    }
     return aiResponse;
 
   } catch (error) {
@@ -33,7 +37,7 @@ export const sendOrganizationDetails = async (data: any, organisationId: any) =>
   try {
     let url = `http://44.208.33.109/api/organisation_database/?organisation_id=${organisationId}`;
 
-    if(!organisationId)
+    if (!organisationId)
       url = `http://44.208.33.109/api/organisation_database`;
 
     const organization_details = { data };

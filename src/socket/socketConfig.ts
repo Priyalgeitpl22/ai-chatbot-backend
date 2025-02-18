@@ -95,7 +95,7 @@ export const socketSetup = (server: any) => {
             answer = "An agent is available and will assist you soon. Thank you for your patience.";
           }
         } else {
-          const response = await getAIResponse(data.content, data.aiOrgId);
+          const response = await getAIResponse(data.content, data.orgId, data.aiOrgId, data.threadId);
           if (response) {
             answer = response.answer;
             question = response.question;
@@ -109,7 +109,10 @@ export const socketSetup = (server: any) => {
             data: { content: answer, sender: "Bot", threadId: data.threadId },
           });
 
-          io.emit("notification", { message: "🔔 New Message Received!" });
+          if(data.sender === 'User') {
+            io.emit("notification", { message: "🔔 New Message Received!" });
+          }
+
           io.emit("receiveMessage", {
             id: Date.now().toString(),
             sender: "Bot",
@@ -126,14 +129,16 @@ export const socketSetup = (server: any) => {
     });
 
     socket.on("updateDashboard", (data) => {
-      io.emit("notification", { message: "🔔 New Message Received!" });
+      if(data.sender === 'User') {
+        io.emit("notification", { message: "🔔 New Message Received!" });
+      }
       io.emit("updateDashboard", data);
     });
 
     socket.on("startChat", async (data) => {
       try {
         const thread = await prisma.thread.create({
-          data: { user: data.sender },
+          data: { user: data.sender, aiOrgId: data.aiOrgId },
         });
 
         socket.join(thread.id);

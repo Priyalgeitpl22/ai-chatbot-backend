@@ -64,11 +64,15 @@ model User {
 }
 
 model Thread {
-  id        String   @id @default(uuid()) // Unique thread ID
-  user      String   // User who started the thread
-  messages  Message[] // Relationship with messages
+  id        String   @id @default(uuid())
+  user      String
+  messages  Message[]
+  aiOrgId  Int
   createdAt DateTime @default(now())
   type      String   @default("unassigned")
+
+  // Back-reference for tasks
+  tasks     Task[] 
 }
 
 model Message {
@@ -92,4 +96,20 @@ model ChatConfig {
   fontColor        String?
   availability     Boolean?
   socketServer     String?
+}
+
+model Task {
+  id         String   @id @default(uuid())
+  orgId      String?
+  aiOrgId    Int
+  threadId   String
+  query      String
+  assignedTo String?
+  status     String   @default("pending")
+  priority   String   @default("low")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relationships
+  thread      Thread       @relation(fields: [threadId], references: [id], onDelete: Cascade)
 }
