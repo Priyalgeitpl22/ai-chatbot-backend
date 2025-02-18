@@ -55,12 +55,17 @@ export const createAgent = async (req: Request, res: Response): Promise<any> => 
                 select: { fullName: true, email: true, id: true, role: true, orgId: true, profilePicture: true, aiOrgId: true }
             });
 
+            let profilePicture;
+            if(profilePictureUrl) {
+                profilePicture = await getPresignedUrl(profilePictureUrl);
+            }
+
             const activationLink = `${process.env.FRONTEND_URL}/activate-account?token=${tokenData.token}&email=${agent.email}`;
             await sendActivationEmail(agent.email, agent.fullName, activationLink);
 
             res.status(200).json({
                 code: 200,
-                data: agent,
+                data: {...agent, profilePicture},
                 message: "Agent created successfully. Activation email sent.",
             });
         });
@@ -185,9 +190,14 @@ export const updateAgent = async (req: Request, res: Response): Promise<any> => 
                 select: { fullName: true, email: true, id: true, role: true, orgId: true, profilePicture: true }
             });
 
+            let profilePicture;
+            if(profilePictureUrl) {
+                profilePicture = await getPresignedUrl(profilePictureUrl);
+            }
+
             res.status(200).json({
                 code: 200,
-                data: updatedAgent,
+                data: {...updatedAgent, profilePicture},
                 message: "Agent updated successfully.",
             });
         });
