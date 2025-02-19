@@ -262,7 +262,7 @@ export const activateAccount = async (req: Request, res: Response): Promise<any>
             data: { password: hashedPassword, activationToken: null, activationTokenExpires: null, verified: true },
         });
 
-        res.status(200).json({ message: "Account activated successfully" });
+        res.status(200).json({ code: 200, message: "Account activated successfully" });
     } catch (err) {
         console.error("Error activating account:", err);
         res.status(500).json({ message: "Error activating account" });
