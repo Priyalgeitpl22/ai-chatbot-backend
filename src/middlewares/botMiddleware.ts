@@ -22,7 +22,7 @@ export const getAIResponse = async (message: string, orgId: string, aiOrgId: num
     }
 
     const aiResponse = await response.json() as AIResponse;
-    if (aiResponse.question ) {
+    if (aiResponse.question && aiResponse.task_creation) {
       createTask(aiOrgId, threadId, aiResponse.question, 'low');
     }
     return aiResponse;

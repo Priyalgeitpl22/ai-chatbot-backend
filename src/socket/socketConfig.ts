@@ -81,7 +81,7 @@ export const socketSetup = (server: any) => {
         const onlineAgents = getOnlineAgents();
         console.log("Online Agents:", onlineAgents);
 
-        let answer;
+        let answer, taskCreation;
         let question = data.content;
 
         const previousMessages = await prisma.message.findMany({
@@ -99,6 +99,7 @@ export const socketSetup = (server: any) => {
           if (response) {
             answer = response.answer;
             question = response.question;
+            taskCreation = response.task_creation;
           } else {
             answer = "I'm sorry, but I couldn't process your request.";
           }
@@ -118,6 +119,7 @@ export const socketSetup = (server: any) => {
             sender: "Bot",
             status: 200,
             content: answer,
+            task_creation: taskCreation,
             threadId: data.threadId,
             question,
             createdAt: new Date().toISOString(),
