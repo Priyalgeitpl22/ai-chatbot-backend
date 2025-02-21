@@ -1,7 +1,7 @@
 import { Server } from "socket.io";
 import { PrismaClient } from "@prisma/client";
 import { getAIResponse } from "../middlewares/botMiddleware";
-import { UserRoles } from "../enums";
+import { createTask } from "../controllers/task.controller";
 
 const prisma = new PrismaClient();
 export const onlineAgents = new Map<string, string>(); // Map<agentId, agentName>
@@ -45,16 +45,15 @@ export const socketSetup = (server: any) => {
         console.log(`Agent ${agentData.name} is offline`);
         console.log(onlineAgent);
       }
-    
       await prisma.user.update({
         where: { id: agentData.id },
         data: { online: agentData.online },
       });
-    
+
       const onlineAgent = getOnlineAgents();
       io.emit("agentStatusUpdate", onlineAgent);
     });
-    
+
     socket.on("joinThread", (threadId) => {
       socket.join(threadId);
       console.log(`User joined thread: ${threadId}`);
@@ -63,7 +62,7 @@ export const socketSetup = (server: any) => {
     socket.on("typing", ({ threadId, agentName }) => {
       socket.to(threadId).emit("typing", { agentName });
     });
-  
+
     socket.on("stopTyping", ({ threadId }) => {
       socket.to(threadId).emit("stopTyping");
     });
@@ -110,7 +109,7 @@ export const socketSetup = (server: any) => {
             data: { content: answer, sender: "Bot", threadId: data.threadId },
           });
 
-          if(data.sender === 'User') {
+          if (data.sender === 'User') {
             io.emit("notification", { message: "🔔 New Message Received!" });
           }
 
@@ -130,8 +129,13 @@ export const socketSetup = (server: any) => {
       }
     });
 
+    socket.on("createTask", async (data) => {
+      createTask(data.aiOrgId, data.threadId, data.name, data.email, data.query, 'low');
+      io.emit("taskCreated", data);
+    });
+
     socket.on("updateDashboard", (data) => {
-      if(data.sender === 'User') {
+      if (data.sender === 'User') {
         io.emit("notification", { message: "🔔 New Message Received!" });
       }
       io.emit("updateDashboard", data);

@@ -3,10 +3,12 @@ import { Request, Response, NextFunction } from "express";
 
 const prisma = new PrismaClient();
 
-export const createTask = async (aiOrgId: number, threadId: string, query: string, priority: string = "low") => {
+export const createTask = async (aiOrgId: number, threadId: string, name: string, email: string, query: string, priority: string = "low") => {
   try {
     const newTask = await prisma.task.create({
       data: {
+        name,
+        email,
         query,
         priority,
         status: "pending",
