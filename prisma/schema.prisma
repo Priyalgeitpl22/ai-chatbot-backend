@@ -32,6 +32,7 @@ model Organization {
   industry  String?
   description String?
   users     User[]
+  emailConfig  Json?
   createdAt DateTime @default(now())
 }
 
