@@ -1,9 +1,8 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { generateRandomPassword, generateRandomToken } from '../utils/otp.utils';
+import { generateRandomToken } from '../utils/otp.utils';
 import multer from "multer";
 import { getPresignedUrl, uploadImageToS3 } from '../aws/imageUtils';
-import { UserRoles } from '../enums';
 import { sendActivationEmail } from '../utils/email.utils';
 
 const prisma = new PrismaClient();
@@ -18,7 +17,6 @@ export const createAgent = async (req: Request, res: Response): Promise<any> => 
 
             const { email, fullName, orgId, aiOrgId, schedule, role, phone } = req.body;
 
-            console.log(schedule);
             if (!email ) {
                 return res.status(400).json({
                     code: 400,
@@ -28,7 +26,7 @@ export const createAgent = async (req: Request, res: Response): Promise<any> => 
 
             const existingAgent = await prisma.user.findUnique({ where: { email } });
             if (existingAgent) {
-                return res.status(400).json({ message: "Agent already exists" });
+                return res.status(400).json({ code: 400, message: "Agent already exists" });
             }
 
             let profilePictureUrl: string | null = null;
@@ -160,7 +158,6 @@ export const updateAgent = async (req: Request, res: Response): Promise<any> => 
 
             const { email, fullName, phone, orgId, schedule, role, aiOrgId } = req.body;
 
-            console.log(schedule);
             if (!id) {
                 return res.status(400).json({ code: 400, message: "Agent ID is required." });
             }

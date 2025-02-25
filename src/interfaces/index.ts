@@ -1,6 +1,6 @@
 export interface AIResponse {
   message?: string,
-  status: number, 
+  status: number,
   question?: string,
   answer?: string
   task_creation?: boolean

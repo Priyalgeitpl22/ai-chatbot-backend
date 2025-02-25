@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import { Request, Response, NextFunction } from "express";
+import { Request, Response } from "express";
 
 const prisma = new PrismaClient();
 
@@ -25,7 +25,7 @@ export const createTask = async (aiOrgId: number, threadId: string, name: string
 
 export const getAllTasks = async (req: Request, res: Response): Promise<any> => {
   try {
-    const user = (req as any).user; 
+    const user = (req as any).user;
 
     if (!user) {
       return res.status(400).json({ code: 400, message: "Invalid user" });

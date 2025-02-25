@@ -8,7 +8,6 @@ export const uploadImageToS3 = async (file: Express.Multer.File): Promise<string
         }
 
         const fileName = `profilepictures/${Date.now()}-${file.originalname.replace(/\s/g, "_")}`;
-
         const params: S3.PutObjectRequest = {
             Bucket: bucket_name,
             Key: fileName,

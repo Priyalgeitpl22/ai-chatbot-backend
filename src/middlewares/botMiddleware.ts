@@ -1,4 +1,3 @@
-import { createTask } from "../controllers/task.controller";
 import { AIResponse } from "../interfaces";
 
 export const getAIResponse = async (message: string, orgId: string, aiOrgId: number, threadId: string) => {
@@ -6,7 +5,6 @@ export const getAIResponse = async (message: string, orgId: string, aiOrgId: num
     const url = `http://44.208.33.109/api/organisation_chatbot/?organisation_id=${aiOrgId}`;
 
     const requestBody = JSON.stringify({ user_query: message });
-    console.log("Sending request:", url, requestBody);
 
     const response = await fetch(url, {
       method: "POST",

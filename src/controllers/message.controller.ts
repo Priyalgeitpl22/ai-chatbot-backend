@@ -1,6 +1,5 @@
 import { PrismaClient } from "@prisma/client";
 import { Request, Response } from "express";
-import { getPresignedUrl } from "../aws/imageUtils";
 
 const prisma = new PrismaClient();
 

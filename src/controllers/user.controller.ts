@@ -57,9 +57,9 @@ export const updateUser = async (req: Request, res: Response): Promise<any> => {
       let profilePictureUrl: string | null = existingUser.profilePicture;
       if (req.file) {
         profilePictureUrl = await uploadImageToS3(req.file);
-        
-        if(existingUser.profilePicture)
-        await deleteImageFromS3(existingUser.profilePicture);
+
+        if (existingUser.profilePicture)
+          await deleteImageFromS3(existingUser.profilePicture);
       }
 
       const updatedUser = await prisma.user.update({
@@ -74,7 +74,7 @@ export const updateUser = async (req: Request, res: Response): Promise<any> => {
       });
 
       res.status(200).json({
-        user: {...updatedUser, profilePicture: updatedUser.profilePicture ? await getPresignedUrl(updatedUser.profilePicture) : null},
+        user: { ...updatedUser, profilePicture: updatedUser.profilePicture ? await getPresignedUrl(updatedUser.profilePicture) : null },
         message: "User details updated successfully",
         code: 200,
       });

@@ -16,7 +16,7 @@ export const saveOrganization = async (req: Request, res: Response): Promise<any
     }
 
     const organization = await prisma.organization.create({
-      data: { name, domain, country, phone}
+      data: { name, domain, country, phone }
     });
 
     res.status(200).json({
@@ -24,7 +24,7 @@ export const saveOrganization = async (req: Request, res: Response): Promise<any
       data: organization,
       message: "Organization created successfully"
     });
-    
+
   } catch (err) {
     console.error('Error saving organization:', err);
     res.status(500).json({
@@ -91,7 +91,7 @@ export const updateOrganization = async (req: Request, res: Response): Promise<a
       city: city ?? existingOrg.city,
       state: state ?? existingOrg.state,
       zip: Number(zip) ?? existingOrg.zip,
-      industry: industry ?? existingOrg.industry, 
+      industry: industry ?? existingOrg.industry,
       phone: phone ?? existingOrg.phone,
       description: description ?? existingOrg.description,
       emailConfig: emailConfig ?? existingOrg.emailConfig
@@ -102,9 +102,8 @@ export const updateOrganization = async (req: Request, res: Response): Promise<a
       data: organizationData
     });
 
-    const aiOrganization = await sendOrganizationDetails({...organizationData, zip: organizationData.zip.toString()}, aiOrgId);
+    const aiOrganization = await sendOrganizationDetails({ ...organizationData, zip: organizationData.zip.toString() }, aiOrgId);
 
-    console.log(aiOrganization);
     res.status(200).json({
       code: 200,
       data: updatedOrganization,

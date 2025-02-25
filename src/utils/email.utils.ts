@@ -27,27 +27,27 @@ export const sendOtpEmail = async (email: string, otp: string) => {
 };
 
 export const sendActivationEmail = async (email: string, fullName: string, activationLink: string) => {
-    const mailOptions = {
-        from: process.env.EMAIL_USER,
-        to: email,
-        subject: "Activate Your Account",
-        html: `
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject: "Activate Your Account",
+    html: `
             <p>Hello ${fullName},</p>
             <p>Your account has been created. Please activate your account by setting up a password.</p>
             <p><a href="${activationLink}">Click here to activate your account</a></p>
             <p>The link will expire in 1 hour.</p>
         `,
-    };
+  };
 
-    await transporter.sendMail(mailOptions);
+  await transporter.sendMail(mailOptions);
 };
 
 export const sendResetPasswordEmail = async (email: string, fullName: string, resetPasswordLink: string) => {
   const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: "Reset Your Account Password",
-      html: `
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject: "Reset Your Account Password",
+    html: `
           <p>Hi ${fullName},</p>
           <p>We received a request to reset your password. Click the link below to set up a new one:</p>
           <p><a href="${resetPasswordLink}">Reset Password</a></p>
