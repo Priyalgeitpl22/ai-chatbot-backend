@@ -61,3 +61,19 @@ export const sendResetPasswordEmail = async (email: string, fullName: string, re
   await transporter.sendMail(mailOptions);
 };
 
+export const sendEmailToVerify = async (transporterOptions: any) => {
+
+  const transporter = nodemailer.createTransport(transporterOptions);
+  const mailOptions = {
+    from: transporterOptions.auth.user,
+    to: 'priyalgeitpl@gmail.com',
+    subject: "Dummy Email",
+    html: `
+          <p>This is a dummy email sent from your Node.js application.</p>
+          <p>Best regards,</p>
+          <p>Your Support Team</p>`,
+  };
+
+  await transporter.sendMail(mailOptions);
+}
+

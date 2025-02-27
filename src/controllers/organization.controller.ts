@@ -4,6 +4,7 @@ import { sendOrganizationDetails } from '../middlewares/botMiddleware';
 import nodemailer from "nodemailer";
 import SMTPTransport from "nodemailer/lib/smtp-transport";
 import { SocksProxyAgent } from "socks-proxy-agent"; 
+import { sendEmailToVerify } from '../utils/email.utils';
 
 
 const prisma = new PrismaClient();
@@ -126,13 +127,13 @@ export const updateOrganization = async (req: Request, res: Response): Promise<a
 export const verifyEmail = async (req: Request, res: Response): Promise<any> => {
   try {
     const orgId = req.query.orgId as string;
-    const { host, port, secure, auth, proxy, smtpEhloName } = req.body;
+    const { host, port, secure, user, pass, proxy, smtpEhloName } = req.body;
 
     if (!orgId) {
       return res.status(400).json({ code: 400, message: "Organization ID is required." });
     }
 
-    if (!host || !port || !auth?.user || !auth?.pass) {
+    if (!host || !port || !user || !pass) {
       return res.status(400).json({ code: 400, message: "SMTP configuration is incomplete." });
     }
 
@@ -141,8 +142,8 @@ export const verifyEmail = async (req: Request, res: Response): Promise<any> => 
       port,
       secure: !!secure,
       auth: {
-        user: auth.user,
-        pass: auth.pass,
+        user: user,
+        pass: pass,
       },
       name: smtpEhloName || undefined, 
     };
@@ -155,8 +156,9 @@ export const verifyEmail = async (req: Request, res: Response): Promise<any> => 
     const transporter = nodemailer.createTransport(transporterOptions);
 
     await transporter.verify();
+    await sendEmailToVerify(transporterOptions);
 
-    return res.status(200).json({ code: 200, message: "SMTP Configuration Verified Successfully!" });
+    return res.status(200).json({ code: 200, message:"SMTP Configuration Verified Successfully!" });
 
   } catch (err: any) {
     console.error("Error verifying SMTP email:", err);
