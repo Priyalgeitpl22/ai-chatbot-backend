@@ -29,7 +29,8 @@
     "nodemailer": "^6.10.0",
     "pg": "^8.13.1",
     "prisma": "^6.3.1",
-    "socket.io": "^4.8.1"
+    "socket.io": "^4.8.1",
+    "socks-proxy-agent": "^8.0.5"
   },
   "devDependencies": {
     "@types/axios": "^0.9.36",

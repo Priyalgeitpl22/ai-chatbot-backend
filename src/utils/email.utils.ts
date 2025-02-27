@@ -60,3 +60,4 @@ export const sendResetPasswordEmail = async (email: string, fullName: string, re
 
   await transporter.sendMail(mailOptions);
 };
+
