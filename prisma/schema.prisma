@@ -90,6 +90,7 @@ model ChatConfig {
   orgId            String?
   aiOrgId          Int? 
   allowFileUpload  Boolean?
+  allowNameEmail   Boolean?
   allowEmojis      Boolean?
   position         String?
   iconColor        String?

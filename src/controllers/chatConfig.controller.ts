@@ -68,6 +68,7 @@ export const getChatScript = async (req: Request, res: Response): Promise<void> 
                             ChatWidget.init({
                                 elementId: "chat-widget",
                                 orgId: ${config.aiOrgId},
+                                allowNameEmail: ${config.allowNameEmail},
                                 allowFileUpload: ${config.allowFileUpload},
                                 allowEmojis: ${config.allowEmojis},
                                 position: "${config.position}",
