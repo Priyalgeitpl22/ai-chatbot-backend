@@ -127,7 +127,7 @@ export const updateOrganization = async (req: Request, res: Response): Promise<a
 export const verifyEmail = async (req: Request, res: Response): Promise<any> => {
   try {
     const orgId = req.query.orgId as string;
-    const { host, port, secure, user, pass, proxy, smtpEhloName } = req.body;
+    const { host, port, secure, user, pass, proxy, smtpEhloName } = req.body.emailConfig;
 
     if (!orgId) {
       return res.status(400).json({ code: 400, message: "Organization ID is required." });
@@ -139,8 +139,8 @@ export const verifyEmail = async (req: Request, res: Response): Promise<any> => 
 
     const transporterOptions: SMTPTransport.Options = {
       host,
-      port,
-      secure: !!secure,
+      port: Number(port),
+      secure: secure === "true",
       auth: {
         user: user,
         pass: pass,
