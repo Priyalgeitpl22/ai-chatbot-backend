@@ -144,7 +144,12 @@ export const socketSetup = (server: any) => {
     socket.on("startChat", async (data) => {
       try {
         const thread = await prisma.thread.create({
-          data: { user: data.sender, aiOrgId: data.aiOrgId },
+          data: { 
+            user: data.sender, 
+            aiOrgId: data.aiOrgId,
+            url: data.url,  
+            ip: data.ip      
+          },
         });
 
         socket.join(thread.id);

@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Thread" ADD COLUMN     "ip" TEXT NOT NULL DEFAULT '',
+ADD COLUMN     "url" TEXT NOT NULL DEFAULT '';

@@ -68,7 +68,9 @@ model Thread {
   id        String   @id @default(uuid())
   user      String
   messages  Message[]
-  aiOrgId  Int
+  aiOrgId   Int
+  url       String   @default("")
+  ip        String   @default("")
   createdAt DateTime @default(now())
   type      String   @default("unassigned")
 
