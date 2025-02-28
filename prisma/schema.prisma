@@ -71,6 +71,8 @@ model Thread {
   aiOrgId   Int
   url       String   @default("")
   ip        String   @default("")
+  name      String   @default("")
+  email     String   @default("")
   createdAt DateTime @default(now())
   type      String   @default("unassigned")
 

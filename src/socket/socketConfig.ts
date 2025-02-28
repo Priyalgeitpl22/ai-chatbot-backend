@@ -148,7 +148,9 @@ export const socketSetup = (server: any) => {
             user: data.sender, 
             aiOrgId: data.aiOrgId,
             url: data.url,  
-            ip: data.ip      
+            ip: data.ip,
+            name: data.name,
+            email: data.email,      
           },
         });
 
@@ -159,6 +161,18 @@ export const socketSetup = (server: any) => {
         console.error("Error starting chat:", error);
       }
     });
+    socket.on("updateThreadInfo", async (data) => {
+      try {
+        const updatedThread = await prisma.thread.update({
+          where: { id: data.threadId },
+          data: { name: data.name, email: data.email },
+        });
+        console.log("Thread updated successfully:", updatedThread);
+      } catch (error) {
+        console.error("Error updating thread info:", error);
+      }
+    });
+    
 
     socket.on("fetchMessages", async (data) => {
       try {
