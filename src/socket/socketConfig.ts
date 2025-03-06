@@ -115,31 +115,34 @@ export const socketSetup = (server: any) => {
         if (!data.threadId) {
           return socket.emit("error", { message: "Thread ID is required" });
         }
-
+        const senderKey = data.sender === "User" ? "User" : "Bot";
         // Save every incoming message.
         await prisma.message.create({
           data: {
             content: data.content,
-            sender: data.sender,
+            sender: senderKey,
             threadId: data.threadId,
           },
         });
 
-        // Skip AI processing if user is still in identification phase.
         const thread = await prisma.thread.findUnique({
           where: { id: data.threadId },
         });
         if (
           data.sender === "User" &&
+          data.allowNameEmail &&
           thread &&
           (thread.name === "" || thread.email === "")
         ) {
+          console.log("User identification incomplete. Skipping AI processing.");
           return;
         }
-        else {
+        
+        // For User messages, process AI response if applicable.
+        
           console.log("Online Agents:", getOnlineAgents());
           await processAIResponse(data, io);
-        }
+        
       } catch (error) {
         console.error("Error handling sendMessage:", error);
       }
@@ -149,6 +152,13 @@ export const socketSetup = (server: any) => {
       try {
         if (!data.threadId) {
           return socket.emit("error", { message: "Thread ID is required" });
+        }
+        const thread = await prisma.thread.findUnique({
+          where: { id: data.threadId },
+        });
+        if (!thread || thread.name === "" || thread.email === "") {
+          console.log("User identification incomplete. Skipping AI processing.");
+          return;
         }
         console.log("Processing pending message:", data.content);
         await processAIResponse(data, io);
@@ -169,12 +179,26 @@ export const socketSetup = (server: any) => {
       io.emit("taskCreated", data);
     });
 
-    socket.on("updateDashboard", (data) => {
+    socket.on("updateDashboard", async (data) => {
       if (data.sender === "User") {
         io.emit("notification", { message: "🔔 New Message Received!" });
+      } else {
+        // This block will execute for agent messages (non-User messages).
+        try {
+          await prisma.message.create({
+            data: {
+              content: data.content,
+              sender: "Bot", // storing agent messages as Bot
+              threadId: data.threadId,
+            },
+          });
+        } catch (error) {
+          console.error("Error storing agent message:", error);
+        }
       }
       io.emit("updateDashboard", data);
     });
+    
 
     socket.on("startChat", async (data) => {
       try {
