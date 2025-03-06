@@ -102,6 +102,7 @@ model ChatConfig {
   fontColor        String?
   availability     Boolean?
   socketServer     String?
+  emailConfig      Json?
 }
 
 model Task {

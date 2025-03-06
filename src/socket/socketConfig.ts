@@ -31,7 +31,7 @@ const processAIResponse = async (data: any, io: Server) => {
   if (online.length > 0 && isFirstUserMessage) {
     answer =
       "An agent is available and will assist you soon. Thank you for your patience.";
-  } else {
+  } else if(online.length === 0) {
     if(data.sender==='User'){
       const response = await getAIResponse(
         data.content,
@@ -136,9 +136,10 @@ export const socketSetup = (server: any) => {
         ) {
           return;
         }
-
-        console.log("Online Agents:", getOnlineAgents());
-        await processAIResponse(data, io);
+        else {
+          console.log("Online Agents:", getOnlineAgents());
+          await processAIResponse(data, io);
+        }
       } catch (error) {
         console.error("Error handling sendMessage:", error);
       }

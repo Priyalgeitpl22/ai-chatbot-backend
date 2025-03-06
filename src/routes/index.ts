@@ -18,6 +18,6 @@ router.use("/task", authMiddleware, taskRoutes);
 router.use("/agent", authMiddleware, agentRoutes);
 router.use("/message", authMiddleware, messageRoutes);
 router.use("/thread", authMiddleware, threadRoutes);
-router.use("/chat/config", authMiddleware, chatConfigRoutes);
+router.use("/chat/config", chatConfigRoutes);
 
 export default router;

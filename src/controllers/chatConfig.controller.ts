@@ -5,7 +5,12 @@ const prisma = new PrismaClient();
 
 export const getChatConfig = async (req: Request, res: Response): Promise<any> => {
     try {
-        const config = await prisma.chatConfig.findFirst();
+        const orgId = (req.query.orgId) as string;
+        const config = await prisma.chatConfig.findFirst({
+            where:{
+                orgId: orgId
+            }
+        });
 
         if (!config) {
             return res.status(404).json({ code: 404, message: "Chat configuration not found" });
@@ -32,7 +37,7 @@ export const updateChatConfig = async (req: Request, res: Response) => {
             });
         } else {
             updatedConfig = await prisma.chatConfig.create({
-                data: configData
+                data: {...configData, socketServer: process.env.SOCKET_SERVER_URL}
             });
         }
 
