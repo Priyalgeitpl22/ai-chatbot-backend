@@ -32,21 +32,23 @@ const processAIResponse = async (data: any, io: Server) => {
     answer =
       "An agent is available and will assist you soon. Thank you for your patience.";
   } else {
-    const response = await getAIResponse(
-      data.content,
-      data.orgId,
-      data.aiOrgId,
-      data.threadId
-    );
-    if (response) {
-      answer = response.answer;
-      question = response.question;
-      taskCreation = response.task_creation;
-    } else {
-      answer = "I'm sorry, but I couldn't process your request.";
+    if(data.sender==='User'){
+      const response = await getAIResponse(
+        data.content,
+        data.orgId,
+        data.aiOrgId,
+        data.threadId
+      );
+      if (response) {
+        answer = response.answer;
+        question = response.question;
+        taskCreation = response.task_creation;
+      } else {
+        answer = "I'm sorry, but I couldn't process your request.";
+      }
     }
   }
-
+console.log("answer:",answer);
   if (answer) {
     await prisma.message.create({
       data: { content: answer, sender: "Bot", threadId: data.threadId },
