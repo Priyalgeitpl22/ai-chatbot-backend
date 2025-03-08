@@ -33,6 +33,7 @@ model Organization {
   description String?
   users     User[]
   emailConfig  Json?
+  aiChatBotSettings Json?
   createdAt DateTime @default(now())
 }
 

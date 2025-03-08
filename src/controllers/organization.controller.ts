@@ -169,3 +169,50 @@ export const verifyEmail = async (req: Request, res: Response): Promise<any> => 
     });
   }
 };
+
+export const createAISettings = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const orgId = req.query.orgId as string;
+    const { aiChatBotSettings } = req.body;
+    if (!orgId) {
+      return res.status(400).json({ code: 400, message: "Organization ID is required." });
+    }
+    const existingOrg = await prisma.organization.findUnique({ where: { id: orgId } });
+
+    if (!existingOrg) {
+      return res.status(404).json({ code: 404, message: "Organization not found." });
+    }
+    const organization = await prisma.organization.update({
+      where: { id: orgId },
+      data: { aiChatBotSettings:aiChatBotSettings }
+    });
+
+    res.status(200).json({
+      code: 200,
+      data: organization.aiChatBotSettings,
+      message: "AI Settings created successfully"
+    });
+
+  } catch (err) {
+    console.error("Error creating AI settings:", err);
+    res.status(500).json({ code: 500, message: "Error creating AI settings" });
+  }
+};
+
+export const getAISettings = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const orgId = req.query.orgId as string;
+    const organization = await prisma.organization.findUnique({ where: { id: orgId } });
+    if (!organization) {
+      return res.status(404).json({ code: 404, message: "Organization not found." });
+    }
+    res.status(200).json({
+      code: 200,
+      data: organization,
+      message: "AI Settings fetched successfully"
+    });
+  } catch (err) {
+    console.error("Error fetching AI settings:", err);
+    res.status(500).json({ code: 500, message: "Internal Server Error" });
+  }
+};
