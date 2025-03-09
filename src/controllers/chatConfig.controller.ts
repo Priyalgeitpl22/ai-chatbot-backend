@@ -72,7 +72,7 @@ export const getChatScript = async (req: Request, res: Response): Promise<void> 
                         if (typeof ChatWidget !== "undefined") {
                             ChatWidget.init({
                                 elementId: "chat-widget",
-                                orgId: ${config.orgId},
+                                orgId: "${config.orgId}",
                             });
                         }
                     };

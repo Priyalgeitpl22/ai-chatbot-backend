@@ -28,11 +28,11 @@ const processAIResponse = async (data: any, io: Server) => {
   const isFirstUserMessage =
     previousMessages.filter((m) => m.sender === "User").length === 1;
 
-  if (online.length > 0 && isFirstUserMessage) {
+  if ((online.length > 0) && isFirstUserMessage) {
     answer =
       "An agent is available and will assist you soon. Thank you for your patience.";
-  } else if(online.length === 0) {
-    if(data.sender==='User'){
+  } else if (online.length === 0) {
+    if (data.sender === 'User') {
       const response = await getAIResponse(
         data.content,
         data.orgId,
@@ -48,7 +48,7 @@ const processAIResponse = async (data: any, io: Server) => {
       }
     }
   }
-console.log("answer:",answer);
+  console.log("answer:", answer);
   if (answer) {
     await prisma.message.create({
       data: { content: answer, sender: "Bot", threadId: data.threadId },
@@ -137,12 +137,10 @@ export const socketSetup = (server: any) => {
           console.log("User identification incomplete. Skipping AI processing.");
           return;
         }
-        
-        // For User messages, process AI response if applicable.
-        
-          console.log("Online Agents:", getOnlineAgents());
-          await processAIResponse(data, io);
-        
+
+        console.log("Online Agents:", getOnlineAgents());
+        await processAIResponse(data, io);
+
       } catch (error) {
         console.error("Error handling sendMessage:", error);
       }
@@ -198,7 +196,7 @@ export const socketSetup = (server: any) => {
       }
       io.emit("updateDashboard", data);
     });
-    
+
 
     socket.on("startChat", async (data) => {
       try {
