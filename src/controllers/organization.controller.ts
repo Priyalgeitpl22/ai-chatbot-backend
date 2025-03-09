@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { sendOrganizationDetails } from '../middlewares/botMiddleware';
 import nodemailer from "nodemailer";
 import SMTPTransport from "nodemailer/lib/smtp-transport";
-import { SocksProxyAgent } from "socks-proxy-agent"; 
+import { SocksProxyAgent } from "socks-proxy-agent";
 import { sendEmailToVerify } from '../utils/email.utils';
 
 
@@ -145,12 +145,12 @@ export const verifyEmail = async (req: Request, res: Response): Promise<any> => 
         user: user,
         pass: pass,
       },
-      name: smtpEhloName || undefined, 
+      name: smtpEhloName || undefined,
     };
 
     if (proxy) {
       const proxyAgent = new SocksProxyAgent(proxy);
-      (transporterOptions as any).agent = proxyAgent; 
+      (transporterOptions as any).agent = proxyAgent;
     }
 
     const transporter = nodemailer.createTransport(transporterOptions);
@@ -158,7 +158,7 @@ export const verifyEmail = async (req: Request, res: Response): Promise<any> => 
     await transporter.verify();
     await sendEmailToVerify(transporterOptions);
 
-    return res.status(200).json({ code: 200, message:"SMTP Configuration Verified Successfully!" });
+    return res.status(200).json({ code: 200, message: "SMTP Configuration Verified Successfully!" });
 
   } catch (err: any) {
     console.error("Error verifying SMTP email:", err);
@@ -184,7 +184,7 @@ export const createAISettings = async (req: Request, res: Response): Promise<any
     }
     const organization = await prisma.organization.update({
       where: { id: orgId },
-      data: { aiChatBotSettings:aiChatBotSettings }
+      data: { aiChatBotSettings: aiChatBotSettings, aiEnabled: true }
     });
 
     res.status(200).json({

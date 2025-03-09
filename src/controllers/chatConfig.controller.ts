@@ -58,30 +58,21 @@ export const getChatScript = async (req: Request, res: Response): Promise<void> 
         }
 
         const script = `
-        <script src="http://localhost:5003/socket.io/socket.io.js"></script>
+        <script src="${process.env.SERVER_URL}/socket.io/socket.io.js"></script>
         <script type="text/javascript">
             (function () {
                 var socketScript = document.createElement("script");
-                socketScript.src = "http://localhost:5003/socket.io/socket.io.js";
+                socketScript.src = "${process.env.SERVER_URL}/socket.io/socket.io.js";
                 socketScript.async = true;
                 socketScript.onload = function () {
                     var chatWidgetScript = document.createElement("script");
-                    chatWidgetScript.src = "http://localhost:5501/chat-widget.js"; 
+                    chatWidgetScript.src = "${process.env.SERVER_URL}/chat-widget.js"; 
                     chatWidgetScript.async = true;
                     chatWidgetScript.onload = function () {
                         if (typeof ChatWidget !== "undefined") {
                             ChatWidget.init({
                                 elementId: "chat-widget",
-                                orgId: ${config.aiOrgId},
-                                allowNameEmail: ${config.allowNameEmail},
-                                allowFileUpload: ${config.allowFileUpload},
-                                allowEmojis: ${config.allowEmojis},
-                                position: "${config.position}",
-                                iconColor: "${config.iconColor}",
-                                chatWindowColor: "${config.chatWindowColor}",
-                                fontColor: "${config.fontColor}",
-                                availability: ${config.availability},
-                                socketServer: "http://localhost:5003/"
+                                orgId: ${config.orgId},
                             });
                         }
                     };
@@ -97,7 +88,7 @@ export const getChatScript = async (req: Request, res: Response): Promise<void> 
         res.status(200).json({code: 200, data: script, message: 'Script fetched successfully!'});
     } catch (err) {
         console.error("Error generating chat script:", err);
-        res.status(500).send("// Internal Server Error");
+        res.status(500).send("Internal Server Error");
     }
 };
 

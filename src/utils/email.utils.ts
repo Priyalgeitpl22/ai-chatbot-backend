@@ -5,14 +5,14 @@ const transporter = nodemailer.createTransport({
   port: 587,
   secure: false,
   auth: {
-    user: process.env.EMAIL_USER || 'priyalgeitpl@gmail.com',
-    pass: process.env.EMAIL_PASSWORD || 'pgcv cebg pexn sjaz',
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD
   },
 });
 
 export const sendOtpEmail = async (email: string, otp: string) => {
   const mailOptions = {
-    from: process.env.EMAIL_USER || 'priyalgeitpl@gmail.com',
+    from: process.env.EMAIL_USER,
     to: email,
     subject: 'OTP Verification',
     text: `Your OTP is ${otp}`,
@@ -66,7 +66,7 @@ export const sendEmailToVerify = async (transporterOptions: any) => {
   const transporter = nodemailer.createTransport(transporterOptions);
   const mailOptions = {
     from: transporterOptions.auth.user,
-    to: 'priyalgeitpl@gmail.com',
+    to: process.env.EMAIL_USER,
     subject: "Dummy Email",
     html: `
           <p>This is a dummy email sent from your Node.js application.</p>
