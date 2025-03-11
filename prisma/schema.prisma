@@ -98,6 +98,8 @@ model ChatConfig {
   allowFileUpload  Boolean?
   allowNameEmail   Boolean?
   allowEmojis      Boolean?
+  allowCustomGreeting Boolean?
+  customGreetingMessage String?
   position         String?
   iconColor        String?
   chatWindowColor  String?

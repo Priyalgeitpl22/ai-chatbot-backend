@@ -1,57 +1,59 @@
 (function (global) {
-    const ChatWidget = {
-      globalStylesInjected: false,
-      userName: '',
-      userEmail: '',
-      collectUserInfoState: "none",
-      pendingUserMessage: null,
-      threadId: null,
-      chatHistory: [],
-  
-      async init(options) {
-        const response = await fetch(`http://api.chat.jooper.ai/api/chat/config?orgId=${options.orgId}`);
-        const data = await response.json();
-  
-        const defaultOptions = {
-          elementId: "chat-widget",
-          apiEndpoint: data.data?.socketServer,
-          allowFileUpload: data.data?.allowFileUpload,
-          allowNameEmail: data.data?.allowNameEmail,  
-          allowEmojis: data.data?.allowEmojis,  
-          position: data.data?.position,
-          orgId: data.data?.aiOrgId,
-          iconColor: data.data?.iconColor,
-          chatWindowColor: data.data?.chatWindowColor,
-          fontColor: data.data?.fontColor,
-          availability: data.data?.availability,
-          socketServer: data.data?.socketServer,
-        };
-        this.options = { ...defaultOptions };
-        this.container = document.getElementById(this.options.elementId);
-        if (!this.container) {
-          return;
-        }
-        this.socket = io(this.options.socketServer);
-        this.onlinAgents = [];
-        this.injectGlobalStyles();
-        this.renderIcon();
-      },
-      
-      getPositionStyles() {
-        return this.options.position === "bottom-left"
-          ? "left: 10px; bottom: 10px;"
-          : "right: 10px; bottom: 10px;";
-      },
-      
-      injectStyle(cssText) {
-        const style = document.createElement("style");
-        style.innerHTML = cssText;
-        document.head.appendChild(style);
-      },
-      
-      injectGlobalStyles() {
-        if (this.globalStylesInjected) return;
-        const css = `
+  const ChatWidget = {
+    globalStylesInjected: false,
+    userName: '',
+    userEmail: '',
+    collectUserInfoState: "none",
+    pendingUserMessage: null,
+    threadId: null,
+    chatHistory: [],
+
+    async init(options) {
+      const response = await fetch(`http://api.chat.jooper.ai/api/chat/config?orgId=${options.orgId}`);
+      const data = await response.json();
+
+      const defaultOptions = {
+        elementId: "chat-widget",
+        apiEndpoint: data.data?.socketServer,
+        allowFileUpload: data.data?.allowFileUpload,
+        allowNameEmail: data.data?.allowNameEmail,
+        allowCustomGreeting: data.data?.allowCustomGreeting,
+        customGreetingMessage: data.data?.customGreetingMessage,
+        allowEmojis: data.data?.allowEmojis,
+        position: data.data?.position,
+        orgId: data.data?.aiOrgId,
+        iconColor: data.data?.iconColor,
+        chatWindowColor: data.data?.chatWindowColor,
+        fontColor: data.data?.fontColor,
+        availability: data.data?.availability,
+        socketServer: data.data?.socketServer,
+      };
+      this.options = { ...defaultOptions };
+      this.container = document.getElementById(this.options.elementId);
+      if (!this.container) {
+        return;
+      }
+      this.socket = io(this.options.socketServer);
+      this.onlinAgents = [];
+      this.injectGlobalStyles();
+      this.renderIcon();
+    },
+
+    getPositionStyles() {
+      return this.options.position === "bottom-left"
+        ? "left: 10px; bottom: 10px;"
+        : "right: 10px; bottom: 10px;";
+    },
+
+    injectStyle(cssText) {
+      const style = document.createElement("style");
+      style.innerHTML = cssText;
+      document.head.appendChild(style);
+    },
+
+    injectGlobalStyles() {
+      if (this.globalStylesInjected) return;
+      const css = `
           /* Global Styles */
           .chat-icon:hover { opacity: 0.8; }
           .chat-widget { position: fixed; border: 1px solid #ddd; border-radius: 5px; width: 380px; height: 550px; display: flex; flex-direction: column; }
@@ -84,44 +86,44 @@
           .message.agent.loading .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
           @keyframes typing { 0% { opacity: 0.2; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-3px); } 100% { opacity: 0.2; transform: translateY(0); } }
         `;
-        this.injectStyle(css);
-        this.globalStylesInjected = true;
-      },
-      
-      // Helper function to store the user message in UI and send it to backend.
-      storeUserMessage(content) {
-        this.appendMessage("User", content);
-        if (this.threadId) {
-          this.socket.emit("sendMessage", {
-            sender: "User",
-            content,
-            threadId: this.threadId,
-            aiOrgId: this.options.orgId,
-            allowNameEmail: this.options.allowNameEmail,
-            createdAt: Date.now()
-          });
-        }
-      },
-      
-      // Helper function to store a bot message.
-      storeBotMessage(content) {
-        this.appendMessage("ChatBot", content);
-        if (this.threadId) {
-          this.socket.emit("sendMessage", {
-            sender: "Bot",  
-            content,
-            threadId: this.threadId,
-            aiOrgId: this.options.orgId,
-            allowNameEmail: this.options.allowNameEmail,
-            createdAt: Date.now()
-          });
-        }
-      },
-      
-      renderIcon() {
-        const positionStyles = this.getPositionStyles();
-        const isBottomRight = this.options.position === "bottom-right";
-        this.container.innerHTML = `
+      this.injectStyle(css);
+      this.globalStylesInjected = true;
+    },
+
+    // Helper function to store the user message in UI and send it to backend.
+    storeUserMessage(content) {
+      this.appendMessage("User", content);
+      if (this.threadId) {
+        this.socket.emit("sendMessage", {
+          sender: "User",
+          content,
+          threadId: this.threadId,
+          aiOrgId: this.options.orgId,
+          allowNameEmail: this.options.allowNameEmail,
+          createdAt: Date.now()
+        });
+      }
+    },
+
+    // Helper function to store a bot message.
+    storeBotMessage(content) {
+      this.appendMessage("ChatBot", content);
+      if (this.threadId) {
+        this.socket.emit("sendMessage", {
+          sender: "Bot",
+          content,
+          threadId: this.threadId,
+          aiOrgId: this.options.orgId,
+          allowNameEmail: this.options.allowNameEmail,
+          createdAt: Date.now()
+        });
+      }
+    },
+
+    renderIcon() {
+      const positionStyles = this.getPositionStyles();
+      const isBottomRight = this.options.position === "bottom-right";
+      this.container.innerHTML = `
           <div class="chat-container ${isBottomRight ? "bottom-right" : "bottom-left"}" style="position: fixed; ${positionStyles}; display: flex; align-items: center;">
             <div class="chat-icon" style="cursor: pointer; background-color: ${this.options.iconColor}; color: white; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
               💬
@@ -132,26 +134,26 @@
             </div>
           </div>
         `;
-        if (isBottomRight) {
-          this.container.querySelector(".chat-container").style.flexDirection = "row-reverse";
-        }
-        this.container
-          .querySelector(".chat-icon")
-          .addEventListener("click", () => this.renderChatWindow());
-        document
-          .getElementById("close-message")
-          .addEventListener("click", () => {
-            document.getElementById("chat-message").style.display = "none";
-          });
-        setTimeout(() => {
-          const chatMessage = document.getElementById("chat-message");
-          if (chatMessage) chatMessage.style.display = "flex";
-        }, 2000);
-      },
-      
-      renderChatWindow() {
-        const positionStyles = this.getPositionStyles();
-        this.container.innerHTML = `
+      if (isBottomRight) {
+        this.container.querySelector(".chat-container").style.flexDirection = "row-reverse";
+      }
+      this.container
+        .querySelector(".chat-icon")
+        .addEventListener("click", () => this.renderChatWindow());
+      document
+        .getElementById("close-message")
+        .addEventListener("click", () => {
+          document.getElementById("chat-message").style.display = "none";
+        });
+      setTimeout(() => {
+        const chatMessage = document.getElementById("chat-message");
+        if (chatMessage) chatMessage.style.display = "flex";
+      }, 2000);
+    },
+
+    renderChatWindow() {
+      const positionStyles = this.getPositionStyles();
+      this.container.innerHTML = `
           <div class="chat-widget" style="${positionStyles} background-color: ${this.options.chatWindowColor}; color: ${this.options.fontColor};">
             <div class="chat-header" style="background-color: ${this.options.iconColor}; display: flex; justify-content: space-between; align-items: center; padding: 10px 20px;">
               <div style="display: flex; align-items: center;">
@@ -174,145 +176,149 @@
             ${this.options.availability ? this.chatInputTemplate() : this.contactFormTemplate()}
           </div>
         `;
-        document.getElementById("close-chat").addEventListener("click", () => this.renderIcon());
-        if (this.options.availability) {
-          this.setupEventListeners();
-        } else {
-          this.setupContactFormListener();
-        }
-        this.startChatThread();
-      },
-  
-      renderContactForm() {
-        const chatWidget = document.querySelector(".chat-widget");
-        if (!chatWidget) return;
-        if (document.getElementById("contact-form-container")) return;
-        const formContainer = document.createElement("div");
-        formContainer.id = "contact-form-container";
-        formContainer.innerHTML = this.contactFormTemplate();
-        const chatInputContainer = document.querySelector(".chat-input-container");
-        if (chatInputContainer) {
-          chatWidget.insertBefore(formContainer, chatInputContainer);
-        } else {
-          chatWidget.appendChild(formContainer);
-        }
+      document.getElementById("close-chat").addEventListener("click", () => this.renderIcon());
+      if (this.options.availability) {
+        this.setupEventListeners();
+      } else {
         this.setupContactFormListener();
-      },
-      
-      getMessageTime() {
-        return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-      },
-      
-      fetchIp() {
-        return fetch('https://api.ipify.org?format=json')
-          .then(response => response.json())
-          .then(data => data.ip)
-          .catch(() => "unknown");
-      },
-      
-      startChatThread() {
-        const currentUrl = window.location.href;
-        this.fetchIp().then(ipAddress => {
-          const payload = {
-            sender: "User",
-            aiOrgId: this.options.orgId,
-            url: currentUrl,
-            ip: ipAddress,
-            name: this.userName || '',
-            email: this.userEmail || ''
-          };
-          this.socket.emit("startChat", payload);
-          this.socket.once("chatStarted", (data) => {
-            this.threadId = data.threadId;
-            this.storeBotMessage("Hello! How can I help you?");
-          });
-        });
-      },
-      
-      sendMessage() {
-        const chatInput = document.getElementById("chat-input");
-        const message = chatInput.value.trim();
-        if (!message) return;
-        this.appendMessage("User", message);
-        chatInput.value = "";
-  
-        if (this.options.allowNameEmail) {
-          if (this.collectUserInfoState === "none") {
-            this.pendingUserMessage = message;
-            this.socket.emit("sendMessage", {
-              sender: "User",
-              content: message,
-              threadId: this.threadId,
-              aiOrgId: this.options.orgId,
-              allowNameEmail: this.options.allowNameEmail,
-              createdAt: Date.now()
-            });
-            this.collectUserInfoState = "waitingForName";
-            this.storeBotMessage("Please enter your name:");
-            return;
-          } else if (this.collectUserInfoState === "waitingForName") {
-            this.userName = message;
-            this.socket.emit("sendMessage", {
-              sender: "User",
-              content: message,
-              threadId: this.threadId,
-              aiOrgId: this.options.orgId,
-              allowNameEmail: this.options.allowNameEmail,
-              createdAt: Date.now()
-            });
-            this.collectUserInfoState = "waitingForEmail";
-            this.storeBotMessage(`Thank you, ${this.userName}. Please enter your email:`);
-            return;
-          } else if (this.collectUserInfoState === "waitingForEmail") {
-            this.userEmail = message;
-            this.socket.emit("sendMessage", {
-              sender: "User",
-              content: message,
-              threadId: this.threadId,
-              aiOrgId: this.options.orgId,
-              allowNameEmail: this.options.allowNameEmail,
-              createdAt: Date.now()
-            });
-            this.collectUserInfoState = "done";
-            this.socket.emit("updateThreadInfo", {
-              threadId: this.threadId,
-              name: this.userName,
-              email: this.userEmail,
-            });
-            this.appendTypingIndicator();
-            if (this.pendingUserMessage) {
-              this.socket.emit("processPendingMessage", {
-                sender: "User",
-                content: this.pendingUserMessage,
-                threadId: this.threadId,
-                aiOrgId: this.options.orgId,
-                createdAt: Date.now()
-              });
-              this.pendingUserMessage = null;
-            }
-            return;
-          }
-        }
-        
-        this.socket.emit("sendMessage", {
+      }
+      this.startChatThread();
+    },
+
+    renderContactForm() {
+      const chatWidget = document.querySelector(".chat-widget");
+      if (!chatWidget) return;
+      if (document.getElementById("contact-form-container")) return;
+      const formContainer = document.createElement("div");
+      formContainer.id = "contact-form-container";
+      formContainer.innerHTML = this.contactFormTemplate();
+      const chatInputContainer = document.querySelector(".chat-input-container");
+      if (chatInputContainer) {
+        chatWidget.insertBefore(formContainer, chatInputContainer);
+      } else {
+        chatWidget.appendChild(formContainer);
+      }
+      this.setupContactFormListener();
+    },
+
+    getMessageTime() {
+      return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    },
+
+    fetchIp() {
+      return fetch('https://api.ipify.org?format=json')
+        .then(response => response.json())
+        .then(data => data.ip)
+        .catch(() => "unknown");
+    },
+
+    startChatThread() {
+      const currentUrl = window.location.href;
+      this.fetchIp().then(ipAddress => {
+        const payload = {
           sender: "User",
-          content: message,
-          threadId: this.threadId,
           aiOrgId: this.options.orgId,
-          allowNameEmail: this.options.allowNameEmail,
-          createdAt: Date.now()
+          url: currentUrl,
+          ip: ipAddress,
+          name: this.userName || '',
+          email: this.userEmail || ''
+        };
+        this.socket.emit("startChat", payload);
+        this.socket.once("chatStarted", (data) => {
+          this.threadId = data.threadId;
+          const greetingMessage = this.options.allowCustomGreeting && this.options.customGreetingMessage
+            ? this.options.customGreetingMessage
+            : "Hello! How can I help you?";
+
+          this.storeBotMessage(greetingMessage);
         });
-        if (this.onlinAgents.length === 0) this.appendTypingIndicator();
-        this.socket.emit("updateDashboard", {
-          sender: "User",
-          content: message,
-          threadId: this.threadId,
-          createdAt: Date.now()
-        });
-      },
-      
-      chatInputTemplate() {
-        return `
+      });
+    },
+
+    sendMessage() {
+      const chatInput = document.getElementById("chat-input");
+      const message = chatInput.value.trim();
+      if (!message) return;
+      this.appendMessage("User", message);
+      chatInput.value = "";
+
+      if (this.options.allowNameEmail) {
+        if (this.collectUserInfoState === "none") {
+          this.pendingUserMessage = message;
+          this.socket.emit("sendMessage", {
+            sender: "User",
+            content: message,
+            threadId: this.threadId,
+            aiOrgId: this.options.orgId,
+            allowNameEmail: this.options.allowNameEmail,
+            createdAt: Date.now()
+          });
+          this.collectUserInfoState = "waitingForName";
+          this.storeBotMessage("Please enter your name:");
+          return;
+        } else if (this.collectUserInfoState === "waitingForName") {
+          this.userName = message;
+          this.socket.emit("sendMessage", {
+            sender: "User",
+            content: message,
+            threadId: this.threadId,
+            aiOrgId: this.options.orgId,
+            allowNameEmail: this.options.allowNameEmail,
+            createdAt: Date.now()
+          });
+          this.collectUserInfoState = "waitingForEmail";
+          this.storeBotMessage(`Thank you, ${this.userName}. Please enter your email:`);
+          return;
+        } else if (this.collectUserInfoState === "waitingForEmail") {
+          this.userEmail = message;
+          this.socket.emit("sendMessage", {
+            sender: "User",
+            content: message,
+            threadId: this.threadId,
+            aiOrgId: this.options.orgId,
+            allowNameEmail: this.options.allowNameEmail,
+            createdAt: Date.now()
+          });
+          this.collectUserInfoState = "done";
+          this.socket.emit("updateThreadInfo", {
+            threadId: this.threadId,
+            name: this.userName,
+            email: this.userEmail,
+          });
+          this.appendTypingIndicator();
+          if (this.pendingUserMessage) {
+            this.socket.emit("processPendingMessage", {
+              sender: "User",
+              content: this.pendingUserMessage,
+              threadId: this.threadId,
+              aiOrgId: this.options.orgId,
+              createdAt: Date.now()
+            });
+            this.pendingUserMessage = null;
+          }
+          return;
+        }
+      }
+
+      this.socket.emit("sendMessage", {
+        sender: "User",
+        content: message,
+        threadId: this.threadId,
+        aiOrgId: this.options.orgId,
+        allowNameEmail: this.options.allowNameEmail,
+        createdAt: Date.now()
+      });
+      if (this.onlinAgents.length === 0) this.appendTypingIndicator();
+      this.socket.emit("updateDashboard", {
+        sender: "User",
+        content: message,
+        threadId: this.threadId,
+        createdAt: Date.now()
+      });
+    },
+
+    chatInputTemplate() {
+      return `
           <div class="chat-input-container">
             <div class="chat-input-wrapper">
               <textarea id="chat-input" placeholder="Type a message..."></textarea>
@@ -324,10 +330,10 @@
             </div>
           </div>
         `;
-      },
-      
-      contactFormTemplate() {
-        return `
+    },
+
+    contactFormTemplate() {
+      return `
           <div class="contact-form">
             <h3>Ticket</h3>
             <input type="text" id="contact-name" placeholder="Your Name" required />
@@ -336,171 +342,170 @@
             <button id="submit-contact">Submit</button>
           </div>
         `;
-      },
-      
-      setupEventListeners() {
-        const sendMessageButton = document.getElementById("send-message");
-        const chatInput = document.getElementById("chat-input");
-        const fileUploadInput = document.getElementById("file-upload");
-        const uploadButton = document.getElementById("upload-button");
-        const emojiPickerButton = document.getElementById("emoji-picker");
-        
-        sendMessageButton.addEventListener("click", () => this.sendMessage());
-        chatInput.addEventListener("keydown", (event) => {
-          if (event.key === "Enter" && !event.shiftKey) {
-            event.preventDefault();
-            sendMessageButton.click();
-          }
-        });
-        
-        this.socket.on("receiveMessage", (data) => {
+    },
+
+    setupEventListeners() {
+      const sendMessageButton = document.getElementById("send-message");
+      const chatInput = document.getElementById("chat-input");
+      const fileUploadInput = document.getElementById("file-upload");
+      const uploadButton = document.getElementById("upload-button");
+      const emojiPickerButton = document.getElementById("emoji-picker");
+
+      sendMessageButton.addEventListener("click", () => this.sendMessage());
+      chatInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" && !event.shiftKey) {
+          event.preventDefault();
+          sendMessageButton.click();
+        }
+      });
+
+      this.socket.on("receiveMessage", (data) => {
+        if (document.getElementById("typing-indicator")) this.removeTypingIndicator();
+        this.appendMessage("ChatBot", data.content);
+        if (data.task_creation) this.renderContactForm();
+      });
+
+      this.socket.on("typing", () => this.appendTypingIndicator());
+      this.socket.on("stopTyping", () => this.removeTypingIndicator());
+      this.socket.on("agentStatusUpdate", (data) => { this.onlinAgents = data; });
+      this.socket.on("updateDashboard", (data) => {
+        if (data.sender === "Bot" && data.threadId === this.threadId) {
           if (document.getElementById("typing-indicator")) this.removeTypingIndicator();
           this.appendMessage("ChatBot", data.content);
-          if (data.task_creation) this.renderContactForm();
-        });
-        
-        this.socket.on("typing", () => this.appendTypingIndicator());
-        this.socket.on("stopTyping", () => this.removeTypingIndicator());
-        this.socket.on("agentStatusUpdate", (data) => { this.onlinAgents = data; });
-        this.socket.on("updateDashboard", (data) => {
-          if (data.sender === "Bot" && data.threadId === this.threadId) {
-            if (document.getElementById("typing-indicator")) this.removeTypingIndicator();
-            this.appendMessage("ChatBot", data.content);
-          }
-        });
-        
-        if (uploadButton && fileUploadInput) {
-          uploadButton.addEventListener("click", () => fileUploadInput.click());
-          fileUploadInput.addEventListener("change", (event) => {
-            const file = event.target.files[0];
-            if (file) this.storeUserMessage(`Uploaded: ${file.name}`);
-          });
         }
-        
-        if (this.options.allowEmojis) this.setupEmojiPicker(chatInput, emojiPickerButton);
-      },
-      
-      setupEmojiPicker(chatInput, emojiPickerButton) {
-        const script = document.createElement("script");
-        script.type = "module";
-        script.src = "https://cdn.jsdelivr.net/npm/emoji-picker-element@1.26.1/picker.min.js";
-        script.onload = () => {
-          const picker = document.createElement("emoji-picker");
-          picker.classList.add("emoji-picker-container");
-          document.body.appendChild(picker);
-          picker.style.setProperty("--emoji-size", "1.1rem");
-          picker.style.setProperty("--num-columns", "9");
-          picker.style.setProperty("--background", "#f5f5f5");
-          picker.style.setProperty("--border-color", "none");
-          picker.style.setProperty("--button-active-background", "#999");
-          picker.style.setProperty("--button-hover-background", "#d9d9d9");
-          
-          const shadowRoot = picker.shadowRoot;
-          if (shadowRoot) {
-            const favoritesSection = shadowRoot.querySelector(".favorites");
-            if (favoritesSection) favoritesSection.style.display = "none";
-            const tabPanel = shadowRoot.querySelector(".tabpanel");
-            if (tabPanel) {
-              const style = document.createElement("style");
-              style.innerHTML = `
+      });
+
+      if (uploadButton && fileUploadInput) {
+        uploadButton.addEventListener("click", () => fileUploadInput.click());
+        fileUploadInput.addEventListener("change", (event) => {
+          const file = event.target.files[0];
+          if (file) this.storeUserMessage(`Uploaded: ${file.name}`);
+        });
+      }
+
+      if (this.options.allowEmojis) this.setupEmojiPicker(chatInput, emojiPickerButton);
+    },
+
+    setupEmojiPicker(chatInput, emojiPickerButton) {
+      const script = document.createElement("script");
+      script.type = "module";
+      script.src = "https://cdn.jsdelivr.net/npm/emoji-picker-element@1.26.1/picker.min.js";
+      script.onload = () => {
+        const picker = document.createElement("emoji-picker");
+        picker.classList.add("emoji-picker-container");
+        document.body.appendChild(picker);
+        picker.style.setProperty("--emoji-size", "1.1rem");
+        picker.style.setProperty("--num-columns", "9");
+        picker.style.setProperty("--background", "#f5f5f5");
+        picker.style.setProperty("--border-color", "none");
+        picker.style.setProperty("--button-active-background", "#999");
+        picker.style.setProperty("--button-hover-background", "#d9d9d9");
+
+        const shadowRoot = picker.shadowRoot;
+        if (shadowRoot) {
+          const favoritesSection = shadowRoot.querySelector(".favorites");
+          if (favoritesSection) favoritesSection.style.display = "none";
+          const tabPanel = shadowRoot.querySelector(".tabpanel");
+          if (tabPanel) {
+            const style = document.createElement("style");
+            style.innerHTML = `
                 .tabpanel::-webkit-scrollbar { width: 5px; }
                 .tabpanel::-webkit-scrollbar-track { background-color: #f1f1f1; }
                 .tabpanel::-webkit-scrollbar-thumb { background-color: #888; border-radius: 10px; }
                 .tabpanel::-webkit-scrollbar-thumb:hover { background-color: #555; }
               `;
-              shadowRoot.appendChild(style);
-            }
+            shadowRoot.appendChild(style);
           }
-          
-          emojiPickerButton.addEventListener("click", (event) => {
-            event.stopPropagation();
-            picker.style.display = picker.style.display === "none" || picker.style.display === "" ? "block" : "none";
-          });
-          document.addEventListener("click", (event) => {
-            if (picker.style.display === "block" && !picker.contains(event.target) && event.target !== emojiPickerButton) {
-              picker.style.display = "none";
-            }
-          });
-          picker.addEventListener("emoji-click", (event) => {
-            chatInput.value += event.detail.unicode;
-          });
-        };
-        document.body.appendChild(script);
-      },
-      
-      setupContactFormListener() {
-        const submitButton = document.getElementById("submit-contact");
-        if (submitButton) {
-          submitButton.addEventListener("click", () => {
-            const name = document.getElementById("contact-name").value.trim();
-            const email = document.getElementById("contact-email").value.trim();
-            const message = document.getElementById("contact-message").value.trim();
-            if (name && email && message) {
-              this.socket.emit("createTask", {
-                aiOrgId: this.options.orgId,
-                threadId: this.threadId,
-                name,
-                email,
-                query: message
-              });
-              const formContainer = document.getElementById("contact-form-container");
-              if (formContainer) formContainer.remove();
-              const chatInputContainer = document.querySelector(".chat-input-container");
-              if (chatInputContainer) {
-                const successMessage = document.createElement("div");
-                successMessage.id = "task-success-message";
-                successMessage.style.textAlign = "center";
-                successMessage.style.padding = "5px";
-                successMessage.style.backgroundColor = "#d4edda";
-                successMessage.style.color = "#155724";
-                successMessage.textContent = "Ticket raised successfully";
-                chatInputContainer.parentNode.insertBefore(successMessage, chatInputContainer);
-                setTimeout(() => { if (successMessage) successMessage.remove(); }, 3000);
-              }
-            } else {
-              alert("Please fill in all fields.");
-            }
-          });
         }
-      },
-      
-      appendMessage(sender, message) {
-        const messagesContainer = document.getElementById("chat-messages");
-        const timeStr = this.getMessageTime();
-        const msgElem = document.createElement("div");
-        const timeElem = document.createElement("div");
-        msgElem.className = `message ${sender === "User" ? "user" : "agent"}`;
-        msgElem.textContent = message;
-        Object.assign(timeElem.style, { fontSize: "10px", color: "#6b7280", marginTop: "5px", textAlign: sender === "User" ? "right" : "left" });
-        timeElem.className = "message-time";
-        timeElem.textContent = timeStr;
-        messagesContainer.append(msgElem, timeElem);
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        
-        this.chatHistory.push({
-          sender,
-          message,
-          time: timeStr
+
+        emojiPickerButton.addEventListener("click", (event) => {
+          event.stopPropagation();
+          picker.style.display = picker.style.display === "none" || picker.style.display === "" ? "block" : "none";
         });
-      },
-      
-      appendTypingIndicator() {
-        const messagesContainer = document.getElementById("chat-messages");
-        if (!messagesContainer || document.getElementById("typing-indicator")) return;
-        const indicator = document.createElement("div");
-        indicator.className = "message agent loading";
-        indicator.id = "typing-indicator";
-        indicator.innerHTML = `<div class="typing-indicator"><span></span><span></span><span></span></div>`;
-        messagesContainer.appendChild(indicator);
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-      },
-      
-      removeTypingIndicator() {
-        const indicator = document.getElementById("typing-indicator");
-        if (indicator) indicator.remove();
+        document.addEventListener("click", (event) => {
+          if (picker.style.display === "block" && !picker.contains(event.target) && event.target !== emojiPickerButton) {
+            picker.style.display = "none";
+          }
+        });
+        picker.addEventListener("emoji-click", (event) => {
+          chatInput.value += event.detail.unicode;
+        });
+      };
+      document.body.appendChild(script);
+    },
+
+    setupContactFormListener() {
+      const submitButton = document.getElementById("submit-contact");
+      if (submitButton) {
+        submitButton.addEventListener("click", () => {
+          const name = document.getElementById("contact-name").value.trim();
+          const email = document.getElementById("contact-email").value.trim();
+          const message = document.getElementById("contact-message").value.trim();
+          if (name && email && message) {
+            this.socket.emit("createTask", {
+              aiOrgId: this.options.orgId,
+              threadId: this.threadId,
+              name,
+              email,
+              query: message
+            });
+            const formContainer = document.getElementById("contact-form-container");
+            if (formContainer) formContainer.remove();
+            const chatInputContainer = document.querySelector(".chat-input-container");
+            if (chatInputContainer) {
+              const successMessage = document.createElement("div");
+              successMessage.id = "task-success-message";
+              successMessage.style.textAlign = "center";
+              successMessage.style.padding = "5px";
+              successMessage.style.backgroundColor = "#d4edda";
+              successMessage.style.color = "#155724";
+              successMessage.textContent = "Ticket raised successfully";
+              chatInputContainer.parentNode.insertBefore(successMessage, chatInputContainer);
+              setTimeout(() => { if (successMessage) successMessage.remove(); }, 3000);
+            }
+          } else {
+            alert("Please fill in all fields.");
+          }
+        });
       }
-    };
-    
-    global.ChatWidget = ChatWidget;
-  })(window);
-  
+    },
+
+    appendMessage(sender, message) {
+      const messagesContainer = document.getElementById("chat-messages");
+      const timeStr = this.getMessageTime();
+      const msgElem = document.createElement("div");
+      const timeElem = document.createElement("div");
+      msgElem.className = `message ${sender === "User" ? "user" : "agent"}`;
+      msgElem.textContent = message;
+      Object.assign(timeElem.style, { fontSize: "10px", color: "#6b7280", marginTop: "5px", textAlign: sender === "User" ? "right" : "left" });
+      timeElem.className = "message-time";
+      timeElem.textContent = timeStr;
+      messagesContainer.append(msgElem, timeElem);
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+      this.chatHistory.push({
+        sender,
+        message,
+        time: timeStr
+      });
+    },
+
+    appendTypingIndicator() {
+      const messagesContainer = document.getElementById("chat-messages");
+      if (!messagesContainer || document.getElementById("typing-indicator")) return;
+      const indicator = document.createElement("div");
+      indicator.className = "message agent loading";
+      indicator.id = "typing-indicator";
+      indicator.innerHTML = `<div class="typing-indicator"><span></span><span></span><span></span></div>`;
+      messagesContainer.appendChild(indicator);
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    },
+
+    removeTypingIndicator() {
+      const indicator = document.getElementById("typing-indicator");
+      if (indicator) indicator.remove();
+    }
+  };
+
+  global.ChatWidget = ChatWidget;
+})(window);
