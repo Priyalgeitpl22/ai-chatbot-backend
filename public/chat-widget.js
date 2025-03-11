@@ -9,7 +9,7 @@
       chatHistory: [],
   
       async init(options) {
-        const response = await fetch(`${process.env.SERVER_URL}/api/chat/config?orgId=${options.orgId}`);
+        const response = await fetch(`http://api.chat.jooper.ai/api/chat/config?orgId=${options.orgId}`);
         const data = await response.json();
   
         const defaultOptions = {
@@ -329,7 +329,7 @@
       contactFormTemplate() {
         return `
           <div class="contact-form">
-            <h3>Contact Us</h3>
+            <h3>Ticket</h3>
             <input type="text" id="contact-name" placeholder="Your Name" required />
             <input type="email" id="contact-email" placeholder="Your Email" required />
             <textarea id="contact-message" placeholder="Your Message" rows="4" required></textarea>
@@ -453,7 +453,7 @@
                 successMessage.style.padding = "5px";
                 successMessage.style.backgroundColor = "#d4edda";
                 successMessage.style.color = "#155724";
-                successMessage.textContent = "Task is created successfully";
+                successMessage.textContent = "Ticket raised successfully";
                 chatInputContainer.parentNode.insertBefore(successMessage, chatInputContainer);
                 setTimeout(() => { if (successMessage) successMessage.remove(); }, 3000);
               }

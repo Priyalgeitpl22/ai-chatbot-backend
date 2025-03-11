@@ -77,6 +77,7 @@ export const socketSetup = (server: any) => {
       allowedHeaders: ["Content-Type"],
       credentials: true,
     },
+    transports: ["websocket", "polling"],
   });
 
   io.on("connection", (socket) => {
