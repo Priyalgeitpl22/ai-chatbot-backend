@@ -132,9 +132,8 @@ export const socketSetup = (server: any) => {
           data.sender === "User" &&
           data.allowNameEmail &&
           thread &&
-          (thread.name === "" || thread.email === "")
+          (thread.name === "" || thread.email === ""|| thread.email=== data?.content)
         ) {
-          console.log("User identification incomplete. Skipping AI processing.");
           return;
         }
 
@@ -181,12 +180,11 @@ export const socketSetup = (server: any) => {
       if (data.sender === "User") {
         io.emit("notification", { message: "🔔 New Message Received!" });
       } else {
-        // This block will execute for agent messages (non-User messages).
         try {
           await prisma.message.create({
             data: {
               content: data.content,
-              sender: "Bot", // storing agent messages as Bot
+              sender: "Bot", 
               threadId: data.threadId,
             },
           });
@@ -220,9 +218,13 @@ export const socketSetup = (server: any) => {
 
     socket.on("updateThreadInfo", async (data) => {
       try {
+        let updateData:any = {};
+        if (data.name) updateData.name = data.name;
+        if (data.email) updateData.email = data.email;
+    
         const updatedThread = await prisma.thread.update({
           where: { id: data.threadId },
-          data: { name: data.name, email: data.email },
+          data: updateData,
         });
         console.log("Thread updated successfully:", updatedThread);
       } catch (error) {

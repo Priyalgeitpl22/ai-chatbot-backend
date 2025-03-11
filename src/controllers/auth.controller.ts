@@ -18,7 +18,7 @@ export const register = async (req: Request, res: Response): Promise<any> => {
             return res.status(400).json({ code: 400, message: "File upload failed", error: err });
         }
 
-        const { email, fullName, orgName, domain, country, phone, password } = req.body;
+        const { email, fullName, orgName, industry, country, phone, password } = req.body;
 
         try {
             const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -28,7 +28,7 @@ export const register = async (req: Request, res: Response): Promise<any> => {
 
             const organizationData = {
                 name: orgName,
-                domain,
+                industry,
                 country,
                 phone
             }
@@ -58,6 +58,7 @@ export const register = async (req: Request, res: Response): Promise<any> => {
                     otpCode: otp.code,
                     otpExpiresAt: otp.expiresAt,
                     profilePicture: profilePictureUrl,
+                    phone: phone,
                 },
             });
 
