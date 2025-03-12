@@ -100,6 +100,8 @@ model ChatConfig {
   allowEmojis      Boolean?
   allowCustomGreeting Boolean?
   customGreetingMessage String?
+  allowFontFamily  Boolean?
+  customFontFamily String?
   position         String?
   iconColor        String?
   chatWindowColor  String?
