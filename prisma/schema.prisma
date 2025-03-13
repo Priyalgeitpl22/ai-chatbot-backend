@@ -96,6 +96,8 @@ model ChatConfig {
   orgId            String?
   aiOrgId          Int? 
   allowFileUpload  Boolean?
+  addChatBotName   String?
+  ChatBotLogoImage String?
   allowNameEmail   Boolean?
   allowEmojis      Boolean?
   allowCustomGreeting Boolean?

@@ -16,11 +16,13 @@
         elementId: "chat-widget",
         apiEndpoint: data.data?.socketServer,
         allowFileUpload: data.data?.allowFileUpload,
+        addChatBotName: data.data?.addChatBotName,
+        ChatBotLogoImage: data.data?.ChatBotLogoImage,
         allowNameEmail: data.data?.allowNameEmail,
         allowCustomGreeting: data.data?.allowCustomGreeting,
         customGreetingMessage: data.data?.customGreetingMessage,
-        allowFontFamily:data.data?.allowFontFamily, 
-        customFontFamily:data.data?.customFontFamily,
+        allowFontFamily: data.data?.allowFontFamily,
+        customFontFamily: data.data?.customFontFamily,
         allowEmojis: data.data?.allowEmojis,
         position: data.data?.position,
         orgId: data.data?.aiOrgId,
@@ -55,9 +57,9 @@
 
     injectGlobalStyles() {
       if (this.globalStylesInjected) return;
-      const fontFamily = this.options.allowFontFamily 
-      ? `${this.options.customFontFamily}, sans-serif` 
-      : `Arial, sans-serif`;
+      const fontFamily = this.options.allowFontFamily
+        ? `${this.options.customFontFamily}, sans-serif`
+        : `Arial, sans-serif`;
       const css = `
           /* Global Styles */
           .chat-icon:hover { opacity: 0.8; }
@@ -163,10 +165,10 @@
             <div class="chat-header" style="background-color: ${this.options.iconColor}; display: flex; justify-content: space-between; align-items: center; padding: 10px 20px;">
               <div style="display: flex; align-items: center;">
                 <div id="avatar-container" style="margin-right: 10px;">
-                  <img id="avatar" src="https://www.w3schools.com/w3images/avatar2.png" alt="Avatar" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">
+                  <img id="avatar" src=${this.options.ChatBotLogoImage || "https://www.w3schools.com/w3images/avatar2.png"} alt="Avatar" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">
                 </div>
                 <div style="display: flex; flex-direction: column;">
-                  <span style="color: white; font-size: 18px; font-weight: bold;">ChatBot</span>
+                    <span style="color: white; font-size: 18px; font-weight: bold;">${this.options.addChatBotName || 'ChatBot'}</span>
                   <div style="display: flex; align-items: center; gap: 5px; font-size: 12px; color: #fff;">
                     <div style="width:8px; height:8px; border-radius:50%; background-color: rgb(16, 185, 129);"></div>
                     Online

@@ -1,13 +1,16 @@
 import { PrismaClient } from "@prisma/client";
 import { Request, Response } from "express";
+import { getPresignedUrl, uploadImageToS3 } from "../aws/imageUtils";
+import multer from "multer";
 
 const prisma = new PrismaClient();
+const upload = multer({ storage: multer.memoryStorage() }).single("ChatBotLogoImage");
 
 export const getChatConfig = async (req: Request, res: Response): Promise<any> => {
     try {
         const orgId = (req.query.orgId) as string;
         const config = await prisma.chatConfig.findFirst({
-            where:{
+            where: {
                 orgId: orgId
             }
         });
@@ -23,30 +26,60 @@ export const getChatConfig = async (req: Request, res: Response): Promise<any> =
     }
 };
 
-export const updateChatConfig = async (req: Request, res: Response) => {
-    try {
-        const configData = req.body;
-
-        const existingConfig = await prisma.chatConfig.findFirst();
-        let updatedConfig;
-
-        if (existingConfig) {
-            updatedConfig = await prisma.chatConfig.update({
-                where: { id: existingConfig.id },
-                data: configData
-            });
-        } else {
-            updatedConfig = await prisma.chatConfig.create({
-                data: {...configData, socketServer: process.env.SOCKET_SERVER_URL}
-            });
+export const updateChatConfig = async (req: Request, res: Response): Promise<any> => {
+    upload(req, res, async (err) => {
+        if (err) {
+            return res.status(400).json({ code: 400, message: "File upload failed", error: err });
         }
+        try {
+            const configData = req.body;
+            let ChatBotLogoImageURL : string | null = null;
+            if(req.file){
+                ChatBotLogoImageURL = await uploadImageToS3(req.file);
+            }
 
-        res.status(200).json({ code: 200, data: updatedConfig, message: "Chat configuration updated successfully" });
-    } catch (err) {
-        console.error("Error updating chat config:", err);
-        res.status(500).json({ code: 500, message: "Internal Server Error" });
-    }
+            let ChatBotLogoImage;
+            if (ChatBotLogoImageURL) {
+                ChatBotLogoImage = await getPresignedUrl(ChatBotLogoImageURL);
+            }
+            console.log("ChatBotLogoImage",ChatBotLogoImage)
+            const parseBoolean = (value: any) => value === "true" ? true : value === "false" ? false : value;
+            const parseInteger = (value: any) => value ? parseInt(value, 10) : null;
+
+            const parsedConfigData = {
+                ...configData,
+                allowEmojis: parseBoolean(configData.allowEmojis),
+                allowFileUpload: parseBoolean(configData.allowFileUpload),
+                allowNameEmail: parseBoolean(configData.allowNameEmail),
+                allowCustomGreeting: parseBoolean(configData.allowCustomGreeting),
+                availability: parseBoolean(configData.availability),
+                allowFontFamily: parseBoolean(configData.allowFontFamily),
+                aiOrgId: parseInteger(configData.aiOrgId), 
+                ChatBotLogoImage: ChatBotLogoImage,
+                socketServer: process.env.SOCKET_SERVER_URL,
+            };
+
+            const existingConfig = await prisma.chatConfig.findFirst();
+            let updatedConfig;
+
+            if (existingConfig) {
+                updatedConfig = await prisma.chatConfig.update({
+                    where: { id: existingConfig.id },
+                    data: parsedConfigData,
+                });
+            } else {
+                updatedConfig = await prisma.chatConfig.create({
+                    data: parsedConfigData,
+                });
+            }
+            res.status(200).json({ code: 200, data: updatedConfig, message: "Chat configuration updated successfully" });
+        } catch (err) {
+            console.error("Error updating chat config:", err);
+            res.status(500).json({ code: 500, message: "Internal Server Error" });
+        }
+    });
 };
+
 
 export const getChatScript = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -85,7 +118,7 @@ export const getChatScript = async (req: Request, res: Response): Promise<void> 
         `;
 
         res.setHeader("Content-Type", "application/javascript");
-        res.status(200).json({code: 200, data: script, message: 'Script fetched successfully!'});
+        res.status(200).json({ code: 200, data: script, message: 'Script fetched successfully!' });
     } catch (err) {
         console.error("Error generating chat script:", err);
         res.status(500).send("Internal Server Error");
