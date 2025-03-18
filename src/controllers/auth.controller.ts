@@ -96,6 +96,8 @@ export const verifyOtp = async (req: Request, res: Response): Promise<any> => {
     }
 };
 
+
+
 export const forgetPassword = async (req: Request, res: Response): Promise<any> => {
     try {
         const { email } = req.body;
@@ -269,4 +271,29 @@ export const activateAccount = async (req: Request, res: Response): Promise<any>
     }
 };
 
+export const resendOtp = async (req: Request, res: Response): Promise<any> => {
+    const { email } = req.body;
+    try {
+      const user = await prisma.user.findUnique({ where: { email } });
+      if (!user)
+        return res.status(404).json({ code: 404, message: "User not found" });
+      if (user.otpExpiresAt && user.otpExpiresAt > new Date()) {
+        return res.status(429).json({
+          code: 429,
+          message: "OTP is still valid. Please wait before requesting a new OTP.",
+        });
+      }
+      const otp = generateOtp();
+      await prisma.user.update({
+        where: { email },
+        data: { otpCode: otp.code, otpExpiresAt: otp.expiresAt },
+      });
+      await sendOtpEmail(email, otp.code);
+      res
+        .status(200)
+        .json({ code: 200, message: "New OTP sent. Please verify your email." });
+    } catch (error) {
+      res.status(500).json({ code: 500, message: "Server error" });
+    }
+  };
 
