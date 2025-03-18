@@ -28,10 +28,22 @@ const processAIResponse = async (data: any, io: Server) => {
   const isFirstUserMessage =
     previousMessages.filter((m) => m.sender === "User").length === 1;
 
-  if ((online.length > 0) && isFirstUserMessage) {
-    answer =
-      "An agent is available and will assist you soon. Thank you for your patience.";
-  } else if (online.length === 0) {
+  const thread = await prisma.thread.findUnique({
+    where: { id: data.threadId },
+  });
+
+  const agentMessageAlreadySent = previousMessages.some(
+    (m) => m.sender === "Bot" && m.content === "An agent is available and will assist you soon. Thank you for your patience."
+  );
+  if (online.length > 0) {
+    if ((!data?.allowNameEmail && isFirstUserMessage) ||
+      (data?.allowNameEmail && thread && thread.name !== "" && thread.email !== "" && !agentMessageAlreadySent)
+    ) {
+      answer =
+        "An agent is available and will assist you soon. Thank you for your patience.";
+    }
+  }
+  else if (online.length === 0) {
     if (data.sender === 'User') {
       const response = await getAIResponse(
         data.content,
@@ -133,7 +145,7 @@ export const socketSetup = (server: any) => {
           data.sender === "User" &&
           data.allowNameEmail &&
           thread &&
-          (thread.name === "" || thread.email === ""|| thread.email=== data?.content)
+          ((thread.name === "" || thread.email === "") || thread.email === data?.content)
         ) {
           return;
         }
@@ -154,10 +166,10 @@ export const socketSetup = (server: any) => {
         const thread = await prisma.thread.findUnique({
           where: { id: data.threadId },
         });
-        if (!thread || thread.name === "" || thread.email === "") {
-          console.log("User identification incomplete. Skipping AI processing.");
-          return;
-        }
+        // if (!thread || thread.name === "" || thread.email === "") {
+        //   console.log("User identification incomplete. Skipping AI processing.");
+        //   return;
+        // }
         console.log("Processing pending message:", data.content);
         await processAIResponse(data, io);
       } catch (error) {

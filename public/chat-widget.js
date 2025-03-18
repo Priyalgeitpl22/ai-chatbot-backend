@@ -274,6 +274,10 @@
             createdAt: Date.now()
           });
           this.collectUserInfoState = "waitingForEmail";
+          this.socket.emit("updateThreadInfo", {
+            threadId: this.threadId,
+            name: this.userName, 
+          });
           this.storeBotMessage(`Thank you, ${this.userName}. Please enter your email:`);
           return;
         } else if (this.collectUserInfoState === "waitingForEmail") {
@@ -289,7 +293,6 @@
           this.collectUserInfoState = "done";
           this.socket.emit("updateThreadInfo", {
             threadId: this.threadId,
-            name: this.userName,
             email: this.userEmail,
           });
           this.appendTypingIndicator();
@@ -299,6 +302,7 @@
               content: this.pendingUserMessage,
               threadId: this.threadId,
               aiOrgId: this.options.orgId,
+              allowNameEmail: this.options.allowNameEmail,
               createdAt: Date.now()
             });
             this.pendingUserMessage = null;
