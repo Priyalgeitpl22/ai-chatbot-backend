@@ -182,14 +182,22 @@ export const createAISettings = async (req: Request, res: Response): Promise<any
     if (!existingOrg) {
       return res.status(404).json({ code: 404, message: "Organization not found." });
     }
-    const organization = await prisma.organization.update({
+    const Organization = await prisma.organization.update({
       where: { id: orgId },
-      data: { aiChatBotSettings: aiChatBotSettings, aiEnabled: true }
+      data: { aiChatBotSettings: aiChatBotSettings, aiEnabled: true },
     });
+
+    console.log("Organization", Organization);
+
+    // Sending organization details after updating AI settings
+    await sendOrganizationDetails(
+      { ...Organization },
+      Organization.aiOrgId
+    );
 
     res.status(200).json({
       code: 200,
-      data: organization.aiChatBotSettings,
+      data: Organization.aiChatBotSettings,
       message: "AI Settings created successfully"
     });
 
