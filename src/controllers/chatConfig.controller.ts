@@ -15,10 +15,6 @@ export const getChatConfig = async (req: Request, res: Response): Promise<any> =
             }
         });
 
-        if (!config) {
-            return res.status(404).json({ code: 404, message: "Chat configuration not found" });
-        }
-
         res.status(200).json({ code: 200, data: config, message: "Success" });
     } catch (err) {
         console.error("Error fetching chat config:", err);

@@ -3,7 +3,7 @@ import { randomBytes } from 'crypto';
 export const generateOtp = (): { code: string, expiresAt: Date } => {
   const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
   const expiresAt = new Date();
-  expiresAt.setMinutes(expiresAt.getMinutes() + 1.5);
+  expiresAt.setSeconds(expiresAt.getSeconds() + 90);
   return { code: otpCode, expiresAt };
 };
 
