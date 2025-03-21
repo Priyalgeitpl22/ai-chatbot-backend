@@ -1,0 +1,1 @@
+-- Placeholder migration file since the database already has this migration

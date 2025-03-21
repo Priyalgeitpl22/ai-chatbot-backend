@@ -53,7 +53,7 @@ model User {
   createdAt      DateTime @default(now())
   online         Boolean  @default(true)
   schedule       Json?     
-
+  deletedAt      DateTime?
   // Fields for OTP verification
   otpCode      String?   
   otpExpiresAt DateTime? 

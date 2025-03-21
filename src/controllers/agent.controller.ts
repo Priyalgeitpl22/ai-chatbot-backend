@@ -86,8 +86,8 @@ export const getAgents = async (req: Request, res: Response): Promise<void> => {
         }
 
         const agents = await prisma.user.findMany({
-            where: { orgId: orgId as string},
-            select: { fullName: true, email: true, id: true, role: true, orgId: true, profilePicture: true, phone: true, schedule: true }
+            where: { orgId: orgId as string,deletedAt: null },
+            select: { fullName: true, email: true, id: true, role: true, orgId: true, profilePicture: true, phone: true, schedule: true, deletedAt:true }
         });
 
         if (!agents) {
@@ -208,3 +208,33 @@ export const updateAgent = async (req: Request, res: Response): Promise<any> => 
     }
 };
 
+export const softDeleteAgent = async (req: Request, res: Response): Promise<any> => {
+    try {
+        const {id} = req.params;
+
+        if (!id) {
+            return res.status(400).json({ code: 400, message: "Agent ID is required." });
+        }
+
+        const existingAgent = await prisma.user.findUnique({ where: { id } });
+        if (!existingAgent) {
+            return res.status(404).json({ code: 404, message: "Agent not found." });
+        }
+
+        const deletedAgent = await prisma.user.update({
+            where: { id },
+            data: { deletedAt: new Date() },
+            select: { id: true, fullName: true, email: true, deletedAt: true }
+        });
+
+        res.status(200).json({
+            code: 200,
+            data: deletedAgent,
+            message: "Agent deleted successfully.",
+        });
+
+    } catch (err) {
+        console.error("Error soft deleting agent:", err);
+        res.status(500).json({ code: 500, message: "Error deleting agent" });
+    }
+};
