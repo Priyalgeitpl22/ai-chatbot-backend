@@ -62,8 +62,9 @@ const processAIResponse = async (data: any, io: Server) => {
   }
   console.log("answer:", answer);
   if (answer) {
+    const formattedAnswer = Array.isArray(answer) ? answer.map(item => `- ${item}`).join("\n") : answer;
     await prisma.message.create({
-      data: { content: answer, sender: "Bot", threadId: data.threadId },
+      data: { content: formattedAnswer, sender: "Bot", threadId: data.threadId },
     });
     if (data.sender === "User") {
       io.emit("notification", { message: "🔔 New Message Received!" });
@@ -72,7 +73,7 @@ const processAIResponse = async (data: any, io: Server) => {
       id: Date.now().toString(),
       sender: "Bot",
       status: 200,
-      content: answer,
+      content: formattedAnswer,
       task_creation: taskCreation,
       threadId: data.threadId,
       question,
@@ -194,13 +195,17 @@ export const socketSetup = (server: any) => {
         io.emit("notification", { message: "🔔 New Message Received!" });
       } else {
         try {
+          const formattedContent = Array.isArray(data.content) 
+        ? data.content.map((item: any) => `- ${item}`).join("\n") 
+        : data.content;
           await prisma.message.create({
             data: {
-              content: data.content,
+              content: formattedContent,
               sender: "Bot", 
               threadId: data.threadId,
             },
           });
+          data.content = formattedContent;
         } catch (error) {
           console.error("Error storing agent message:", error);
         }

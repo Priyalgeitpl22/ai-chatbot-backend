@@ -67,9 +67,9 @@
           .chat-header { color: white; border-radius: 5px 5px 0 0; }
           .chat-messages { flex: 1; overflow-y: scroll; scrollbar-width: none; -ms-overflow-style: none; padding: 10px; border-top: 1px solid #ddd; display: flex; flex-direction: column; }
           .chat-messages::-webkit-scrollbar { display: none; }
-          .message { padding: 8px 10px; border-radius: 10px; max-width: 80%; margin-top: 5px; display: inline-block; }
-          .message.agent { background-color: #f1f1f1; color: #000; align-self: flex-start; }
-          .message.user { background-color: ${this.options.iconColor}; color: white; align-self: flex-end; word-break: break-all; }
+          .message { padding: 8px 10px; max-width: 80%; margin-top: 5px; display: inline-block; position: relative; }
+          .message.agent { background-color: #e9ecef; color: #000; border-radius: 10px 10px 10px 0px; align-self: flex-start; }
+          .message.user { background-color: ${this.options.iconColor}; color: #fff !important; border-radius: 10px 10px 0px 10px; align-self: flex-end; word-break: break-all; }
           .chat-input-container { display: flex; padding: 10px; gap: 5px; position: relative; }
           #chat-input { flex: 1; resize: none; border-radius: 5px; padding: 5px; overflow: auto; }
           #chat-input::-webkit-scrollbar { display: none; }
@@ -92,6 +92,26 @@
           .message.agent.loading .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
           .message.agent.loading .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
           @keyframes typing { 0% { opacity: 0.2; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-3px); } 100% { opacity: 0.2; transform: translateY(0); } }
+          .message ul { margin: 5px 0; padding-left: 20px; list-style-type: disc; }
+          .message li { margin-bottom: 5px; }
+          .message ol { padding-left: 20px; list-style-type: none; counter-reset: custom-counter; }
+          .message ol li { position: relative; margin-bottom: 12px; padding-left: 30px; font-size: 14px; color: #444; counter-increment: custom-counter; line-height: 1.5; }
+          .message ol li:before { content: counter(custom-counter) "."; position: absolute; left: 0; font-weight: bold; color: ${this.options.iconColor || "#007bff"}; }
+          .point-title { font-weight: 600; color: #555; margin-right: 5px; }
+          .message p { margin: 5px 0; line-height: 1.5; }
+          .message-card { background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 8px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); padding: 8px 10px; max-width: 90%; }
+          .message-card.agent { background-color: #f9f9f9; }
+          .message-content { font-size: 14px; }
+          .message-table-wrapper { margin: 10px 0; overflow-x: auto; }
+          .message-table-wrapper table.info-table { width: 100%; border-collapse: separate; border-spacing: 0; background-color: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); }
+          .message-table-wrapper th, .message-table-wrapper td { padding: 12px 15px; text-align: left; font-size: 13px; border-bottom: 1px solid #e5e5e5; }
+          .message-table-wrapper th { background: linear-gradient(135deg, ${this.options.iconColor || "#007bff"} 0%, ${this.options.iconColor || "#0056b3"} 100%); color: #fff; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #ffffff33; }
+          .message-table-wrapper td { color: #444; }
+          .message-table-wrapper td.row-heading { background-color: #f5f5f5; font-weight: 500; color: #333; }
+          .message-table-wrapper tr:nth-child(even) td:not(.row-heading) { background-color: #fafafa; }
+          .message-table-wrapper tr:hover td { background-color: #f0f0f0; transition: background-color 0.2s ease; }
+          .message-table-wrapper a { color: ${this.options.iconColor || "#007bff"}; text-decoration: none; font-weight: 500; }
+          .message-table-wrapper a:hover { text-decoration: underline; color: ${this.options.iconColor || "#0056b3"}; }
         `;
       this.injectStyle(css);
       this.globalStylesInjected = true;
@@ -470,7 +490,7 @@
               successMessage.style.padding = "5px";
               successMessage.style.backgroundColor = "#d4edda";
               successMessage.style.color = "#155724";
-              successMessage.textContent = "Ticket raised successfully";
+              successMessage.textContent = "Tickets raised successfully";
               chatInputContainer.parentNode.insertBefore(successMessage, chatInputContainer);
               setTimeout(() => { if (successMessage) successMessage.remove(); }, 3000);
             }
@@ -486,8 +506,111 @@
       const timeStr = this.getMessageTime();
       const msgElem = document.createElement("div");
       const timeElem = document.createElement("div");
-      msgElem.className = `message ${sender === "User" ? "user" : "agent"}`;
-      msgElem.textContent = message;
+      msgElem.className = `message ${sender === "User" ? "user" : "agent"} message-card`;
+      const lines = message.split("\n").filter(line => line.trim() !== "");
+    
+      const formattedContent = [];
+      let currentListItems = [];
+      let tableLines = [];
+      let inTable = false;
+    
+      lines.forEach((line, index) => {
+        const isTableLine = line.trim().startsWith("|") && line.trim().endsWith("|");
+    
+        if (isTableLine) {
+          inTable = true;
+          tableLines.push(line);
+        } else {
+          if (inTable) {
+            const rows = tableLines.map(row => 
+              row.split("|").map(cell => cell.trim()).filter(cell => cell !== "")
+            );
+    
+            const headerRow = rows[0];
+            const bodyRows = rows.slice(2); // Skip the separator row (e.g., |---|---|)
+    
+            const headerCells = headerRow.map(cell => `<th>${cell}</th>`).join("");
+            const header = `<tr>${headerCells}</tr>`;
+    
+            const body = bodyRows.map((row, rowIndex) => {
+              const cells = row.map((cell, cellIndex) => {
+                const linkMatch = cell.match(/\[(.*?)\]\((.*?)\)/);
+                if (linkMatch) {
+                  const linkText = linkMatch[1];
+                  const linkUrl = linkMatch[2];
+                  return `<td class="${cellIndex === 0 ? 'row-heading' : ''}"><a href="${linkUrl}" target="_blank" rel="noopener noreferrer">${linkText}</a></td>`;
+                }
+                return `<td class="${cellIndex === 0 ? 'row-heading' : ''}">${cell}</td>`;
+              }).join("");
+              return `<tr>${cells}</tr>`;
+            }).join("");
+    
+            formattedContent.push(`
+              <div class="message-table-wrapper">
+                <table class="info-table">${header}${body}</table>
+              </div>
+            `);
+    
+            tableLines = [];
+            inTable = false;
+          }
+    
+          const isNumberedPoint = line.match(/^\d+\.\s*\*\*(.*?)\*\*:\s*(.*)/);
+          if (isNumberedPoint) {
+            const title = isNumberedPoint[1];
+            const description = isNumberedPoint[2];
+            currentListItems.push(`<li><span class="point-title">${title}:</span> ${description}</li>`);
+          } else {
+            if (currentListItems.length > 0) {
+              formattedContent.push(`<ol>${currentListItems.join("")}</ol>`);
+              currentListItems = [];
+            }
+            formattedContent.push(`<p>${line}</p>`);
+          }
+        }
+      });
+    
+      if (inTable && tableLines.length > 0) {
+        const rows = tableLines.map(row => 
+          row.split("|").map(cell => cell.trim()).filter(cell => cell !== "")
+        );
+    
+        const headerRow = rows[0];
+        const bodyRows = rows.slice(2);
+    
+        const headerCells = headerRow.map(cell => `<th>${cell}</th>`).join("");
+        const header = `<tr>${headerCells}</tr>`;
+    
+        const body = bodyRows.map((row, rowIndex) => {
+          const cells = row.map((cell, cellIndex) => {
+            const linkMatch = cell.match(/\[(.*?)\]\((.*?)\)/);
+            if (linkMatch) {
+              const linkText = linkMatch[1];
+              const linkUrl = linkMatch[2];
+              return `<td class="${cellIndex === 0 ? 'row-heading' : ''}"><a href="${linkUrl}" target="_blank" rel="noopener noreferrer">${linkText}</a></td>`;
+            }
+            return `<td class="${cellIndex === 0 ? 'row-heading' : ''}">${cell}</td>`;
+          }).join("");
+          return `<tr>${cells}</tr>`;
+        }).join("");
+    
+        formattedContent.push(`
+          <div class="message-table-wrapper">
+            <table class="info-table">${header}${body}</table>
+          </div>
+        `);
+      }
+    
+      if (currentListItems.length > 0) {
+        formattedContent.push(`<ol>${currentListItems.join("")}</ol>`);
+      }
+    
+      msgElem.innerHTML = `
+        <div class="message-content">
+          ${formattedContent.join("")}
+        </div>
+      `;
+    
       Object.assign(timeElem.style, { fontSize: "10px", color: "#6b7280", marginTop: "5px", textAlign: sender === "User" ? "right" : "left" });
       timeElem.className = "message-time";
       timeElem.textContent = timeStr;
