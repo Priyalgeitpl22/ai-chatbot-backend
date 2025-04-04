@@ -30,7 +30,7 @@ export const getPresignedUrl = async (fileName: string) => {
         const params = {
             Bucket: bucket_name,
             Key: fileName,
-            Expires: 60 * 5,
+            Expires: 604800,
         };
 
         return s3Conifg.getSignedUrlPromise("getObject", params);

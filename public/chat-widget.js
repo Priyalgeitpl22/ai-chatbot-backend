@@ -9,7 +9,7 @@
     chatHistory: [],
 
     async init(options) {
-      const response = await fetch(`http://api.chat.jooper.ai/api/chat/config?orgId=${options.orgId}`);
+      const response = await fetch(`https://api.chat.jooper.ai/api/chat/config?orgId=${options.orgId}`);
       const data = await response.json();
 
       const defaultOptions = {
