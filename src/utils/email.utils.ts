@@ -76,4 +76,25 @@ export const sendEmailToVerify = async (transporterOptions: any) => {
 
   await transporter.sendMail(mailOptions);
 }
+export const sendEmailChat = async(email:string,text:string,subject:string,emailConfig: any) => {
 
+  console.log("emailConfig",emailConfig);
+  const transporter = nodemailer.createTransport({
+    host: emailConfig.host,
+    port: Number(emailConfig.port),
+    secure: emailConfig.secure.toString().toLowerCase() === "true",
+    auth: {
+      user: emailConfig.user,
+      pass: emailConfig.pass,
+    },
+  });
+
+
+  const mailOptions = {
+    from: emailConfig.user,
+    to: email,
+    subject: subject,
+    html: text,
+  };
+  await transporter.sendMail(mailOptions);
+}

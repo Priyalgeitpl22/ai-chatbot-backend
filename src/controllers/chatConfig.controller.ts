@@ -52,7 +52,7 @@ export const updateChatConfig = async (req: Request, res: Response): Promise<any
                 allowFontFamily: parseBoolean(configData.allowFontFamily),
                 aiOrgId: parseInteger(configData.aiOrgId), 
                 ChatBotLogoImage: ChatBotLogoImage,
-                socketServer: process.env.SOCKET_SERVER_URL,
+                socketServer: process.env.SERVER_URL,
             };
 
             const existingConfig = await prisma.chatConfig.findFirst();

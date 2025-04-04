@@ -16,6 +16,7 @@
         elementId: "chat-widget",
         apiEndpoint: data.data?.socketServer,
         allowFileUpload: data.data?.allowFileUpload,
+        addInitialPopupText: data.data?.addInitialPopupText,
         addChatBotName: data.data?.addChatBotName,
         ChatBotLogoImage: data.data?.ChatBotLogoImage,
         allowNameEmail: data.data?.allowNameEmail,
@@ -60,6 +61,7 @@
       const fontFamily = this.options.allowFontFamily
         ? `${this.options.customFontFamily}, sans-serif`
         : `Arial, sans-serif`;
+      const position = this.options.position === "bottom-left" ? "left: 20px;" : "right: 20px;";
       const css = `
           /* Global Styles */
           .chat-icon:hover { opacity: 0.8; }
@@ -82,7 +84,7 @@
           .contact-form button { width: 100%; color: #fff; background: ${this.options.iconColor}; border: none; border-radius: 5px; padding: 10px; font-size: 16px; cursor: pointer; opacity: 0.8; transition: background 0.3s; }
           .contact-form button:hover { opacity: 1; background: ${this.options.iconColor}; }
           .emoji-picker { cursor: pointer; }
-          .emoji-picker-container { position: absolute; bottom: 70px; left: 20px; z-index: 9999; display: none; border: 1px solid #ccc; border-radius: 5px; width: 340px; height: 200px; overflow: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+          .emoji-picker-container { position: absolute; bottom: 70px; ${position} z-index: 9999; display: none; border: 1px solid #ccc; border-radius: 5px; width: 340px; height: 200px; overflow: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
           .emoji-picker-container #shadow-root .picker .favorites { display: none; }
           textarea { border: none; }
           textarea:focus { outline: none; border: none; }
@@ -98,7 +100,9 @@
           .message ol li { position: relative; margin-bottom: 12px; padding-left: 30px; font-size: 14px; color: #444; counter-increment: custom-counter; line-height: 1.5; }
           .message ol li:before { content: counter(custom-counter) "."; position: absolute; left: 0; font-weight: bold; color: ${this.options.iconColor || "#007bff"}; }
           .point-title { font-weight: 600; color: #555; margin-right: 5px; }
-          .message p { margin: 5px 0; line-height: 1.5; }
+          .message p { margin: 5px 0; line-height: 1.5;}
+          .message.agent p {color: black !important;}
+          .message.user p {color: white !important;}
           .message-card { background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 8px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); padding: 8px 10px; max-width: 90%; }
           .message-card.agent { background-color: #f9f9f9; }
           .message-content { font-size: 14px; }
@@ -156,7 +160,7 @@
               💬
             </div>
             <div class="chat-message" id="chat-message" style="background: white; color: black; padding: 8px 12px; border-radius: 15px; box-shadow: 0px 2px 5px rgba(0,0,0,0.2); ${isBottomRight ? "margin-left: 10px;" : "margin-right: 10px;"} font-size: 14px; display: none; align-items: center;">
-              Hello and welcome to Chat360 👋
+              ${this.options.addInitialPopupText ||'Hello and welcome to GoldenBot 👋'}
               <button id="close-message" style="background: none; border: none; font-size: 16px; ${isBottomRight ? "margin-right: 8px;" : "margin-left: 8px;"} cursor: pointer;">&times;</button>
             </div>
           </div>
@@ -203,7 +207,13 @@
             ${this.options.availability ? this.chatInputTemplate() : this.contactFormTemplate()}
           </div>
         `;
-      document.getElementById("close-chat").addEventListener("click", () => this.renderIcon());
+        document.getElementById("close-chat").addEventListener("click", () => {
+          // Emit leaveThread before closing the chat
+          if (this.threadId) {
+            this.socket.emit("leaveThread", this.threadId);
+          }
+          this.renderIcon();
+        });
       if (this.options.availability) {
         this.setupEventListeners();
       } else {

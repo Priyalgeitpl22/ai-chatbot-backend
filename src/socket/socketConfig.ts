@@ -2,6 +2,7 @@ import { Server } from "socket.io";
 import { PrismaClient } from "@prisma/client";
 import { getAIResponse } from "../middlewares/botMiddleware";
 import { createTask } from "../controllers/task.controller";
+import {sendEmailChat} from '../utils/email.utils'
 
 const prisma = new PrismaClient();
 export const onlineAgents = new Map<string, string>(); // Map<agentId, agentName>
@@ -115,6 +116,10 @@ export const socketSetup = (server: any) => {
       socket.join(threadId);
       console.log(`User joined thread: ${threadId}`);
     });
+    socket.on("leaveThread", (threadId) => {
+      socket.leave(threadId);
+      console.log(`User left thread: ${threadId}`);
+    });
 
     socket.on("typing", ({ threadId, agentName }) =>
       socket.to(threadId).emit("typing", { agentName })
@@ -164,14 +169,6 @@ export const socketSetup = (server: any) => {
         if (!data.threadId) {
           return socket.emit("error", { message: "Thread ID is required" });
         }
-        const thread = await prisma.thread.findUnique({
-          where: { id: data.threadId },
-        });
-        // if (!thread || thread.name === "" || thread.email === "") {
-        //   console.log("User identification incomplete. Skipping AI processing.");
-        //   return;
-        // }
-        console.log("Processing pending message:", data.content);
         await processAIResponse(data, io);
       } catch (error) {
         console.error("Error processing pending message:", error);
@@ -206,6 +203,32 @@ export const socketSetup = (server: any) => {
             },
           });
           data.content = formattedContent;
+          const room = io.sockets.adapter.rooms.get(data.threadId);
+          const userInRoom = room && room.size > 0;
+          if (!userInRoom) {
+            const thread = await prisma.thread.findUnique({
+              where: { id: data.threadId },
+            });
+            if (thread && thread.email) {
+              const subject = "New Message from Support Team";
+              const text = formattedContent;
+              const organization = await prisma.chatConfig.findFirst({
+                where: { aiOrgId: thread.aiOrgId }, 
+                select: { emailConfig: true },
+              });
+              
+              if (organization && organization.emailConfig) {
+                await sendEmailChat(
+                  thread.email,
+                  text,
+                  subject,
+                  organization.emailConfig
+                );
+              }
+            } else {
+              console.log("No email found for thread:", data.threadId);
+            }
+          }
         } catch (error) {
           console.error("Error storing agent message:", error);
         }
