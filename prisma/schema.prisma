@@ -64,6 +64,7 @@ model User {
 
   activationToken   String? 
   activationTokenExpires DateTime?  
+  userSettings   UserSettings?
 }
 
 model Thread {
@@ -130,4 +131,12 @@ model Task {
 
   // Relationships
   thread      Thread       @relation(fields: [threadId], references: [id], onDelete: Cascade)
+}
+
+model UserSettings {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  settings  Json     // Flexible JSON object for all types of settings
+  updatedAt DateTime @updatedAt
 }

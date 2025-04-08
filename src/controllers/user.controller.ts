@@ -86,3 +86,49 @@ export const updateUser = async (req: Request, res: Response): Promise<any> => {
   }
 };
 
+export const getUserSettings = async (req: Request, res: Response) => {
+  const { userId } = req.params;
+  try {
+    const settings = await prisma.userSettings.findUnique({
+      where: { userId },
+    });
+    res.status(200).json(settings);
+  } catch (error) {
+    console.error("Error fetching user settings:", error);
+    res.status(500).json({ message: "Error fetching user settings" });
+  }
+};
+
+export const saveUserSettings = async (req: Request, res: Response) => {
+  const { userId, category, data } = req.body;
+
+  try {
+    const existing = await prisma.userSettings.findUnique({ where: { userId } });
+
+    if (existing) {
+      const updated = await prisma.userSettings.update({
+        where: { userId },
+        data: {
+          settings: {
+            ...(existing.settings as Record<string, any>),
+            [category]: data,
+          },
+        },
+      });
+      res.status(200).json(updated);
+    } else {
+      const created = await prisma.userSettings.create({
+        data: {
+          userId,
+          settings: {
+            [category]: data,
+          },
+        },
+      });
+      res.status(201).json(created);
+    }
+  } catch (error) {
+    console.error("Error saving user settings:", error);
+    res.status(500).json({ message: "Error saving user settings" });
+  }
+};
