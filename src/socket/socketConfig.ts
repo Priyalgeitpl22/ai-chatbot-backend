@@ -67,9 +67,6 @@ const processAIResponse = async (data: any, io: Server) => {
     await prisma.message.create({
       data: { content: formattedAnswer, sender: "Bot", threadId: data.threadId },
     });
-    if (data.sender === "User") {
-      io.emit("notification", { message: "🔔 New Message Received!" });
-    }
     io.emit("receiveMessage", {
       id: Date.now().toString(),
       sender: "Bot",
@@ -188,8 +185,13 @@ export const socketSetup = (server: any) => {
     });
 
     socket.on("updateDashboard", async (data) => {
+      console.log("Data-User:-",data)
       if (data.sender === "User") {
-        io.emit("notification", { message: "🔔 New Message Received!" });
+        const thread = await prisma.thread.findUnique({ 
+          where: { id: data.threadId },
+        });
+        console.log("Thread-User:-",thread)
+        io.emit("notification", { message: `${data.content}`, thread});
       } else {
         try {
           const formattedContent = Array.isArray(data.content) 
@@ -250,7 +252,7 @@ export const socketSetup = (server: any) => {
           },
         });
         socket.join(thread.id);
-        io.emit("notification", { message: "🔔 New Chat Initiated!" });
+        // io.emit("notification", { message: "🔔 New Chat Initiated!" });
         socket.emit("chatStarted", { threadId: thread.id });
       } catch (error) {
         console.error("Error starting chat:", error);

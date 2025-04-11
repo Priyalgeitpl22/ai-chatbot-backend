@@ -99,7 +99,7 @@ export const updateOrganization = async (req: Request, res: Response): Promise<a
       industry: industry ?? existingOrg.industry,
       phone: phone ?? existingOrg.phone,
       description: description ?? existingOrg.description,
-      emailConfig: emailConfig ?? existingOrg.emailConfig
+      // emailConfig: emailConfig ?? existingOrg.emailConfig
     }
 
     const updatedOrganization = await prisma.organization.update({
