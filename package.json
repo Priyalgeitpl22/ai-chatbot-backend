@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "nodemon --ext ts --exec ts-node src/server.ts",
     "build": "tsc",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "deploy": "git pull origin main && npx prisma migrate dev && npx tsc && pm2 restart all"
   },
   "keywords": [],
   "author": "",
