@@ -105,7 +105,7 @@
           .message.user p {color: white !important;}
           .message-card { background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 8px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); padding: 8px 10px; max-width: 90%; }
           .message-card.agent { background-color: #f9f9f9; }
-          .message-content { font-size: 14px; }
+          .message-content { font-size: 14px; } p { color: white; }
           .message-table-wrapper { margin: 10px 0; overflow-x: auto; }
           .message-table-wrapper table.info-table { width: 100%; border-collapse: separate; border-spacing: 0; background-color: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); }
           .message-table-wrapper th, .message-table-wrapper td { padding: 12px 15px; text-align: left; font-size: 13px; border-bottom: 1px solid #e5e5e5; }
