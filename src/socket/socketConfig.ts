@@ -138,6 +138,7 @@ export const socketSetup = (server: any) => {
             content: data.content,
             sender: senderKey,
             threadId: data.threadId,
+            createdAt: new Date(data.createdAt),
           },
         });
 

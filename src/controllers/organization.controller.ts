@@ -99,16 +99,17 @@ export const updateOrganization = async (req: Request, res: Response): Promise<a
       industry: industry ?? existingOrg.industry,
       phone: phone ?? existingOrg.phone,
       description: description ?? existingOrg.description,
-      // emailConfig: emailConfig ?? existingOrg.emailConfig
+      emailConfig: emailConfig ?? existingOrg.emailConfig
     }
 
     const updatedOrganization = await prisma.organization.update({
       where: { id: orgId },
       data: organizationData
     });
+    const { emailConfig: _, ...safeOrgDataForAI } = organizationData;
 
-    const aiOrganization = await sendOrganizationDetails({ ...organizationData, zip: organizationData.zip.toString() }, aiOrgId);
-
+    await sendOrganizationDetails({ ...safeOrgDataForAI, zip: safeOrgDataForAI.zip.toString() }, aiOrgId);
+    
     res.status(200).json({
       code: 200,
       data: updatedOrganization,
