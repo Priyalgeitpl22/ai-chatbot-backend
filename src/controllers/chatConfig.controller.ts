@@ -14,6 +14,9 @@ export const getChatConfig = async (req: Request, res: Response): Promise<any> =
                 orgId: orgId
             }
         });
+        if (config && config.ChatBotLogoImage) {
+            config.ChatBotLogoImage = await getPresignedUrl(config.ChatBotLogoImage);
+        }
 
         res.status(200).json({ code: 200, data: config, message: "Success" });
     } catch (err) {
@@ -36,7 +39,8 @@ export const updateChatConfig = async (req: Request, res: Response): Promise<any
 
             let ChatBotLogoImage;
             if (ChatBotLogoImageURL) {
-                ChatBotLogoImage = await getPresignedUrl(ChatBotLogoImageURL);
+                // ChatBotLogoImage = await getPresignedUrl(ChatBotLogoImageURL);
+                ChatBotLogoImage = ChatBotLogoImageURL;
             }
             console.log("ChatBotLogoImage",ChatBotLogoImage)
             const parseBoolean = (value: any) => value === "true" ? true : value === "false" ? false : value;
