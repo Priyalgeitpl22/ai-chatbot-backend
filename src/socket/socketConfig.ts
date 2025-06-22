@@ -42,15 +42,37 @@ const processAIResponse = async (data: any, io: Server) => {
     ) {
       answer =
         "An agent is available and will assist you soon. Thank you for your patience.";
+    } else {
+      if (data.sender === 'User') {
+        const response = await  getAIResponse(
+          data.content,
+          data.orgId,
+          data.aiOrgId,
+          data.threadId,
+          online
+        );
+        if (response) {
+          answer = response.answer;
+          question = response.question;
+          taskCreation = response.task_creation;
+
+          if(response.connect_agent) {
+            io.emit("notification", { message: `A vistor is trying to connect to you`, thread});
+          }
+        } else {
+          answer = "I'm sorry, but I couldn't process your request.";
+        }
+      }
     }
   }
   else if (online.length === 0) {
     if (data.sender === 'User') {
-      const response = await getAIResponse(
+      const response = await  getAIResponse(
         data.content,
         data.orgId,
         data.aiOrgId,
-        data.threadId
+        data.threadId,
+        online
       );
       if (response) {
         answer = response.answer;

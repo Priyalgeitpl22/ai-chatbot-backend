@@ -1,4 +1,5 @@
 export interface AIResponse {
+  connect_agent: any;
   message?: string,
   status: number,
   question?: string,

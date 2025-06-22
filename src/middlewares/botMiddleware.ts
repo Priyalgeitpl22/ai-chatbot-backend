@@ -1,10 +1,17 @@
 import { AIResponse } from "../interfaces";
 
-export const getAIResponse = async (message: string, orgId: string, aiOrgId: number, threadId: string) => {
+export const getAIResponse = async (message: string, orgId: string, aiOrgId: number, threadId: string, agentsOnline: any) => {
   try {
-    const url = `http://44.208.33.109/api/organisation_chatbot/?organisation_id=${aiOrgId}`;
+    const url = `${process.env.NODE_AI_URL}/api/organisation_chatbot`;
 
-    const requestBody = JSON.stringify({ user_query: message });
+    let agents_available=false;
+    let available_agents = [];
+
+    if(agentsOnline.length > 0) {
+      agents_available = true;
+      available_agents = agentsOnline
+    }
+    const requestBody = JSON.stringify({ organisation_id: aiOrgId, user_query: message, agents_available, available_agents  });
 
     const response = await fetch(url, {
       method: "POST",
@@ -30,10 +37,10 @@ export const getAIResponse = async (message: string, orgId: string, aiOrgId: num
 
 export const sendOrganizationDetails = async (data: any, organisationId: any) => {
   try {
-    let url = `http://44.208.33.109/api/organisation_database/?organisation_id=${organisationId}`;
+    let url = `${process.env.NODE_AI_URL}/api/organisation_database/?organisation_id=${organisationId}`;
 
     if (!organisationId)
-      url = `http://44.208.33.109/api/organisation_database`;
+      url = `${process.env.NODE_AI_URL}/api/organisation_database`;
 
     const organization_details = { data };
     const requestBody = JSON.stringify({ organisation_data: organization_details });
