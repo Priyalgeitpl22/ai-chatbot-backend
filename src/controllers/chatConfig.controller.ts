@@ -59,7 +59,7 @@ export const updateChatConfig = async (req: Request, res: Response): Promise<any
                 socketServer: process.env.SERVER_URL,
             };
 
-            const existingConfig = await prisma.chatConfig.findFirst();
+            const existingConfig = await prisma.chatConfig.findFirst({where:{orgId:configData.orgId}});
             let updatedConfig;
 
             if (existingConfig) {
@@ -83,7 +83,8 @@ export const updateChatConfig = async (req: Request, res: Response): Promise<any
 
 export const getChatScript = async (req: Request, res: Response): Promise<void> => {
     try {
-        const config = await prisma.chatConfig.findFirst();
+        const {orgeId} = req.params
+        const config = await prisma.chatConfig.findFirst({where:{orgId:orgeId}});
 
         if (!config) {
             res.status(404).send("// Chat configuration not found");
