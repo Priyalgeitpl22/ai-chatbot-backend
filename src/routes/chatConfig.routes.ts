@@ -5,6 +5,6 @@ const router = Router();
 
 router.get("/", getChatConfig);
 router.post("/", updateChatConfig);
-router.get("/script", getChatScript);
+router.get("/script/:orgeId", getChatScript);
 
 export default router;
