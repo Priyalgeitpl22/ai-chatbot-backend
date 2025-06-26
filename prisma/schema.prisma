@@ -72,6 +72,7 @@ model Thread {
   user      String
   messages  Message[]
   aiOrgId   Int
+  assignedTo String?
   url       String   @default("")
   ip        String   @default("")
   name      String   @default("")
