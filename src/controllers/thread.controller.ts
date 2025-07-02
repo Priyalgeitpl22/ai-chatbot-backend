@@ -74,3 +74,34 @@ export const searchThreads = async (req: Request, res: Response): Promise<any> =
     res.status(500).json({ code: 500, message: "Error searching threads" });
   }
 };
+
+export const assignThread = async (req:Request,res:Response):Promise<any>=>{
+  try{
+    const {threadId} = req.params
+    const {assignedTo,assign} = req.body 
+
+    if(assign && !assignedTo ){
+      return res.status(400).json({ code: 400, message: "assignedTo value is required." })
+    }
+
+    // if we want to unassign 
+    if(!assign){
+      const thread = await prisma.thread.update({
+        where:{id:threadId},
+        data:{assignedTo:null,type:"unassigned"}
+      })
+      return res.status(200).json({code:200,thread,message:"Thread unassigned sucessful"})
+    }
+    
+   const thread = await prisma.thread.update({
+    where:{id:threadId},
+    data:{assignedTo:assignedTo,type:"assigned"}
+   })
+
+    return res.status(200).json({code:200,thread,message:"Thread assigned sucessful"})
+
+  }catch(err:any){
+    console.log(err.message)
+    res.status(500).json({ code: 500, message: "Error assigning thread" })
+  }
+} 

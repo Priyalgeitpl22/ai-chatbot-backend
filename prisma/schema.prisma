@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {
@@ -72,6 +73,7 @@ model Thread {
   user      String
   messages  Message[]
   aiOrgId   Int
+  assignedTo String?
   url       String   @default("")
   ip        String   @default("")
   name      String   @default("")

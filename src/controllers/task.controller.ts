@@ -50,18 +50,27 @@ export const getAllTasks = async (req: Request, res: Response): Promise<any> => 
 export const assignTask = async (req: Request, res: Response): Promise<any> => {
   try {
     const { id } = req.params;
-    const { assignedTo } = req.body;
-
-    if (!assignedTo) {
+    const { assignedTo, assign} = req.body;
+    console.log(id,assign)
+    if (assign && !assignedTo) {
       return res.status(400).json({ code: 400, message: "assignedTo value is required." });
+    }
+
+    // un assigning the task
+    if(!assign){
+      const task = await prisma.task.update({
+        where:{id:id},
+        data:{assignedTo:null}
+      });
+      return res.status(200).json({ code: 200, task, message: "Task unassigned successfully" });
     }
 
     const task = await prisma.task.update({
       where: { id }, 
       data: { assignedTo },
     });
-
-    res.status(200).json({ code: 200, task, message: "Task assigned successfully" });
+    console.log(task)
+   return res.status(200).json({ code: 200, task, message: "Task assigned successfully" });
   } catch (err) {
     console.error("Error assigning task:", err);
     res.status(500).json({ code: 500, message: "Error assigning task" });
