@@ -9,7 +9,7 @@
     chatHistory: [],
 
     async init(options) {
-      const response = await fetch(`${process.env.SERVER_URL}/api/chat/config?orgId=${options.orgId}`);
+      const response = await fetch(`${'http://localhost:5003'}/api/chat/config?orgId=${options.orgId}`);
       const data = await response.json();
 
       const defaultOptions = {
