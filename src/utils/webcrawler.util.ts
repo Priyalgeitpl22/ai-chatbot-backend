@@ -56,11 +56,9 @@ async function crawl(
 }
 
 async function summarizeWithGemini(text: string): Promise<string> {
-  const apiKey =
-    process.env.GOOGLE_API_KEY ||
-    "AIzaSyClJ48XXnmnxiHKls-HBPKsgYvrDL9bpS0";
+  const apiKey =process.env.GOOGLE_API_KEY;
 
-  const genAI = new GoogleGenerativeAI(apiKey);
+  const genAI = new GoogleGenerativeAI(apiKey||"");
   const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
   const prompt = `
