@@ -116,6 +116,46 @@
           .message-table-wrapper tr:hover td { background-color: #f0f0f0; transition: background-color 0.2s ease; }
           .message-table-wrapper a { color: ${this.options.iconColor || "#007bff"}; text-decoration: none; font-weight: 500; }
           .message-table-wrapper a:hover { text-decoration: underline; color: ${this.options.iconColor || "#0056b3"}; }
+          .suggestions-container {
+  display: flex;
+  height:35px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  gap: 8px;
+  padding: 10px;
+  background: #f5f5f5;
+  border-top: 1px solid #ddd;
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;     /* Firefox */
+}
+
+.suggestions-container::-webkit-scrollbar {
+  display: none;             /* Chrome, Safari, Opera */
+}
+
+.suggestion {
+  white-space: nowrap;
+  background-color: #e0e0e0;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.suggestion:hover {
+  background-color: #d0d0d0;
+  
+}#suggestion-box-container {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  background: #f5f5f5;
+}
+
+
+
         `;
       this.injectStyle(css);
       this.globalStylesInjected = true;
@@ -204,6 +244,8 @@
               </button>
             </div>
             <div class="chat-messages" id="chat-messages" style="display: flex; flex-direction: column;"></div>
+            <div id="suggestion-box-container"></div>
+
             ${this.options.availability ? this.chatInputTemplate() : this.contactFormTemplate()}
           </div>
         `;
@@ -373,6 +415,39 @@
         `;
     },
 
+     appendSuggestion() {
+  const suggestionContainerTarget = document.getElementById("suggestion-box-container");
+
+  
+  const suggestionsContainer = document.createElement("div");
+  suggestionsContainer.className = "suggestions-container";
+
+  const suggestions = [
+   "Ok","Yes","Create Task","Talk Agent","Thank you"
+  ];
+
+  suggestions.forEach(text => {
+    const btn = document.createElement("button");
+    btn.className = "suggestion";
+    btn.textContent = text;
+    btn.addEventListener("click", () => {
+      this.sendMessageFromSuggestion(text);
+    });
+    suggestionsContainer.appendChild(btn);
+  });
+
+  // Remove existing suggestion blocks before appending new
+ const old = suggestionContainerTarget.querySelector(".suggestions-container");
+if (old) old.remove();
+
+suggestionContainerTarget.appendChild(suggestionsContainer);
+
+
+  messagesContainer.appendChild(suggestionsContainer);
+  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+},
+
+
     contactFormTemplate() {
       return `
           <div class="contact-form">
@@ -403,6 +478,7 @@
       this.socket.on("receiveMessage", (data) => {
         if (document.getElementById("typing-indicator")) this.removeTypingIndicator();
         this.appendMessage("ChatBot", data.content);
+        this.appendSuggestion();
         if (data.task_creation) this.renderContactForm();
       });
 
@@ -510,6 +586,8 @@
         });
       }
     },
+
+   
 
     appendMessage(sender, message) {
       const messagesContainer = document.getElementById("chat-messages");
@@ -644,6 +722,11 @@
       messagesContainer.appendChild(indicator);
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
     },
+    sendMessageFromSuggestion(text) {
+  const chatInput = document.getElementById("chat-input");
+  chatInput.value = text;
+  this.sendMessage();
+},
 
     removeTypingIndicator() {
       const indicator = document.getElementById("typing-indicator");

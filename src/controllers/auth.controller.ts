@@ -40,7 +40,7 @@ export const register = async (req: Request, res: Response): Promise<any> => {
             const aiOrganization = await sendOrganizationDetails(organizationData, null);
 
             const organization = await prisma.organization.create({
-                data: { aiOrgId: aiOrganization.organisation_id, ...organizationData },
+                data: { aiOrgId: Number(aiOrganization.organisation_id), ...organizationData },
             });
 
             const hashedPassword = await bcrypt.hash(password, 10);
@@ -57,7 +57,7 @@ export const register = async (req: Request, res: Response): Promise<any> => {
                     fullName,
                     role: UserRoles.ADMIN,
                     orgId: organization.id,
-                    aiOrgId: aiOrganization.organisation_id,
+                    aiOrgId: Number(aiOrganization.organisation_id),
                     password: hashedPassword,
                     otpCode: otp.code,
                     otpExpiresAt: otp.expiresAt,
