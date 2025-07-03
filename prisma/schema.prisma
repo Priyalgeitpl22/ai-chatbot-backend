@@ -73,6 +73,7 @@ model Thread {
   user      String
   messages  Message[]
   aiOrgId   Int
+  readed    Boolean @default(false)
   assignedTo String?
   url       String   @default("")
   ip        String   @default("")
