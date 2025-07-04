@@ -1,17 +1,17 @@
 import { AIResponse } from "../interfaces";
 
-export const getAIResponse = async (message: string, orgId: string, aiOrgId: number, threadId: string, agentsOnline: any) => {
+export const getAIResponse = async (message: string, orgId: string, aiOrgId: number, threadId: string) => {
   try {
     const url = `${process.env.NODE_AI_URL}/api/organisation_chatbot`;
 
-    let agents_available=false;
-    let available_agents = [];
+    // let agents_available=false;
+    // let available_agents = [];
 
-    if(agentsOnline.length > 0) {
-      agents_available = true;
-      available_agents = agentsOnline
-    }
-    const requestBody = JSON.stringify({ organisation_id: aiOrgId, user_query: message, agents_available, available_agents  });
+    // if(agentsOnline.length > 0) {
+    //   agents_available = true;
+    //   available_agents = agentsOnline
+    // }
+    const requestBody = JSON.stringify({ organisation_id: aiOrgId, user_query: message });
 
     const response = await fetch(url, {
       method: "POST",
