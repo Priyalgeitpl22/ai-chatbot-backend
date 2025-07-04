@@ -3,6 +3,7 @@ import { PrismaClient } from "@prisma/client";
 import { getAIResponse } from "../middlewares/botMiddleware";
 import { createTask } from "../controllers/task.controller";
 import {sendEmailChat} from '../utils/email.utils'
+import { threadId } from "worker_threads";
 
 const prisma = new PrismaClient();
 export const onlineAgents = new Map<string, string>(); // Map<agentId, agentName>
@@ -18,6 +19,11 @@ export const getOnlineAgents = () =>
 
 // Helper to emit a bot response after processing a message via AI.
 const processAIResponse = async (data: any, io: Server) => {
+  // Only process AI response if aiEnabled is true
+  if (!data.aiEnabled) {
+    return;
+  }
+
   const online = getOnlineAgents();
   let answer: string | undefined;
   let taskCreation: any;
@@ -204,8 +210,10 @@ export const socketSetup = (server: any) => {
               content: formattedContent,
               sender: "Bot", 
               threadId: data.threadId,
+              seen:true
             },
           });
+          await prisma.thread.update({where:{id:data.threadId},data:{assignedTo:data.agentId,type:"assigned"}})
           data.content = formattedContent;
           const room = io.sockets.adapter.rooms.get(data.threadId);
           const userInRoom = room && room.size > 0;
