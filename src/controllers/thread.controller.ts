@@ -1,6 +1,5 @@
 import { PrismaClient } from "@prisma/client";
 import { Request, Response } from "express";
-import { threadId } from "worker_threads";
 
 const prisma = new PrismaClient();
 
@@ -15,7 +14,7 @@ export const getAllThreads = async (req: Request, res: Response): Promise<any> =
 
     const threads = await prisma.thread.findMany({
       where: {
-        aiOrgId: user.aiOrgId
+        aiOrgId: user.aiOrgId,
       },
       orderBy: {
         createdAt: "desc",
@@ -28,12 +27,18 @@ export const getAllThreads = async (req: Request, res: Response): Promise<any> =
           orderBy: {
             createdAt: "desc",
           },
-          take: 1,
         },
       },
     });
 
-    res.status(200).json({ code: 200, data: { threads: threads, TotalThreads: threads.length }, message: "success" });
+    const result = threads.map((thread) => ({
+      ...thread,
+      latestMessage: thread.messages[0] || null,
+      unseenCount: thread.messages.filter((msg) => !msg.seen).length,
+    }));
+
+    res.status(200).json({ code: 200, data: { threads: result, TotalThreads: threads.length }, message: "success" });
+
   } catch (err) {
     res.status(500).json({ code: 500, message: "Error fetching threads" });
   }
@@ -127,6 +132,10 @@ export const markThreadReaded = async (req: Request, res: Response): Promise<any
       const thread = await prisma.thread.findUnique({ where: { id: threadId } })
       if (thread) {
         await prisma.thread.update({ where: { id: thread.id }, data: { readed: true } })
+        // await prisma.message.update({where:{threadId:(threadId)},data:{sender:"true"}})
+        await prisma.message.updateMany({ where: { threadId: threadId }, data: { seen: true } })
+        // await prisma.message.update({where:{threadId:(threadId)},data:{sender:"true"}})
+        await prisma.message.updateMany({ where: { threadId: threadId }, data: { seen: true } })
         return res.status(200).json({ code: 200, message: "Thread readed sucessful" })
       } else {
         return res.status(400).json({ code: 400, message: "The thread not found" })
@@ -139,3 +148,7 @@ export const markThreadReaded = async (req: Request, res: Response): Promise<any
     res.status(500).json({ code: 500, message: "Error assigning thread" })
   }
 }
+
+
+
+
