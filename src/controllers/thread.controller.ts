@@ -4,39 +4,39 @@ import { threadId } from "worker_threads";
 
 const prisma = new PrismaClient();
 
-export const getAllThreads = async (req: Request, res: Response) => {
-    try {
+export const getAllThreads = async (req: Request, res: Response): Promise<any> => {
+  try {
 
-        const user = (req as any).user;
+    const user = (req as any).user;
 
-        if (!user) {
-            res.status(400).json({ code: 400, message: "Invalid user" });
-        }
-
-        const threads = await prisma.thread.findMany({
-            where: {
-                aiOrgId: user.aiOrgId
-            },
-            orderBy: {
-                createdAt: "desc",
-            },
-            include: {
-            _count: {
-              select: { messages: true },
-            },
-            messages: {
-              orderBy: {
-                createdAt: "desc",
-              },
-              take: 1,
-            },
-          },
-        });
-        
-        res.status(200).json({ code: 200, data: { threads: threads, TotalThreads: threads.length }, message: "success" });
-    } catch (err) {
-        res.status(500).json({ code: 500, message: "Error fetching threads" });
+    if (!user) {
+      return res.status(400).json({ code: 400, message: "Invalid user" });
     }
+
+    const threads = await prisma.thread.findMany({
+      where: {
+        aiOrgId: user.aiOrgId
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      include: {
+        _count: {
+          select: { messages: true },
+        },
+        messages: {
+          orderBy: {
+            createdAt: "desc",
+          },
+          take: 1,
+        },
+      },
+    });
+
+    res.status(200).json({ code: 200, data: { threads: threads, TotalThreads: threads.length }, message: "success" });
+  } catch (err) {
+    res.status(500).json({ code: 500, message: "Error fetching threads" });
+  }
 };
 
 export const searchThreads = async (req: Request, res: Response): Promise<any> => {
@@ -88,53 +88,53 @@ export const searchThreads = async (req: Request, res: Response): Promise<any> =
   }
 };
 
-export const assignThread = async (req:Request,res:Response):Promise<any>=>{
-  try{
-    const {threadId} = req.params
-    const {assignedTo,assign} = req.body 
+export const assignThread = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { threadId } = req.params
+    const { assignedTo, assign } = req.body
 
-    if(assign && !assignedTo ){
+    if (assign && !assignedTo) {
       return res.status(400).json({ code: 400, message: "assignedTo value is required." })
     }
 
     // if we want to unassign 
-    if(!assign){
+    if (!assign) {
       const thread = await prisma.thread.update({
-        where:{id:threadId},
-        data:{assignedTo:null,type:"unassigned"}
+        where: { id: threadId },
+        data: { assignedTo: null, type: "unassigned" }
       })
-      return res.status(200).json({code:200,thread,message:"Thread unassigned sucessful"})
+      return res.status(200).json({ code: 200, thread, message: "Thread unassigned sucessful" })
     }
-    
-   const thread = await prisma.thread.update({
-    where:{id:threadId},
-    data:{assignedTo:assignedTo,type:"assigned"}
-   })
 
-    return res.status(200).json({code:200,thread,message:"Thread assigned sucessful"})
+    const thread = await prisma.thread.update({
+      where: { id: threadId },
+      data: { assignedTo: assignedTo, type: "assigned" }
+    })
 
-  }catch(err:any){
+    return res.status(200).json({ code: 200, thread, message: "Thread assigned sucessful" })
+
+  } catch (err: any) {
     console.log(err.message)
     res.status(500).json({ code: 500, message: "Error assigning thread" })
   }
-} 
+}
 
-export const markThreadReaded = async(req:Request,res:Response):Promise<any>=>{
-  try{
-    const {threadId} = req.params
+export const markThreadReaded = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { threadId } = req.params
 
-    if(threadId){
-      const thread = await prisma.thread.findUnique({where:{id:threadId}})
-      if(thread){
-        await prisma.thread.update({where:{id:thread.id},data:{readed:true}})
-        return res.status(200).json({code:200,message:"Thread readed sucessful"})
-      }else{
-        return res.status(400).json({code:400,message:"The thread not found"})
+    if (threadId) {
+      const thread = await prisma.thread.findUnique({ where: { id: threadId } })
+      if (thread) {
+        await prisma.thread.update({ where: { id: thread.id }, data: { readed: true } })
+        return res.status(200).json({ code: 200, message: "Thread readed sucessful" })
+      } else {
+        return res.status(400).json({ code: 400, message: "The thread not found" })
       }
-    }else{
-      return res.status(400).json({code:400,message:"Thread Id not found"})
+    } else {
+      return res.status(400).json({ code: 400, message: "Thread Id not found" })
     }
-  }catch(err:any){
+  } catch (err: any) {
     console.log(err.message)
     res.status(500).json({ code: 500, message: "Error assigning thread" })
   }

@@ -27,6 +27,7 @@
         allowEmojis: data.data?.allowEmojis,
         position: data.data?.position,
         orgId: data.data?.aiOrgId,
+        aiEnabled: data.data?.aiEnabled,
         iconColor: data.data?.iconColor,
         chatWindowColor: data.data?.chatWindowColor,
         fontColor: data.data?.fontColor,
@@ -170,6 +171,7 @@
           content,
           threadId: this.threadId,
           aiOrgId: this.options.orgId,
+          aiEnabled: this.options.aiEnabled,
           allowNameEmail: this.options.allowNameEmail,
           createdAt: Date.now()
         });
@@ -185,6 +187,7 @@
           content,
           threadId: this.threadId,
           aiOrgId: this.options.orgId,
+          aiEnabled: this.options.aiEnabled,
           allowNameEmail: this.options.allowNameEmail,
           createdAt: Date.now()
         });
@@ -297,6 +300,7 @@
         const payload = {
           sender: "User",
           aiOrgId: this.options.orgId,
+          aiEnabled: this.options.aiEnabled,
           url: currentUrl,
           ip: ipAddress,
           name: this.userName || '',
@@ -329,6 +333,7 @@
             content: message,
             threadId: this.threadId,
             aiOrgId: this.options.orgId,
+            aiEnabled: this.options.aiEnabled,
             allowNameEmail: this.options.allowNameEmail,
             createdAt: Date.now()
           });
@@ -342,6 +347,7 @@
             content: message,
             threadId: this.threadId,
             aiOrgId: this.options.orgId,
+            aiEnabled: this.options.aiEnabled,
             allowNameEmail: this.options.allowNameEmail,
             createdAt: Date.now()
           });
@@ -359,6 +365,7 @@
             content: message,
             threadId: this.threadId,
             aiOrgId: this.options.orgId,
+            aiEnabled: this.options.aiEnabled,
             allowNameEmail: this.options.allowNameEmail,
             createdAt: Date.now()
           });
@@ -374,6 +381,7 @@
               content: this.pendingUserMessage,
               threadId: this.threadId,
               aiOrgId: this.options.orgId,
+              aiEnabled: this.options.aiEnabled,
               allowNameEmail: this.options.allowNameEmail,
               createdAt: Date.now()
             });
@@ -388,6 +396,7 @@
         content: message,
         threadId: this.threadId,
         aiOrgId: this.options.orgId,
+        aiEnabled: this.options.aiEnabled,
         allowNameEmail: this.options.allowNameEmail,
         createdAt: Date.now()
       });
@@ -561,6 +570,7 @@ suggestionContainerTarget.appendChild(suggestionsContainer);
           if (name && email && message) {
             this.socket.emit("createTask", {
               aiOrgId: this.options.orgId,
+              aiEnabled: this.options.aiEnabled,
               threadId: this.threadId,
               name,
               email,
