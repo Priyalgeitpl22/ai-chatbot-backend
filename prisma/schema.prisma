@@ -90,6 +90,7 @@ model Message {
   id        String   @id @default(uuid())
   content   String
   sender    String
+  seen      Boolean @default(false)
   threadId  String
   thread    Thread   @relation(fields: [threadId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
