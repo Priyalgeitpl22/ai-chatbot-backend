@@ -35,6 +35,8 @@ export const updateChatConfig = async (req: Request, res: Response): Promise<any
         }
         try {
             const configData = req.body;
+            delete configData.aiEnabled;
+
             let ChatBotLogoImageURL : string | null = null;
             if(req.file){
                 ChatBotLogoImageURL = await uploadImageToS3(req.file);
