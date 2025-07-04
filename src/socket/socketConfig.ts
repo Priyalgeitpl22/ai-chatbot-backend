@@ -213,6 +213,7 @@ export const socketSetup = (server: any) => {
               seen:true
             },
           });
+          await prisma.thread.update({where:{id:data.threadId},data:{assignedTo:data.agentId,type:"assigned"}})
           data.content = formattedContent;
           const room = io.sockets.adapter.rooms.get(data.threadId);
           const userInRoom = room && room.size > 0;
