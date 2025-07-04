@@ -79,7 +79,7 @@
           .message.user { background-color: ${
             this.options.iconColor
           }; color: #fff !important; border-radius: 10px 10px 0px 10px; align-self: flex-end; word-break: break-all; }
-          .chat-input-container { display: flex; padding: 10px; gap: 5px; position: relative; }
+          .chat-input-container { display: flex; padding: 10px; gap: 5px; position: relative;}
           #chat-input { flex: 1; resize: none; border-radius: 5px; padding: 5px; overflow: auto; }
           #chat-input::-webkit-scrollbar { display: none; }
           .chat-actions { display: flex; }
@@ -221,10 +221,10 @@
 }
 
 #submit-contact {
-  background-color: #c470a3;
+  background-color: ${this.options.iconColor};
   color: #fff;
   border: none;
-  padding: 8px;
+  padding-block: 8px;
   width: 100%;
   font-weight: bold;
   border-radius: 6px;
@@ -233,7 +233,7 @@
 }
 
 #submit-contact:hover {
-  background-color: #a85591;
+  background-color: ${this.options.iconColor};
 }
 
 @keyframes popupFadeIn {
@@ -328,7 +328,7 @@
       this.container.innerHTML = `
           <div class="chat-widget" style="${positionStyles} background-color: ${
         this.options.chatWindowColor
-      }; color: ${this.options.fontColor};">
+      }; color: ${this.options.fontColor}; z-index:9999;">
             <div class="chat-header" style="background-color: ${
               this.options.iconColor
             }; display: flex; justify-content: space-between; align-items: center; padding: 10px 20px;">
@@ -527,7 +527,7 @@
       return `
           <div class="chat-input-container">
             <div class="chat-input-wrapper">
-              <textarea id="chat-input" placeholder="Type a message..."></textarea>
+              <textarea id="chat-input" style="height: 100%!important;" placeholder="Type a message..."></textarea>
               <div class="chat-actions">
                 ${
                   this.options.allowEmojis
