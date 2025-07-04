@@ -40,12 +40,12 @@ export const saveOrganization = async (req: Request, res: Response): Promise<any
   }
 };
 
-export const getOrganization = async (req: Request, res: Response): Promise<void> => {
+export const getOrganization = async (req: Request, res: Response): Promise<any> => {
   try {
     const { orgId } = req.query;
 
     if (!orgId) {
-      res.status(400).json({ code: 400, message: "Organization ID is required" });
+      return res.status(400).json({ code: 400, message: "Organization ID is required" });
     }
 
     const organization = await prisma.organization.findFirst({
@@ -53,7 +53,7 @@ export const getOrganization = async (req: Request, res: Response): Promise<void
     });
 
     if (!organization) {
-      res.status(404).json({ code: 404, message: "Organization not found" });
+      return res.status(404).json({ code: 404, message: "Organization not found" });
     }
 
     res.status(200).json({
@@ -71,7 +71,7 @@ export const getOrganization = async (req: Request, res: Response): Promise<void
 export const updateOrganization = async (req: Request, res: Response): Promise<any> => {
   try {
     const orgId = req.query.orgId as string;
-    const { name, domain, country, city, state, zip, industry, phone, address, aiOrgId, description, emailConfig } = req.body;
+    const { name, domain, country, city, state, zip, industry, phone, address, aiOrgId, description, emailConfig, aiEnabled } = req.body;
 
     if (!orgId) {
       return res.status(400).json({
@@ -100,7 +100,8 @@ export const updateOrganization = async (req: Request, res: Response): Promise<a
       industry: industry ?? existingOrg.industry,
       phone: phone ?? existingOrg.phone,
       description: description ?? existingOrg.description,
-      emailConfig: emailConfig ?? existingOrg.emailConfig
+      emailConfig: emailConfig ?? existingOrg.emailConfig,
+      aiEnabled: aiEnabled ?? existingOrg.aiEnabled
     }
 
     const updatedOrganization = await prisma.organization.update({

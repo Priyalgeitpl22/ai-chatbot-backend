@@ -18,6 +18,11 @@ export const getOnlineAgents = () =>
 
 // Helper to emit a bot response after processing a message via AI.
 const processAIResponse = async (data: any, io: Server) => {
+  // Only process AI response if aiEnabled is true
+  if (!data.aiEnabled) {
+    return;
+  }
+
   const online = getOnlineAgents();
   let answer: string | undefined;
   let taskCreation: any;
