@@ -3,8 +3,8 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 export const createFAQ = async (req: any, res: any) => {
-  const { question, answer,orgId } = req.body;
-  if (!orgId || !question || !answer) {
+  const { question, answer, orgId, userId } = req.body;
+  if (!orgId || !question || !answer || !userId) {
     return res.status(400).json({ message: 'orgId, question, and answer are required.' });
   }
   try {
@@ -18,11 +18,21 @@ export const createFAQ = async (req: any, res: any) => {
     if (!org.aiEnabled) {
       return res.status(403).json({ message: 'AI is not enabled for this organization.' });
     }
+    
+     const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+     if (!user || user.orgId !== orgId) {
+      return res.status(400).json({ message: 'User does not belong to this organization.' });
+    }
+
     const faq = await prisma.fAQ.create({
       data: {
         orgId: orgId,
         question,
         answer,
+        userId
       },
     });
     return res.status(201).json(faq);
