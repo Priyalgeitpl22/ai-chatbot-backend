@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
@@ -9,114 +9,116 @@ datasource db {
 }
 
 model access_token {
-  id              String   @id @default(uuid())
-  created_datetime DateTime? @default(now()) 
-  updated_datetime DateTime? @default(now()) 
-  deleted_datetime DateTime? 
-  user_id         String?   @db.VarChar(256)
-  active          Int       @default(1)
-  expiry_datetime DateTime? 
-  token           String?   // Add the token field to store the JWT
+  id               String    @id @default(uuid())
+  created_datetime DateTime? @default(now())
+  updated_datetime DateTime? @default(now())
+  deleted_datetime DateTime?
+  user_id          String?   @db.VarChar(256)
+  active           Int       @default(1)
+  expiry_datetime  DateTime?
+  token            String? // Add the token field to store the JWT
 }
 
 model Organization {
-  id        String   @id @default(uuid())
-  aiOrgId   Int?
-  name      String?
-  phone     String?
-  address   String?
-  city      String?
-  state     String?
-  country   String?
-  zip       Int?
-  domain    String?
-  industry  String?
-  description String?
-  users     User[]
-  emailConfig  Json?
+  id                String   @id @default(uuid())
+  aiOrgId           Int?
+  name              String?
+  phone             String?
+  address           String?
+  city              String?
+  state             String?
+  country           String?
+  zip               Int?
+  domain            String?
+  industry          String?
+  description       String?
+  users             User[]
+  faqs              FAQ[]
+  emailConfig       Json?
   aiChatBotSettings Json?
-  aiEnabled Boolean  @default(false)
-  createdAt DateTime @default(now())
+  aiEnabled         Boolean  @default(false)
+  createdAt         DateTime @default(now())
 }
 
 model User {
-  id             String   @id @default(uuid())
-  email          String   @unique
+  id             String       @id @default(uuid())
+  email          String       @unique
   fullName       String
   password       String
   phone          String?
-  role           String   @default("admin")
-  verified       Boolean  @default(false)
+  role           String       @default("admin")
+  verified       Boolean      @default(false)
   orgId          String
-  aiOrgId        Int? 
-  profilePicture String? 
+  aiOrgId        Int?
+  profilePicture String?
   organization   Organization @relation(fields: [orgId], references: [id])
-  createdAt      DateTime @default(now())
-  online         Boolean  @default(true)
-  schedule       Json?     
+  createdAt      DateTime     @default(now())
+  online         Boolean      @default(true)
+  schedule       Json?
   deletedAt      DateTime?
+  faqs           FAQ[]
   // Fields for OTP verification
-  otpCode      String?   
-  otpExpiresAt DateTime? 
+  otpCode        String?
+  otpExpiresAt   DateTime?
 
   // Fields for password reset
-  resetToken        String?   
-  resetTokenExpires DateTime? 
+  resetToken        String?
+  resetTokenExpires DateTime?
 
-  activationToken   String? 
-  activationTokenExpires DateTime?  
-  userSettings   UserSettings?
+  activationToken        String?
+  activationTokenExpires DateTime?
+  userSettings           UserSettings?
 }
 
 model Thread {
-  id        String   @id @default(uuid())
-  user      String
-  messages  Message[]
-  aiOrgId   Int
-  readed    Boolean @default(false)
+  id         String    @id @default(uuid())
+  user       String
+  messages   Message[]
+  aiOrgId    Int
+  readed     Boolean   @default(false)
   assignedTo String?
-  url       String   @default("")
-  ip        String   @default("")
-  name      String   @default("")
-  email     String   @default("")
-  createdAt DateTime @default(now())
-  type      String   @default("unassigned")
+  url        String    @default("")
+  ip         String    @default("")
+  name       String    @default("")
+  email      String    @default("")
+  createdAt  DateTime  @default(now())
+  type       String    @default("unassigned")
 
   // Back-reference for tasks
-  tasks     Task[] 
+  tasks Task[]
 }
 
 model Message {
   id        String   @id @default(uuid())
   content   String
   sender    String
-  seen      Boolean @default(false)
+  seen      Boolean  @default(false)
   threadId  String
   thread    Thread   @relation(fields: [threadId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 }
 
 model ChatConfig {
-  id               String  @id @default(uuid())
-  orgId            String?
-  aiOrgId          Int? 
-  allowFileUpload  Boolean?
-  addInitialPopupText String?
-  addChatBotName   String?
-  ChatBotLogoImage String?
-  allowNameEmail   Boolean?
-  allowEmojis      Boolean?
-  allowCustomGreeting Boolean?
+  id                    String   @id @default(uuid())
+  orgId                 String?
+  aiOrgId               Int?
+  allowFileUpload       Boolean?
+  addInitialPopupText   String?
+  addChatBotName        String?
+  ChatBotLogoImage      String?
+  allowNameEmail        Boolean?
+  allowEmojis           Boolean?
+  allowCustomGreeting   Boolean?
   customGreetingMessage String?
-  allowFontFamily  Boolean?
-  customFontFamily String?
-  position         String?
-  iconColor        String?
-  chatWindowColor  String?
-  fontColor        String?
-  availability     Boolean?
-  socketServer     String?
-  emailConfig      Json?
+  allowFontFamily       Boolean?
+  customFontFamily      String?
+  position              String?
+  iconColor             String?
+  chatWindowColor       String?
+  fontColor             String?
+  availability          Boolean?
+  socketServer          String?
+  emailConfig           Json?
 }
 
 model Task {
@@ -134,13 +136,25 @@ model Task {
   updatedAt  DateTime @updatedAt
 
   // Relationships
-  thread      Thread       @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  thread Thread @relation(fields: [threadId], references: [id], onDelete: Cascade)
 }
 
 model UserSettings {
   id        String   @id @default(uuid())
   userId    String   @unique
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  settings  Json     // Flexible JSON object for all types of settings
+  settings  Json // Flexible JSON object for all types of settings
   updatedAt DateTime @updatedAt
+}
+
+model FAQ {
+  id           Int          @id @default(autoincrement())
+  orgId        String
+  userId       String?
+  question     String       @db.Text
+  answer       String       @db.Text
+  user         User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [orgId], references: [id])
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 }
