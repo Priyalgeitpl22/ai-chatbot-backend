@@ -28,6 +28,7 @@ model Organization {
   city              String?
   state             String?
   country           String?
+  openAiKey String?
   zip               Int?
   domain            String?
   industry          String?

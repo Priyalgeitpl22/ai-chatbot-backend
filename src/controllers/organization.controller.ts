@@ -71,7 +71,7 @@ export const getOrganization = async (req: Request, res: Response): Promise<any>
 export const updateOrganization = async (req: Request, res: Response): Promise<any> => {
   try {
     const orgId = req.query.orgId as string;
-    const { name, domain, country, city, state, zip, industry, phone, address, aiOrgId, description, emailConfig, aiEnabled } = req.body;
+    const { name, domain, country, city, state, zip, industry, phone, address, aiOrgId, description, emailConfig, aiEnabled, openAiKey } = req.body;
 
     if (!orgId) {
       return res.status(400).json({
@@ -101,7 +101,8 @@ export const updateOrganization = async (req: Request, res: Response): Promise<a
       phone: phone ?? existingOrg.phone,
       description: description ?? existingOrg.description,
       emailConfig: emailConfig ?? existingOrg.emailConfig,
-      aiEnabled: aiEnabled ?? existingOrg.aiEnabled
+      aiEnabled: aiEnabled ?? existingOrg.aiEnabled,
+      openAiKey: openAiKey ?? existingOrg.openAiKey
     }
 
     const updatedOrganization = await prisma.organization.update({
