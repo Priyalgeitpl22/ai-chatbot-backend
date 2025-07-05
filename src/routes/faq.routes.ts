@@ -1,5 +1,9 @@
 import { Router } from 'express';
-import { createFAQ } from '../controllers/faq.controller';
+import { createFAQ, getFAQsByOrgId } from '../controllers/faq.controller';
+import { authMiddleware } from '../middlewares/authMiddleware';
+
 const router = Router();
-router.post('/create', createFAQ); 
+
+router.post('/create', authMiddleware, createFAQ); 
+router.get('/:orgId', authMiddleware, getFAQsByOrgId);
 export default router;

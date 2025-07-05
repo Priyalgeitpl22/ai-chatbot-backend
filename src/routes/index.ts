@@ -18,8 +18,8 @@ router.use("/org", authMiddleware, organizationRoutes);
 router.use("/task", authMiddleware, taskRoutes);
 router.use("/agent", authMiddleware, agentRoutes);
 router.use("/message", authMiddleware, messageRoutes);
-router.use("/thread",  threadRoutes);
-router.use("/faq",faqRoutes );
+router.use("/thread", authMiddleware,  threadRoutes);
+router.use("/faq", authMiddleware, faqRoutes );
 router.use("/chat/config", chatConfigRoutes);
 
 export default router;
