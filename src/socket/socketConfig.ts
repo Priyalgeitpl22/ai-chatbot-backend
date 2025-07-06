@@ -21,9 +21,9 @@ export const getOnlineAgents = () =>
 const processAIResponse = async (data: any, io: Server) => {
   // Only process AI response if aiEnabled is true
   console.log("data.aiEnabled: ", data.aiEnabled);
-  if (!data.aiEnabled) {
-    return;
-  }
+  // if (!data.aiEnabled) {
+  //   return;
+  // }
 
   const online = getOnlineAgents();
   let answer: string | undefined;
@@ -54,20 +54,51 @@ const processAIResponse = async (data: any, io: Server) => {
   else if (online.length === 0) {
     console.log("data.faqs: ", data.faqs);
     if (data.sender === 'User') {
-      const response = await  getAIResponse(
-        data.content,
-        data.orgId,
-        data.aiOrgId,
-        data.threadId,
-        data?.faqs
-      );
-      console.log("AI Response:---------------", response);
-      if (response) {
-        answer = response.answer;
-        question = response.question;
-        taskCreation = response.task_creation;
+      // Check if AI is enabled
+      if (data.aiEnabled) {
+        const response = await  getAIResponse(
+          data.content,
+          data.orgId,
+          data.aiOrgId,
+          data.threadId,
+          data?.faqs
+        );
+        console.log("AI Response:---------------", response);
+        if (response) {
+          answer = response.answer;
+          question = response.question;
+          taskCreation = response.task_creation;
+        } else {
+          answer = "I'm sorry, but I couldn't process your request.";
+        }
       } else {
-        answer = "I'm sorry, but I couldn't process your request.";
+        const previousMessages = await prisma.message.findMany({
+          where: { threadId: data.threadId },
+          orderBy: { createdAt: 'desc' },
+          take: 2
+        });
+        
+        const lastBotMessage = previousMessages.find(m => m.sender === 'Bot');
+        const isTaskPrompt = lastBotMessage && lastBotMessage.content.includes("create a task");
+        
+        if (isTaskPrompt && (data.content.toLowerCase().includes('yes') || data.content.toLowerCase().includes('ok') || data.content.toLowerCase().includes('sure') || data.content.toLowerCase().includes('yes please') || data.content.toLowerCase().includes('create'))) {
+          // User wants to create a task
+          try {
+            const thread = await prisma.thread.findUnique({
+              where: { id: data.threadId },
+            });
+
+            answer = "Please put the details and someone will reach out shortly.";
+            taskCreation = true;
+          } catch (error) {
+            console.error("Error creating task:", error);
+            answer = "I apologize, but there was an error creating the task. Please try again later.";
+          }
+        } else if (!isTaskPrompt) {
+          // No agents online and AI is not enabled - show initial prompt
+          answer = "I apologize, but no agents are available at the moment and AI assistance is not enabled. Would you like me to create a task for your query so someone can get back to you later?";
+        }
+        // If it's a task prompt but user says no, don't respond (let conversation end)
       }
     }
   }
