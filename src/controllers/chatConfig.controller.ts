@@ -15,13 +15,13 @@ export const getChatConfig = async (req: Request, res: Response): Promise<any> =
             }
         });
 
-        const aiEnabled = await prisma.organization.findFirst({ where: { id: orgId }, select: { aiEnabled: true } });
+        const orgData = await prisma.organization.findFirst({ where: { id: orgId }, select: { aiEnabled: true, faqs: true} });
 
         if (config && config.ChatBotLogoImage) {
             config.ChatBotLogoImage = await getPresignedUrl(config.ChatBotLogoImage);
         }
 
-        res.status(200).json({ code: 200, data: {...config, aiEnabled: aiEnabled?.aiEnabled}, message: "Success" });
+        res.status(200).json({ code: 200, data: {...config, aiEnabled: orgData?.aiEnabled, faqs: orgData?.faqs }, message: "Success" });
     } catch (err) {
         console.error("Error fetching chat config:", err);
         res.status(500).json({ code: 500, message: "Internal Server Error" });

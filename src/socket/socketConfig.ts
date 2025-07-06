@@ -20,6 +20,7 @@ export const getOnlineAgents = () =>
 // Helper to emit a bot response after processing a message via AI.
 const processAIResponse = async (data: any, io: Server) => {
   // Only process AI response if aiEnabled is true
+  console.log("data.aiEnabled: ", data.aiEnabled);
   if (!data.aiEnabled) {
     return;
   }
@@ -57,6 +58,7 @@ const processAIResponse = async (data: any, io: Server) => {
         data.orgId,
         data.aiOrgId,
         data.threadId,
+        data?.faqs
       );
       console.log("AI Response:---------------", response);
       if (response) {

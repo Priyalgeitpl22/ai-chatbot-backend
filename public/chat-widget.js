@@ -32,6 +32,7 @@
         position: data.data?.position,
         orgId: data.data?.aiOrgId,
         aiEnabled: data.data?.aiEnabled,
+        faqs: data.data?.faqs,
         iconColor: data.data?.iconColor,
         chatWindowColor: data.data?.chatWindowColor,
         fontColor: data.data?.fontColor,
@@ -260,6 +261,7 @@
           threadId: this.threadId,
           aiOrgId: this.options.orgId,
           aiEnabled: this.options.aiEnabled,
+          faqs: this.options.faqs,
           allowNameEmail: this.options.allowNameEmail,
           createdAt: Date.now(),
         });
@@ -276,6 +278,7 @@
           threadId: this.threadId,
           aiOrgId: this.options.orgId,
           aiEnabled: this.options.aiEnabled,
+          faqs: this.options.faqs,
           allowNameEmail: this.options.allowNameEmail,
           createdAt: Date.now(),
         });
@@ -409,6 +412,7 @@
           sender: "User",
           aiOrgId: this.options.orgId,
           aiEnabled: this.options.aiEnabled,
+          faqs: this.options.faqs,
           url: currentUrl,
           ip: ipAddress,
           name: this.userName || "",
@@ -444,6 +448,7 @@
             threadId: this.threadId,
             aiOrgId: this.options.orgId,
             aiEnabled: this.options.aiEnabled,
+            faqs: this.options.faqs,
             allowNameEmail: this.options.allowNameEmail,
             createdAt: Date.now(),
           });
@@ -458,6 +463,7 @@
             threadId: this.threadId,
             aiOrgId: this.options.orgId,
             aiEnabled: this.options.aiEnabled,
+            faqs: this.options.faqs,
             allowNameEmail: this.options.allowNameEmail,
             createdAt: Date.now(),
           });
@@ -478,6 +484,7 @@
             threadId: this.threadId,
             aiOrgId: this.options.orgId,
             aiEnabled: this.options.aiEnabled,
+            faqs: this.options.faqs,
             allowNameEmail: this.options.allowNameEmail,
             createdAt: Date.now(),
           });
@@ -494,6 +501,7 @@
               threadId: this.threadId,
               aiOrgId: this.options.orgId,
               aiEnabled: this.options.aiEnabled,
+              faqs: this.options.faqs,
               allowNameEmail: this.options.allowNameEmail,
               createdAt: Date.now(),
             });
@@ -509,6 +517,7 @@
         threadId: this.threadId,
         aiOrgId: this.options.orgId,
         aiEnabled: this.options.aiEnabled,
+        faqs: this.options.faqs,
         allowNameEmail: this.options.allowNameEmail,
         createdAt: Date.now(),
       });
@@ -739,6 +748,7 @@
             this.socket.emit("createTask", {
               aiOrgId: this.options.orgId,
               aiEnabled: this.options.aiEnabled,
+              faqs: this.options.faqs,
               threadId: this.threadId,
               name,
               email,
