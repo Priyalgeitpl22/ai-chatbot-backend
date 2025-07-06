@@ -15,7 +15,10 @@ export const getChatConfig = async (req: Request, res: Response): Promise<any> =
             }
         });
 
-        const orgData = await prisma.organization.findFirst({ where: { id: orgId }, select: { aiEnabled: true, faqs: true} });
+        const orgData = await prisma.organization.findFirst({ 
+            where: { id: orgId }, 
+            include: { faqs: true }
+        });
 
         if (config && config.ChatBotLogoImage) {
             config.ChatBotLogoImage = await getPresignedUrl(config.ChatBotLogoImage);
@@ -36,6 +39,7 @@ export const updateChatConfig = async (req: Request, res: Response): Promise<any
         try {
             const configData = req.body;
             delete configData.aiEnabled;
+            delete configData.faqs;
 
             let ChatBotLogoImageURL : string | null = null;
             if(req.file){

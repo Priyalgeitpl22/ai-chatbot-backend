@@ -52,6 +52,7 @@ const processAIResponse = async (data: any, io: Server) => {
     }
   }
   else if (online.length === 0) {
+    console.log("data.faqs: ", data.faqs);
     if (data.sender === 'User') {
       const response = await  getAIResponse(
         data.content,
