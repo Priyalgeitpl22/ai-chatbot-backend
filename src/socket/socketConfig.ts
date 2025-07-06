@@ -19,11 +19,7 @@ export const getOnlineAgents = () =>
 
 // Helper to emit a bot response after processing a message via AI.
 const processAIResponse = async (data: any, io: Server) => {
-  // Only process AI response if aiEnabled is true
   console.log("data.aiEnabled: ", data.aiEnabled);
-  // if (!data.aiEnabled) {
-  //   return;
-  // }
 
   const online = getOnlineAgents();
   let answer: string | undefined;
@@ -52,14 +48,46 @@ const processAIResponse = async (data: any, io: Server) => {
       )
     ) {
       answer = "An agent is available and will assist you soon. Thank you for your patience.";
-    } else {
-      answer = undefined;
     }
-  }
-  else if (online.length === 0) {
-    console.log("data.faqs: ", data.faqs);
-    if (data.sender === 'User') {
-      // Check if AI is enabled
+  } else if (online.length === 0 && data.sender === 'User') {
+    // Check for task prompt logic
+    const prevMsgs = await prisma.message.findMany({
+      where: { threadId: data.threadId },
+      orderBy: { createdAt: 'desc' },
+      take: 2
+    });
+    const lastBotMessage = prevMsgs.find(m => m.sender === 'Bot');
+    const isTaskPrompt = lastBotMessage && lastBotMessage.content.includes("create a task");
+    const userReply = data.content.toLowerCase().trim();
+
+    if (isTaskPrompt) {
+      if (
+        userReply.includes('yes') ||
+        userReply.includes('ok') ||
+        userReply.includes('sure') ||
+        userReply.includes('yes please') ||
+        userReply.includes('create')
+      ) {
+        // User wants to create a task
+        try {
+          // (You can add your createTask logic here if needed)
+          answer = "Please put the details and someone will reach out shortly.";
+          taskCreation = true;
+        } catch (error) {
+          console.error("Error creating task:", error);
+          answer = "I apologize, but there was an error creating the task. Please try again later.";
+        }
+      } else if (
+        userReply.includes('no') ||
+        userReply.includes('not now') ||
+        userReply.includes('later')
+      ) {
+        answer = "No problem! If you need further assistance, feel free to ask.";
+      } else {
+        answer = "I didn't quite catch that. Would you like me to create a task for your query so someone can get back to you later? Please reply with 'yes' or 'no'.";
+      }
+    } else {
+      // Not a task prompt, check AI or show initial prompt
       if (data.aiEnabled) {
         const response = await getAIResponse(
           data.content,
@@ -68,7 +96,6 @@ const processAIResponse = async (data: any, io: Server) => {
           data.threadId,
           data?.faqs
         );
-        console.log("AI Response:---------------", response);
         if (response) {
           answer = response.answer;
           question = response.question;
@@ -77,71 +104,28 @@ const processAIResponse = async (data: any, io: Server) => {
           answer = "I'm sorry, but I couldn't process your request.";
         }
       } else {
-        const previousMessages = await prisma.message.findMany({
-          where: { threadId: data.threadId },
-          orderBy: { createdAt: 'desc' },
-          take: 2
-        });
-
-        const lastBotMessage = previousMessages.find(m => m.sender === 'Bot');
-        const isTaskPrompt = lastBotMessage && lastBotMessage.content.includes("create a task");
-
-        const userReply = data.content.toLowerCase().trim();
-
-        if (isTaskPrompt) {
-          if (
-            userReply.includes('yes') ||
-            userReply.includes('ok') ||
-            userReply.includes('sure') ||
-            userReply.includes('yes please') ||
-            userReply.includes('create')
-          ) {
-            // User wants to create a task
-            try {
-              const thread = await prisma.thread.findUnique({
-                where: { id: data.threadId },
-              });
-
-              answer = "Please put the details and someone will reach out shortly.";
-              taskCreation = true;
-            } catch (error) {
-              console.error("Error creating task:", error);
-              answer = "I apologize, but there was an error creating the task. Please try again later.";
-            }
-          } else if (
-            userReply.includes('no') ||
-            userReply.includes('not now') ||
-            userReply.includes('later')
-          ) {
-            answer = "No problem! If you need further assistance, feel free to ask.";
-          } else {
-            answer = "I didn't quite catch that. Would you like me to create a task for your query so someone can get back to you later? Please reply with 'yes' or 'no'.";
-          }
-        } else if (!isTaskPrompt) {
-          // No agents online and AI is not enabled - show initial prompt
-          answer = "I apologize, but no agents are available at the moment and AI assistance is not enabled. Would you like me to create a task for your query so someone can get back to you later?";
-        }
-        // If it's a task prompt but user says no, don't respond (let conversation end)
+        answer = "I apologize, but no agents are available at the moment and AI assistance is not enabled. Would you like me to create a task for your query so someone can get back to you later?";
       }
     }
   }
-  console.log("answer:", answer);
-  if (answer) {
-    const formattedAnswer = Array.isArray(answer) ? answer.map(item => `- ${item}`).join("\n") : answer;
+
+  // Always emit a response to clear typing indicator
+  const formattedAnswer = Array.isArray(answer) ? answer.map(item => `- ${item}`).join("\n") : answer || "";
+  if (formattedAnswer) {
     await prisma.message.create({
       data: { content: formattedAnswer, sender: "Bot", threadId: data.threadId },
     });
-    io.emit("receiveMessage", {
-      id: Date.now().toString(),
-      sender: "Bot",
-      status: 200,
-      content: formattedAnswer,
-      task_creation: taskCreation,
-      threadId: data.threadId,
-      question,
-      createdAt: new Date().toISOString(),
-    });
   }
+  io.emit("receiveMessage", {
+    id: Date.now().toString(),
+    sender: "Bot",
+    status: 200,
+    content: formattedAnswer,
+    task_creation: taskCreation,
+    threadId: data.threadId,
+    question,
+    createdAt: new Date().toISOString(),
+  });
 };
 
 export const socketSetup = (server: any) => {

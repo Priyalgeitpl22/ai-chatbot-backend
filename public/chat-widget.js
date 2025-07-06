@@ -646,7 +646,9 @@
         if (document.getElementById("typing-indicator"))
           this.removeTypingIndicator();
 
-        this.appendMessage("ChatBot", data.content);
+        if (data.content && data.content.trim() !== "") {
+          this.appendMessage("ChatBot", data.content);
+        }
 
         if (data.task_creation) {
           this.removeSuggestions();
@@ -665,7 +667,9 @@
         if (data.sender === "Bot" && data.threadId === this.threadId) {
           if (document.getElementById("typing-indicator"))
             this.removeTypingIndicator();
-          this.appendMessage("ChatBot", data.content);
+          if (data.content && data.content.trim() !== "") {
+            this.appendMessage("ChatBot", data.content);
+          }
         }
       });
 
