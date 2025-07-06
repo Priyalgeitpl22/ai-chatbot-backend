@@ -2,7 +2,7 @@ import { Server } from "socket.io";
 import { PrismaClient } from "@prisma/client";
 import { getAIResponse } from "../middlewares/botMiddleware";
 import { createTask } from "../controllers/task.controller";
-import {sendEmailChat} from '../utils/email.utils'
+import { sendEmailChat } from '../utils/email.utils'
 import { threadId } from "worker_threads";
 
 const prisma = new PrismaClient();
@@ -44,11 +44,16 @@ const processAIResponse = async (data: any, io: Server) => {
     (m) => m.sender === "Bot" && m.content === "An agent is available and will assist you soon. Thank you for your patience."
   );
   if (online.length > 0) {
-    if ((!data?.allowNameEmail && isFirstUserMessage) ||
-      (data?.allowNameEmail && thread && thread.name !== "" && thread.email !== "" && !agentMessageAlreadySent)
+    if (
+      !agentMessageAlreadySent &&
+      (
+        (!data?.allowNameEmail && isFirstUserMessage) ||
+        (data?.allowNameEmail && thread && thread.name !== "" && thread.email !== "")
+      )
     ) {
-      answer =
-        "An agent is available and will assist you soon. Thank you for your patience.";
+      answer = "An agent is available and will assist you soon. Thank you for your patience.";
+    } else {
+      answer = undefined;
     }
   }
   else if (online.length === 0) {
@@ -56,7 +61,7 @@ const processAIResponse = async (data: any, io: Server) => {
     if (data.sender === 'User') {
       // Check if AI is enabled
       if (data.aiEnabled) {
-        const response = await  getAIResponse(
+        const response = await getAIResponse(
           data.content,
           data.orgId,
           data.aiOrgId,
@@ -77,22 +82,40 @@ const processAIResponse = async (data: any, io: Server) => {
           orderBy: { createdAt: 'desc' },
           take: 2
         });
-        
+
         const lastBotMessage = previousMessages.find(m => m.sender === 'Bot');
         const isTaskPrompt = lastBotMessage && lastBotMessage.content.includes("create a task");
-        
-        if (isTaskPrompt && (data.content.toLowerCase().includes('yes') || data.content.toLowerCase().includes('ok') || data.content.toLowerCase().includes('sure') || data.content.toLowerCase().includes('yes please') || data.content.toLowerCase().includes('create'))) {
-          // User wants to create a task
-          try {
-            const thread = await prisma.thread.findUnique({
-              where: { id: data.threadId },
-            });
 
-            answer = "Please put the details and someone will reach out shortly.";
-            taskCreation = true;
-          } catch (error) {
-            console.error("Error creating task:", error);
-            answer = "I apologize, but there was an error creating the task. Please try again later.";
+        const userReply = data.content.toLowerCase().trim();
+
+        if (isTaskPrompt) {
+          if (
+            userReply.includes('yes') ||
+            userReply.includes('ok') ||
+            userReply.includes('sure') ||
+            userReply.includes('yes please') ||
+            userReply.includes('create')
+          ) {
+            // User wants to create a task
+            try {
+              const thread = await prisma.thread.findUnique({
+                where: { id: data.threadId },
+              });
+
+              answer = "Please put the details and someone will reach out shortly.";
+              taskCreation = true;
+            } catch (error) {
+              console.error("Error creating task:", error);
+              answer = "I apologize, but there was an error creating the task. Please try again later.";
+            }
+          } else if (
+            userReply.includes('no') ||
+            userReply.includes('not now') ||
+            userReply.includes('later')
+          ) {
+            answer = "No problem! If you need further assistance, feel free to ask.";
+          } else {
+            answer = "I didn't quite catch that. Would you like me to create a task for your query so someone can get back to you later? Please reply with 'yes' or 'no'.";
           }
         } else if (!isTaskPrompt) {
           // No agents online and AI is not enabled - show initial prompt
@@ -227,27 +250,27 @@ export const socketSetup = (server: any) => {
     });
 
     socket.on("updateDashboard", async (data) => {
-      console.log("Data-User:-",data)
+      console.log("Data-User:-", data)
       if (data.sender === "User") {
-        const thread = await prisma.thread.findUnique({ 
+        const thread = await prisma.thread.findUnique({
           where: { id: data.threadId },
         });
-        console.log("Thread-User:-",thread)
-        io.emit("notification", { message: `${data.content}`, thread});
+        console.log("Thread-User:-", thread)
+        io.emit("notification", { message: `${data.content}`, thread });
       } else {
         try {
-          const formattedContent = Array.isArray(data.content) 
-        ? data.content.map((item: any) => `- ${item}`).join("\n") 
-        : data.content;
+          const formattedContent = Array.isArray(data.content)
+            ? data.content.map((item: any) => `- ${item}`).join("\n")
+            : data.content;
           await prisma.message.create({
             data: {
               content: formattedContent,
-              sender: "Bot", 
+              sender: "Bot",
               threadId: data.threadId,
-              seen:true
+              seen: true
             },
           });
-          await prisma.thread.update({where:{id:data.threadId},data:{assignedTo:data.agentId,type:"assigned"}})
+          await prisma.thread.update({ where: { id: data.threadId }, data: { assignedTo: data.agentId, type: "assigned" } })
           data.content = formattedContent;
           const room = io.sockets.adapter.rooms.get(data.threadId);
           const userInRoom = room && room.size > 0;
@@ -259,10 +282,10 @@ export const socketSetup = (server: any) => {
               const subject = "New Message from Support Team";
               const text = formattedContent;
               const organization = await prisma.chatConfig.findFirst({
-                where: { aiOrgId: thread.aiOrgId }, 
+                where: { aiOrgId: thread.aiOrgId },
                 select: { emailConfig: true },
               });
-              
+
               if (organization && organization.emailConfig) {
                 await sendEmailChat(
                   thread.email,
@@ -305,10 +328,10 @@ export const socketSetup = (server: any) => {
 
     socket.on("updateThreadInfo", async (data) => {
       try {
-        let updateData:any = {};
+        let updateData: any = {};
         if (data.name) updateData.name = data.name;
         if (data.email) updateData.email = data.email;
-    
+
         const updatedThread = await prisma.thread.update({
           where: { id: data.threadId },
           data: updateData,

@@ -1,4 +1,9 @@
 (function (global) {
+  window.addEventListener('beforeunload', function() {
+    localStorage.removeItem('chatWidgetThreadId');
+    localStorage.removeItem('chatWidgetHistory');
+  });
+
   const ChatWidget = {
     globalStylesInjected: false,
     userName: "",
@@ -48,6 +53,9 @@
       this.onlinAgents = [];
       this.injectGlobalStyles();
       this.renderIcon();
+      this.threadId = localStorage.getItem('chatWidgetThreadId');
+      const savedHistory = localStorage.getItem('chatWidgetHistory');
+      this.chatHistory = savedHistory ? JSON.parse(savedHistory) : [];
     },
 
     getPositionStyles() {
@@ -371,6 +379,9 @@
         this.setupContactFormListener();
       }
       this.startChatThread();
+      this.chatHistory.forEach(msg => {
+        this.appendMessage(msg.sender, msg.message);
+      });
     },
 
     renderContactForm() {
@@ -421,6 +432,7 @@
         this.socket.emit("startChat", payload);
         this.socket.once("chatStarted", (data) => {
           this.threadId = data.threadId;
+        if (!this.chatHistory || this.chatHistory.length === 0) {
           const greetingMessage =
             this.options.allowCustomGreeting &&
               this.options.customGreetingMessage
@@ -428,6 +440,7 @@
               : "Hello! How can I help you?";
 
           this.storeBotMessage(greetingMessage);
+        }
         });
       });
     },
@@ -930,12 +943,9 @@
       timeElem.textContent = timeStr;
       messagesContainer.append(msgElem, timeElem);
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
-
-      this.chatHistory.push({
-        sender,
-        message,
-        time: timeStr,
-      });
+      this.chatHistory.push({ sender, message, time: timeStr });
+      localStorage.setItem('chatWidgetThreadId', this.threadId);
+      localStorage.setItem('chatWidgetHistory', JSON.stringify(this.chatHistory));
     },
 
     appendTypingIndicator() {
