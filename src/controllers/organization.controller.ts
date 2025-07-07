@@ -193,7 +193,6 @@ export const createAISettings = async (req: Request, res: Response): Promise<any
       data: { aiChatBotSettings: aiChatBotSettings, aiEnabled: true },
     });
 
-    // Sending organization details after updating AI settings
     await sendOrganizationDetails(
       { ...Organization },
       Organization.aiOrgId

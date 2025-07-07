@@ -150,7 +150,7 @@
   overflow-x: auto;
   align-items: center;
   gap: 8px;
-  padding: 10px;
+  padding: 0px 10px;
   background: #f5f5f5;
   border-top: 1px solid #ddd;
   -ms-overflow-style: none;  /* IE and Edge */
@@ -548,7 +548,7 @@
       return `
           <div class="chat-input-container">
             <div class="chat-input-wrapper">
-              <textarea id="chat-input" style="height: 100%!important;" placeholder="Type a message..."></textarea>
+              <textarea id="chat-input" style="height: 80%!important;" placeholder="Type a message..."></textarea>
               <div class="chat-actions">
                 ${this.options.allowEmojis
           ? '<button id="emoji-picker"><img src="https://cdn-icons-png.flaticon.com/128/4989/4989500.png" alt="Emoji" width="20" height="20" /></button>'
@@ -577,7 +577,7 @@
         "Ok",
         "Yes",
         "Create Task",
-        "Talk Agent",
+        "Talk to Agent",
         "Thank you",
       ];
 
@@ -788,11 +788,13 @@
               successMessage.style.padding = "5px";
               successMessage.style.backgroundColor = "#d4edda";
               successMessage.style.color = "#155724";
-              successMessage.textContent = "Tickets raised successfully";
+              successMessage.textContent = "Ticket raised successfully";
               chatInputContainer.parentNode.insertBefore(
                 successMessage,
                 chatInputContainer
               );
+              this.appendMessage("Bot", "Ticket has been raised successfully, someone will reach out to you shortly. Is there anything else I can help you with?");
+
               setTimeout(() => {
                 if (successMessage) successMessage.remove();
               }, 3000);

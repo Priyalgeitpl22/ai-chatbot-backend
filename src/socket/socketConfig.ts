@@ -26,89 +26,103 @@ const processAIResponse = async (data: any, io: Server) => {
   let taskCreation: any;
   let question = data.content;
 
-  const previousMessages = await prisma.message.findMany({
+const previousMessages = await prisma.message.findMany({
+  where: { threadId: data.threadId },
+});
+const isFirstUserMessage =
+  previousMessages.filter((m) => m.sender === "User").length === 1;
+
+const thread = await prisma.thread.findUnique({
+  where: { id: data.threadId },
+});
+
+const agentMessageAlreadySent = previousMessages.some(
+  (m) => m.sender === "Bot" && m.content === "An agent is available and will assist you soon. Thank you for your patience."
+);
+// if (online.length > 0) {
+//   if (
+//     !agentMessageAlreadySent &&
+//     (
+//       (!data?.allowNameEmail && isFirstUserMessage) ||
+//       (data?.allowNameEmail && thread && thread.name !== "" && thread.email !== "")
+//     )
+//   ) {
+//     answer = "An agent is available and will assist you soon. Thank you for your patience.";
+//   }
+// } else 
+if (data.sender === 'User') {
+  // Check for task prompt logic
+  const prevMsgs = await prisma.message.findMany({
     where: { threadId: data.threadId },
+    orderBy: { createdAt: 'desc' },
+    take: 2
   });
-  const isFirstUserMessage =
-    previousMessages.filter((m) => m.sender === "User").length === 1;
+  const lastBotMessage = prevMsgs.find(m => m.sender === 'Bot');
+  const isTaskPrompt = lastBotMessage && lastBotMessage.content.includes("create a ticket");
+  const userReply = data.content.toLowerCase().trim();
 
-  const thread = await prisma.thread.findUnique({
-    where: { id: data.threadId },
-  });
-
-  const agentMessageAlreadySent = previousMessages.some(
-    (m) => m.sender === "Bot" && m.content === "An agent is available and will assist you soon. Thank you for your patience."
-  );
-  if (online.length > 0) {
+  if (isTaskPrompt) {
     if (
-      !agentMessageAlreadySent &&
-      (
-        (!data?.allowNameEmail && isFirstUserMessage) ||
-        (data?.allowNameEmail && thread && thread.name !== "" && thread.email !== "")
-      )
+      userReply.includes('yes') ||
+      userReply.includes('ok') ||
+      userReply.includes('sure') ||
+      userReply.includes('yes please') ||
+      userReply.includes('create') ||
+      userReply.includes('create task')
     ) {
-      answer = "An agent is available and will assist you soon. Thank you for your patience.";
-    }
-  } else if (online.length === 0 && data.sender === 'User') {
-    // Check for task prompt logic
-    const prevMsgs = await prisma.message.findMany({
-      where: { threadId: data.threadId },
-      orderBy: { createdAt: 'desc' },
-      take: 2
-    });
-    const lastBotMessage = prevMsgs.find(m => m.sender === 'Bot');
-    const isTaskPrompt = lastBotMessage && lastBotMessage.content.includes("create a task");
-    const userReply = data.content.toLowerCase().trim();
-
-    if (isTaskPrompt) {
-      if (
-        userReply.includes('yes') ||
-        userReply.includes('ok') ||
-        userReply.includes('sure') ||
-        userReply.includes('yes please') ||
-        userReply.includes('create')
-      ) {
-        // User wants to create a task
-        try {
-          // (You can add your createTask logic here if needed)
-          answer = "Please put the details and someone will reach out shortly.";
-          taskCreation = true;
-        } catch (error) {
-          console.error("Error creating task:", error);
-          answer = "I apologize, but there was an error creating the task. Please try again later.";
-        }
-      } else if (
-        userReply.includes('no') ||
-        userReply.includes('not now') ||
-        userReply.includes('later')
-      ) {
-        answer = "No problem! If you need further assistance, feel free to ask.";
-      } else {
-        answer = "I didn't quite catch that. Would you like me to create a task for your query so someone can get back to you later? Please reply with 'yes' or 'no'.";
+      // User wants to create a task
+      try {
+        taskCreation = true;
+      } catch (error) {
+        console.error("Error creating ticket:", error);
+        answer = "I apologize, but there was an error creating the ticket. Please try again later.";
       }
+    } else if (
+      userReply.includes('no') ||
+      userReply.includes('not now') ||
+      userReply.includes('later')
+    ) {
+      answer = "No problem! If you need further assistance, feel free to ask.";
     } else {
-      // Not a task prompt, check AI or show initial prompt
-      if (data.aiEnabled) {
-        const response = await getAIResponse(
-          data.content,
-          data.orgId,
-          data.aiOrgId,
-          data.threadId,
-          data?.faqs
-        );
-        if (response) {
-          answer = response.answer;
+      answer = "I didn't quite catch that. Would you like me to create a ticket for your query so someone can get back to you later? Please reply with 'yes' or 'no'.";
+    }
+  } else if (data.sender === 'User' && data.content.toLowerCase().includes('talk to agent')) {
+    answer = "Okay, let me connect you with an agent. Thank you for your patience.";
+    io.emit("notification", { message: `${data.content}`, thread });
+  } else {
+    if (data.aiEnabled) {
+      const response = await getAIResponse(
+        data.content,
+        data.orgId,
+        data.aiOrgId,
+        data.threadId,
+        data?.faqs
+      ) as any;
+      if (response) {
+        if (response?.answer.includes("I'm unable to")) {
+          if (online.length > 0) {
+            answer = "I'm not able to assist with this, Let me connect you with an agent. Thank you for waiting!";
+            io.emit("notification", { message: `${data.content}`, thread });
+          } else {
+            answer = "I'm unable to assist with this and no agents are available at the moment. Would you like me to create a ticket for your query so someone can get back to you later?";
+          }
           question = response.question;
           taskCreation = response.task_creation;
         } else {
-          answer = "I'm sorry, but I couldn't process your request.";
+          answer = response.answer;
         }
+      } else {
+        answer = "I'm sorry, but I couldn't process your request.";
+      }
+    } else {
+      if (online.length > 0) {
+        answer = "An agent is available and will assist you soon. Thank you for your patience.";
       } else {
         answer = "I apologize, but no agents are available at the moment and AI assistance is not enabled. Would you like me to create a task for your query so someone can get back to you later?";
       }
     }
   }
-
+}
   // Always emit a response to clear typing indicator
   const formattedAnswer = Array.isArray(answer) ? answer.map(item => `- ${item}`).join("\n") : answer || "";
   if (formattedAnswer) {
