@@ -18,7 +18,6 @@ export const createTask = async (aiOrgId: number, threadId: string, name: string
       },
     });
 
-    console.log("Task created:", newTask);
   } catch (error) {
     console.error("Error creating task:", error);
   }
@@ -70,7 +69,6 @@ export const assignTask = async (req: Request, res: Response): Promise<any> => {
       where: { id },
       data: { assignedTo },
     });
-    console.log(task)
     return res.status(200).json({ code: 200, task, message: "Task assigned successfully" });
   } catch (err) {
     console.error("Error assigning task:", err);

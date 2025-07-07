@@ -27,7 +27,6 @@ export const markMessageReaded = async(req:Request,res:Response):Promise<any>=>{
     return res.status(400).json({ code: 400, message: "thredId not found" })
     }
   }catch(err:any){
-    console.log(err.message)
     res.status(500).json({ code: 500, message: "Error assigning thread" })
   }
 }
