@@ -14,13 +14,13 @@
     chatHistory: [],
 
     async init(options) {
-      // const response = await fetch(
-      //   `${"http://localhost:5003"}/api/chat/config?orgId=${options.orgId}`
-      // );
-      const response = await fetch(`https://api.chat.jooper.ai/api/chat/config?orgId=${options.orgId}`);
+      const response = await fetch(
+        `${"http://localhost:5003"}/api/chat/config?orgId=${options.orgId}`
+      );
+      // const response = await fetch(`https://api.chat.jooper.ai/api/chat/config?orgId=${options.orgId}`);
 
       const data = await response.json();
-
+      console.log(data)
       const defaultOptions = {
         elementId: "chat-widget",
         apiEndpoint: data.data?.socketServer,
@@ -43,6 +43,7 @@
         fontColor: data.data?.fontColor,
         availability: data.data?.availability,
         socketServer: data.data?.socketServer,
+        organizationId:data.data?.orgId
       };
       this.options = { ...defaultOptions };
       this.container = document.getElementById(this.options.elementId);
@@ -642,6 +643,7 @@
 
       this.socket.on("receiveMessage", (data) => {
         console.log("Received message:", data);
+        if(data.sender === "Bot" && data.threadId === this.threadId){
 
         if (document.getElementById("typing-indicator"))
           this.removeTypingIndicator();
@@ -656,6 +658,7 @@
         } else {
           this.appendSuggestion();
         }
+      }
       });
 
       this.socket.on("typing", () => this.appendTypingIndicator());
@@ -664,7 +667,12 @@
         this.onlinAgents = data;
       });
       this.socket.on("updateDashboard", (data) => {
+        console.log(data,"data")
+        console.log(this.threadId,"thread id of this")
+        console.log(data.threadId === this.threadId)
         if (data.sender === "Bot" && data.threadId === this.threadId) {
+          console.log("inside condition")
+
           if (document.getElementById("typing-indicator"))
             this.removeTypingIndicator();
           if (data.content && data.content.trim() !== "") {
@@ -762,6 +770,7 @@
             .getElementById("contact-message")
             .value.trim();
           if (name && email && message) {
+            console.log(this.options)
             this.socket.emit("createTask", {
               aiOrgId: this.options.orgId,
               aiEnabled: this.options.aiEnabled,
@@ -770,6 +779,7 @@
               name,
               email,
               query: message,
+              orgId:this.options.organizationId,
             });
             const formContainer = document.getElementById(
               "contact-form-container"

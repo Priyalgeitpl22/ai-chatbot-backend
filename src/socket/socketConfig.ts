@@ -228,7 +228,8 @@ export const socketSetup = (server: any) => {
         data.name,
         data.email,
         data.query,
-        "low"
+        "low",
+        data.orgId,
       );
       io.emit("taskCreated", data);
     });
