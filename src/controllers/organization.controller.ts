@@ -102,7 +102,7 @@ export const updateOrganization = async (req: Request, res: Response): Promise<a
       description: description ?? existingOrg.description,
       emailConfig: emailConfig ?? existingOrg.emailConfig,
       aiEnabled: aiEnabled ?? existingOrg.aiEnabled,
-      openAiKey: openAiKey ?? existingOrg.openAiKey
+      openAiKey: openAiKey ?? existingOrg.openAiKey  
     }
 
     const updatedOrganization = await prisma.organization.update({

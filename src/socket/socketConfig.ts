@@ -289,6 +289,12 @@ export const socketSetup = (server: any) => {
       io.emit("updateDashboard", data);
     });
 
+    socket.on("readMessage",async(data)=>{
+      if(data){
+        await prisma.message.updateMany({where:{threadId:data.threadId, seen:false},data:{seen:true}})
+      }
+    })
+
 
     socket.on("startChat", async (data) => {
       try {
