@@ -3,7 +3,7 @@ import { Request, Response } from "express";
 
 const prisma = new PrismaClient();
 
-export const createTask = async (aiOrgId: number, threadId: string, name: string, email: string, query: string, priority: string = "low") => {
+export const createTask = async (aiOrgId: number, threadId: string, name: string, email: string, query: string, priority: string = "low",orgId:string) => {
   try {
     const newTask = await prisma.task.create({
       data: {
@@ -14,10 +14,10 @@ export const createTask = async (aiOrgId: number, threadId: string, name: string
         status: "pending",
         aiOrgId,
         thread: { connect: { id: threadId } },
+        orgId
       },
     });
 
-    console.log("Task created:", newTask);
   } catch (error) {
     console.error("Error creating task:", error);
   }
@@ -69,7 +69,6 @@ export const assignTask = async (req: Request, res: Response): Promise<any> => {
       where: { id },
       data: { assignedTo },
     });
-    console.log(task)
     return res.status(200).json({ code: 200, task, message: "Task assigned successfully" });
   } catch (err) {
     console.error("Error assigning task:", err);
@@ -79,10 +78,10 @@ export const assignTask = async (req: Request, res: Response): Promise<any> => {
 
 export const getUnreadTicketCount = async (req: Request, res: Response): Promise<any> => {
   try {
-    const { orgId } = req.query;
+    const {orgId} = req.params;
     const count = await prisma.task.count({
       where: {
-        orgId: orgId as string,
+        orgId: orgId,
         assignedTo: null,
       },
     });

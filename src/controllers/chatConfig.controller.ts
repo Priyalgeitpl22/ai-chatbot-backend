@@ -51,7 +51,6 @@ export const updateChatConfig = async (req: Request, res: Response): Promise<any
                 // ChatBotLogoImage = await getPresignedUrl(ChatBotLogoImageURL);
                 ChatBotLogoImage = ChatBotLogoImageURL;
             }
-            console.log("ChatBotLogoImage",ChatBotLogoImage)
             const parseBoolean = (value: any) => value === "true" ? true : value === "false" ? false : value;
             const parseInteger = (value: any) => value ? parseInt(value, 10) : null;
 

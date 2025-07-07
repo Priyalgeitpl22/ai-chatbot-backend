@@ -20,7 +20,7 @@
       const response = await fetch(`https://api.chat.jooper.ai/api/chat/config?orgId=${options.orgId}`);
 
       const data = await response.json();
-
+      
       const defaultOptions = {
         elementId: "chat-widget",
         apiEndpoint: data.data?.socketServer,
@@ -43,6 +43,7 @@
         fontColor: data.data?.fontColor,
         availability: data.data?.availability,
         socketServer: data.data?.socketServer,
+        organizationId:data.data?.orgId
       };
       this.options = { ...defaultOptions };
       this.container = document.getElementById(this.options.elementId);
@@ -641,7 +642,7 @@
       });
 
       this.socket.on("receiveMessage", (data) => {
-        console.log("Received message:", data);
+        if(data.sender === "Bot" && data.threadId === this.threadId){
 
         if (document.getElementById("typing-indicator"))
           this.removeTypingIndicator();
@@ -656,6 +657,7 @@
         } else {
           this.appendSuggestion();
         }
+      }
       });
 
       this.socket.on("typing", () => this.appendTypingIndicator());
@@ -770,6 +772,7 @@
               name,
               email,
               query: message,
+              orgId:this.options.organizationId,
             });
             const formContainer = document.getElementById(
               "contact-form-container"

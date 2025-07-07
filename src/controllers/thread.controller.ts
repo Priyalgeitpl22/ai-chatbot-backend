@@ -119,7 +119,6 @@ export const assignThread = async (req: Request, res: Response): Promise<any> =>
     return res.status(200).json({ code: 200, thread, message: "Thread assigned sucessful" })
 
   } catch (err: any) {
-    console.log(err.message)
     res.status(500).json({ code: 500, message: "Error assigning thread" })
   }
 }
@@ -144,7 +143,6 @@ export const markThreadReaded = async (req: Request, res: Response): Promise<any
       return res.status(400).json({ code: 400, message: "Thread Id not found" })
     }
   } catch (err: any) {
-    console.log(err.message)
     res.status(500).json({ code: 500, message: "Error assigning thread" })
   }
 }
