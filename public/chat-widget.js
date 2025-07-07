@@ -14,10 +14,10 @@
     chatHistory: [],
 
     async init(options) {
-      const response = await fetch(
-        `${"http://localhost:5003"}/api/chat/config?orgId=${options.orgId}`
-      );
-      // const response = await fetch(`https://api.chat.jooper.ai/api/chat/config?orgId=${options.orgId}`);
+      // const response = await fetch(
+      //   `${"http://localhost:5003"}/api/chat/config?orgId=${options.orgId}`
+      // );
+      const response = await fetch(`https://api.chat.jooper.ai/api/chat/config?orgId=${options.orgId}`);
 
       const data = await response.json();
       console.log(data)
