@@ -204,37 +204,3 @@ export const createChatOrTicket = async (req: any, res: any) => {
     return res.status(500).json({ code: 500, message: "Error processing chat" });
   }
 };
-
-export const getUnreadTicketCount = async (req: any, res: any) => {
-  try {
-    const { orgId } = req.query;
-
-    if (!orgId || typeof orgId !== "string") {
-      return res.status(400).json({ code: 400, message: "Missing or invalid orgId" });
-    }
-
-    const org = await prisma.organization.findUnique({ where: { id: orgId } });
-    if (!org) {
-      return res.status(404).json({ code: 404, message: "Organization not found" });
-    }
-
-    const count = await prisma.thread.count({
-      where: {
-        type: "ticket",
-        readed: false,
-        aiOrgId: org.aiOrgId ?? 0,
-      },
-    });
-
-    return res.status(200).json({
-      code: 200,
-      unreadTickets: count,
-    });
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ code: 500, message: "Failed to get unread ticket count" });
-  }
-};
-
-
