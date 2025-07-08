@@ -29,6 +29,10 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.JOOPER_SSH_KEY }}
           script: |
-            cd /root/apps
-            docker-compose down
-            docker-compose up -d --build
+            cd /root/apps/ai-chatbot-backend
+            git pull origin main
+            npm i
+            npx prisma migrate dev
+            npx tsc
+            pm2 restart all
+
