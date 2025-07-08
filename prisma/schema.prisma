@@ -16,13 +16,14 @@ model access_token {
   user_id          String?   @db.VarChar(256)
   active           Int       @default(1)
   expiry_datetime  DateTime?
-  token            String? // Add the token field to store the JWT
+  token            String? 
 }
 
 model Organization {
   id                String   @id @default(uuid())
   aiOrgId           Int?
   name              String?
+  enable_totp_auth  Boolean  @default(false)
   phone             String?
   address           String?
   city              String?
@@ -42,25 +43,28 @@ model Organization {
 }
 
 model User {
-  id             String       @id @default(uuid())
-  email          String       @unique
-  fullName       String
-  password       String
-  phone          String?
-  role           String       @default("admin")
-  verified       Boolean      @default(false)
-  orgId          String
-  aiOrgId        Int?
-  profilePicture String?
-  organization   Organization @relation(fields: [orgId], references: [id])
-  createdAt      DateTime     @default(now())
-  online         Boolean      @default(true)
-  schedule       Json?
-  deletedAt      DateTime?
-  faqs           FAQ[]
+  id              String       @id @default(uuid())
+  email           String       @unique
+  fullName        String
+  password        String
+  phone           String?
+  role            String       @default("admin")
+  verified        Boolean      @default(false)
+  orgId           String
+  aiOrgId         Int?
+  profilePicture  String?
+  enable_2fa      Boolean      @default(false)
+  two_fa_secret   String? 
+  temp_2fa_secret String? 
+  organization    Organization @relation(fields: [orgId], references: [id])
+  createdAt       DateTime     @default(now())
+  online          Boolean      @default(true)
+  schedule        Json?
+  deletedAt       DateTime?
+  faqs            FAQ[]
   // Fields for OTP verification
-  otpCode        String?
-  otpExpiresAt   DateTime?
+  otpCode         String?
+  otpExpiresAt    DateTime?
 
   // Fields for password reset
   resetToken        String?
