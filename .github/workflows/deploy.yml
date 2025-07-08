@@ -3,7 +3,7 @@ name: Deploy to Jooper Server
 on:
   push:
     branches:
-      - main   # or your main branch name
+      - main
 
 jobs:
   deploy:
@@ -19,8 +19,8 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.JOOPER_SSH_KEY }}
-          source: "."      # what to upload — whole repo here
-          target: "/root/apps"  # where on your server
+          source: "." 
+          target: "/root/apps"
 
       - name: Run remote commands on server
         uses: appleboy/ssh-action@v1.0.0
@@ -29,10 +29,10 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.JOOPER_SSH_KEY }}
           script: |
-            cd /root/apps/ai-chatbot-backend
-            git pull origin main
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            cd /root/apps   # or /root/apps/ai-chatbot-backend if correct
             npm i
-            npx prisma migrate dev
+            npx prisma migrate deploy
             npx tsc
-            pm2 restart all
-
+            pm2 restart all  # or pm2 restart ai-chatbot-backend
