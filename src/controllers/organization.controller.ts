@@ -111,7 +111,7 @@ export const updateOrganization = async (req: Request, res: Response): Promise<a
     const { emailConfig: _, ...safeOrgDataForAI } = organizationData;
 
     await sendOrganizationDetails({ ...safeOrgDataForAI, zip: safeOrgDataForAI.zip.toString() }, aiOrgId);
-    
+
     res.status(200).json({
       code: 200,
       data: updatedOrganization,
@@ -185,18 +185,16 @@ export const createAISettings = async (req: Request, res: Response): Promise<any
     if (!existingOrg) {
       return res.status(404).json({ code: 404, message: "Organization not found." });
     }
-    console.log(aiChatBotSettings.ConpanyWebsiteUrl,"data")
+    console.log(aiChatBotSettings.ConpanyWebsiteUrl, "data")
     const data = await webcrawl(aiChatBotSettings.ConpanyWebsiteUrl)
-    console.log(data,"webcrawl")
-    aiChatBotSettings.serviceOrProductInfo =  aiChatBotSettings.serviceOrProductInfo + " " + data
+    console.log(data, "webcrawl")
+    aiChatBotSettings.serviceOrProductInfo = aiChatBotSettings.serviceOrProductInfo + " " + data
     const Organization = await prisma.organization.update({
       where: { id: orgId },
       data: { aiChatBotSettings: aiChatBotSettings, aiEnabled: true },
     });
 
-    // console.log("Organization", Organization);
 
-    // Sending organization details after updating AI settings
     await sendOrganizationDetails(
       { ...Organization },
       Organization.aiOrgId

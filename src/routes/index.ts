@@ -9,6 +9,8 @@ import threadRoutes from "./thread.routes";
 import chatConfigRoutes from "./chatConfig.routes";
 import faqRoutes from "./faq.routes";
 import { authMiddleware } from "../middlewares/authMiddleware";
+import securityRoutes from './security.route';
+
 
 const router = Router();
 
@@ -18,8 +20,9 @@ router.use("/org", authMiddleware, organizationRoutes);
 router.use("/task", authMiddleware, taskRoutes);
 router.use("/agent", authMiddleware, agentRoutes);
 router.use("/message", authMiddleware, messageRoutes);
-router.use("/thread",  threadRoutes);
-router.use("/faq",faqRoutes );
 router.use("/chat/config", chatConfigRoutes);
+router.use("/thread", threadRoutes);
+router.use("/faq", faqRoutes);
+router.use('/security', securityRoutes);
 
 export default router;
