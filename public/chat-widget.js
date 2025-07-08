@@ -576,7 +576,7 @@
       const suggestions = [
         "Ok",
         "Yes",
-        "Create Task",
+        "Create Ticket",
         "Talk to Agent",
         "Thank you",
       ];

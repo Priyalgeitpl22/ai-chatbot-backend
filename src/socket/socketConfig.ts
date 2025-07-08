@@ -68,7 +68,7 @@ if (data.sender === 'User') {
       userReply.includes('sure') ||
       userReply.includes('yes please') ||
       userReply.includes('create') ||
-      userReply.includes('create task')
+      userReply.includes('create ticket')
     ) {
       // User wants to create a task
       try {
@@ -118,7 +118,7 @@ if (data.sender === 'User') {
       if (online.length > 0) {
         answer = "An agent is available and will assist you soon. Thank you for your patience.";
       } else {
-        answer = "I apologize, but no agents are available at the moment and AI assistance is not enabled. Would you like me to create a task for your query so someone can get back to you later?";
+        answer = "I apologize, but no agents are available at the moment and AI assistance is not enabled. Would you like me to create a ticket for your query so someone can get back to you later?";
       }
     }
   }
