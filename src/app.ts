@@ -11,7 +11,7 @@ app.use("/api", routes);
 app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/", (req, res) => {
-  res.send("Welcome to the API!");
+  res.send("Welcome to the AI Chatbot Backend!");
 });
 
 export default app;
