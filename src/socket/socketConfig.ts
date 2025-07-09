@@ -168,7 +168,11 @@ export const socketSetup = (server: any) => {
         where: { id: agentData.id },
         data: { online: agentData.online },
       });
-      io.emit("agentStatusUpdate", getOnlineAgents());
+       socket.broadcast.emit("onlineStatus", {
+    userId: agentData.id,
+    online: agentData.online,
+  });
+      io.emit("agentStatusUpdate", getOnlineAgents())
     });
 
     socket.on("joinThread", (threadId) => {

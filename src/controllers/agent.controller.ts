@@ -87,7 +87,7 @@ export const getAgents = async (req: Request, res: Response): Promise<void> => {
 
         const agents = await prisma.user.findMany({
             where: { orgId: orgId as string,deletedAt: null },
-            select: { fullName: true, email: true, id: true, role: true, orgId: true, profilePicture: true, phone: true, schedule: true, deletedAt:true }
+            select: { fullName: true, email: true, id: true, role: true, orgId: true, profilePicture: true, phone: true, schedule: true, deletedAt:true,online:true, }
         });
 
         if (!agents) {
