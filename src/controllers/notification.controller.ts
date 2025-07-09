@@ -58,14 +58,14 @@ export const getAllNotifications = async (
   res: Response
 ): Promise<any> => {
   try {
-    console.log("helo");
+   
     const { orgId } = req.params;
 
     const getAllNotifications = await prisma.notification.findMany({
       where: { orgId, read: false },
       include: { thread: true },
     });
-    console.log(getAllNotifications, "data");
+    
     const count = await prisma.notification.count({
       where: { orgId, read: false, notification: false },
     });
@@ -153,7 +153,6 @@ export const clearNotification = async (
         .json({ code: 200, message: "No unread notifications to clear." });
     }
   } catch (err) {
-    console.error("Error clearing notifications:", err);
     return res
       .status(500)
       .json({
