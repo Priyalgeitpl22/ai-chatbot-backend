@@ -20,7 +20,7 @@
       const response = await fetch(`https://api.chat.jooper.ai/api/chat/config?orgId=${options.orgId}`);
 
       const data = await response.json();
-      
+
       const defaultOptions = {
         elementId: "chat-widget",
         apiEndpoint: data.data?.socketServer,
@@ -43,7 +43,7 @@
         fontColor: data.data?.fontColor,
         availability: data.data?.availability,
         socketServer: data.data?.socketServer,
-        organizationId:data.data?.orgId
+        organizationId: data.data?.orgId
       };
       this.options = { ...defaultOptions };
       this.container = document.getElementById(this.options.elementId);
@@ -81,182 +81,191 @@
           ? "left: 20px;"
           : "right: 20px;";
       const css = `
-          /* Global Styles */
-          .chat-icon:hover { opacity: 0.8; }
-          .chat-widget {font-family: ${fontFamily} !important; position: fixed; border: 1px solid #ddd; border-radius: 5px; width: 380px; height: 550px; display: flex; flex-direction: column; }
-          .chat-header { color: white; border-radius: 5px 5px 0 0; }
-          .chat-messages { flex: 1; overflow-y: scroll; scrollbar-width: none; -ms-overflow-style: none; padding: 10px; border-top: 1px solid #ddd; display: flex; flex-direction: column; }
-          .chat-messages::-webkit-scrollbar { display: none; }
-          .message { padding: 8px 10px; max-width: 80%; margin-top: 5px; display: inline-block; position: relative; }
-          .message.agent { background-color: #e9ecef; color: #000; border-radius: 10px 10px 10px 0px; align-self: flex-start; }
-          .message.user { background-color: ${
-            this.options.iconColor
-          }; color: #fff !important; border-radius: 10px 10px 0px 10px; align-self: flex-end; word-break: break-all; }
-          .chat-input-container { display: flex; padding: 10px; gap: 5px; position: relative;}
-          #chat-input { flex: 1; resize: none; border-radius: 5px; padding: 5px; overflow: auto; }
-          #chat-input::-webkit-scrollbar { display: none; }
-          .chat-actions { display: flex; }
-          .chat-actions button { cursor: pointer; color: white; border: none; border-radius: 5px; padding: 5px; background: none; opacity: 0.7; }
-          .chat-actions button:hover { opacity: 0.8; }
-          .contact-form { padding: 10px; display: flex; flex-direction: column; align-items: center; }
-          .contact-form input, .contact-form textarea { width: 100%; margin-bottom: 10px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; background-color: #fafafa; font-size: 14px; transition: border-color 0.3s, box-shadow 0.3s; }
-          .contact-form input:focus, .contact-form textarea:focus { border-color: #667eea; box-shadow: 0 0 5px rgba(102,126,234,0.5); outline: none; }
-          .contact-form button { width: 100%; color: #fff; background: ${this.options.iconColor
-        }; border: none; border-radius: 5px; padding: 10px; font-size: 16px; cursor: pointer; opacity: 0.8; transition: background 0.3s; }
-          .contact-form button:hover { opacity: 1; background: ${this.options.iconColor
-        }; }
-          .emoji-picker { cursor: pointer; }
-          .emoji-picker-container { position: absolute; bottom: 70px; ${position} z-index: 9999; display: none; border: 1px solid #ccc; border-radius: 5px; width: 340px; height: 200px; overflow: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-          .emoji-picker-container #shadow-root .picker .favorites { display: none; }
-          textarea { border: none; }
-          textarea:focus { outline: none; border: none; }
-          .chat-input-wrapper { display: flex; width: 100%; padding: 3px 5px; border: 1px solid #ddd; border-radius: 5px; }
-          .message.agent.loading .typing-indicator { display: flex; align-items: center; }
-          .message.agent.loading .typing-indicator span { background-color: #ccc; border-radius: 50%; width: 8px; height: 8px; margin: 0 2px; animation: typing 1s infinite; }
-          .message.agent.loading .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
-          .message.agent.loading .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
-          @keyframes typing { 0% { opacity: 0.2; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-3px); } 100% { opacity: 0.2; transform: translateY(0); } }
-          .message ul { margin: 5px 0; padding-left: 20px; list-style-type: disc; }
-          .message li { margin-bottom: 5px; }
-          .message ol { padding-left: 20px; list-style-type: none; counter-reset: custom-counter; }
-          .message ol li { position: relative; margin-bottom: 12px; padding-left: 30px; font-size: 14px; color: #444; counter-increment: custom-counter; line-height: 1.5; }
-          .message ol li:before { content: counter(custom-counter) "."; position: absolute; left: 0; font-weight: bold; color: ${this.options.iconColor || "#007bff"
-        }; }
-          .point-title { font-weight: 600; color: #555; margin-right: 5px; }
-          .message p { margin: 5px 0; line-height: 1.5;}
-          .message.agent p {color: black !important;}
-          .message.user p {color: white !important;}
-          .message-card { background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 8px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); padding: 8px 10px; max-width: 90%; }
-          .message-card.agent { background-color: #f9f9f9; }
-          .message-content { font-size: 14px; } p { color: white; }
-          .message-table-wrapper { margin: 10px 0; overflow-x: auto; }
-          .message-table-wrapper table.info-table { width: 100%; border-collapse: separate; border-spacing: 0; background-color: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); }
-          .message-table-wrapper th, .message-table-wrapper td { padding: 12px 15px; text-align: left; font-size: 13px; border-bottom: 1px solid #e5e5e5; }
-          .message-table-wrapper th { background: linear-gradient(135deg, ${this.options.iconColor || "#007bff"
-        } 0%, ${this.options.iconColor || "#0056b3"
-        } 100%); color: #fff; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #ffffff33; }
-          .message-table-wrapper td { color: #444; }
-          .message-table-wrapper td.row-heading { background-color: #f5f5f5; font-weight: 500; color: #333; }
-          .message-table-wrapper tr:nth-child(even) td:not(.row-heading) { background-color: #fafafa; }
-          .message-table-wrapper tr:hover td { background-color: #f0f0f0; transition: background-color 0.2s ease; }
-          .message-table-wrapper a { color: ${this.options.iconColor || "#007bff"
-        }; text-decoration: none; font-weight: 500; }
-          .message-table-wrapper a:hover { text-decoration: underline; color: ${this.options.iconColor || "#0056b3"
-        }; }
-          .suggestions-container {
-  display: flex;
-  height:35px;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  align-items: center;
-  gap: 8px;
-  padding: 0px 10px;
-  background: #f5f5f5;
-  border-top: 1px solid #ddd;
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;     /* Firefox */
-}
-
-.suggestions-container::-webkit-scrollbar {
-  display: none;             /* Chrome, Safari, Opera */
-}
-
-.suggestion {
-  white-space: nowrap;
-  background-color: #e0e0e0;
+        .jooper-chat-widget, .jooper-message, .jooper-suggestion, .jooper-contact-form, .jooper-chat-header, .jooper-chat-input, .jooper-form-title {
+          font-family: ${fontFamily} !important;
+        }
+        .jooper-chat-widget {
+          font-family: ${fontFamily} !important;
+          position: fixed;
+          border: 1px solid #ddd;
+          border-radius: 8px;
+          width: 100%; 
+          height: 100%; 
+          max-width: 380px;
+          max-height: 550px; 
+          display: flex;
+          flex-direction: column;
+          box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+          background: ${this.options.chatWindowColor} !important;
+          z-index: 9999;
+        }
+       
+        .jooper-chat-header { color: white; border-radius: 8px 8px 0 0; background: ${this.options.iconColor}; display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; }
+        .jooper-chat-header .jooper-chat-title { font-size: 20px; font-weight: bold; color: #fff; }
+        .jooper-chat-header .jooper-chat-status { font-size: 13px; color: #fff; display: flex; align-items: center; gap: 6px; }
+        .jooper-chat-header #avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; margin-right: 12px; }
+        .jooper-chat-messages {
+          flex: 1;
+          overflow-y: auto;
+          padding: 16px;
+          background: ${this.options.chatWindowColor}; 
+          display: flex;
+          flex-direction: column;
+        }
+        .jooper-chat-messages::-webkit-scrollbar { width: 3px; background: #f5f5f5; }
+        .jooper-chat-messages::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+        .jooper-chat-messages::-webkit-scrollbar-thumb:hover { background: #b0b7c3; }
+        .jooper-chat-messages { scrollbar-width: thin; scrollbar-color: #d1d5db #f5f5f5; }
+        .jooper-message { padding: 1px 14px; max-width: 80%; margin-top: 8px; display: inline-block; position: relative; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+        .jooper-message.agent { background: #f5f5f5; color: #222; align-self: flex-start; }
+        .jooper-message.user { background: ${this.options.iconColor}; color: #fff; align-self: flex-end; }
+        .jooper-chat-input-container { display: flex; padding: 12px; gap: 8px; border-top: 1px solid #eee; background: #fafafa; }
+        .jooper-chat-input-wrapper { display: flex; width: 100%; border: 1px solid #ddd; border-radius: 6px; background: #fff; }
+        .jooper-chat-input { flex: 1; border: none; border-radius: 6px; padding: 10px; font-size: 15px; background: transparent; resize: none; }
+        .jooper-chat-input:focus { outline: none; }
+        .jooper-chat-actions { display: flex; align-items: center; gap: 4px; }
+        .jooper-chat-actions button { background: none; border: none; cursor: pointer; opacity: 0.7; border-radius: 5px; padding: 5px; }
+        .jooper-chat-actions button:hover { opacity: 1; }
+        .jooper-suggestions-container {
+          display: flex;
+          flex-wrap: nowrap;
+          overflow-x: auto;
+          align-items: center; /* vertical centering only */
+          gap: 8px;
+          padding: 10px;
+          background: #f5f5f5;
+          border-top: 1px solid #eee;
+          height: 38px;
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+          margin-top: 0;
+        }
+        .jooper-suggestions-container::-webkit-scrollbar { display: none; }
+        .jooper-suggestion {
+          white-space: nowrap;
+          background: #fff; /* CHANGED: white background */
+          border: 2px solid ${this.options.iconColor}; /* CHANGED: outline color from iconColor */
+          color: ${this.options.iconColor}; /* CHANGED: text color from iconColor */
+          border-radius: 20px;
+          padding: 6px 22px;
+          font-size: 16px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: background 0.2s, color 0.2s, border-color 0.2s;
+          margin-bottom: 6px;
+        }
+        .jooper-suggestion:hover {
+          background: ${this.options.iconColor}22; /* CHANGED: more visible fill on hover */
+          color: ${this.options.iconColor};
+          border-color: ${this.options.iconColor};
+        }
+        .jooper-message-time { font-size: 11px; color: #888; margin-top: 2px; text-align: right; }
+        /* Responsive styles */
+        @media (max-width: 600px) {
+          .jooper-chat-widget { width: 100vw !important; height: 100vh !important; max-width: 100vw; max-height: 100vh; right: 0 !important; left: 0 !important; bottom: 0 !important; border-radius: 0 !important; }
+          .jooper-chat-header { border-radius: 0 !important; }
+        }
+        .emoji-picker-container { position: absolute; left: 50%; bottom: 70px; transform: translateX(-50%); z-index: 1000; display: none; border: 1px solid #ccc; border-radius: 8px; width: 340px; max-width: 95%; height: 220px; overflow: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.2); background: #fff; }
+        .emoji-picker-container::-webkit-scrollbar { width: 6px; background: #f5f5f5; }
+        .emoji-picker-container::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+        .emoji-picker-container::-webkit-scrollbar-thumb:hover { background: #b0b7c3; }
+        .emoji-picker-container { scrollbar-width: thin; scrollbar-color: #d1d5db #f5f5f5; }
+        .jooper-contact-form {
+          padding: 24px 20px 20px 20px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          background: #fff;
+          border-radius: 12px;
+          box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+          position: relative;
+          margin: 0 8px;
+        }
+        .jooper-contact-form input, .jooper-contact-form textarea {
+          width: 100%;
+          margin-bottom: 12px;
+          padding: 10px;
+          border: 1px solid #ddd;
+          border-radius: 5px;
+          background-color: #fafafa;
+          font-size: 15px;
+          transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        .jooper-contact-form input:focus, .jooper-contact-form textarea:focus {
+          border-color:${this.options.iconColor};
+          box-shadow: 0 0 5px rgba(102,126,234,0.15);
+          outline: none;
+        }
+        .jooper-contact-form button#submit-contact {
+          width: 100%;
+          color: #fff;
+          background-color: ${this.options.iconColor};
   border: none;
-  border-radius: 20px;
-  padding: 2px 16px;
-  font-size: 14px;
+          border-radius: 5px;
+          padding: 10px;
+          font-size: 16px;
   cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.suggestion:hover {
-  background-color: #d0d0d0;
-  
-}#suggestion-box-container {
-  position: sticky;
-  bottom: 0;
-  z-index: 2;
-  background: #f5f5f5;
-
-}
-
-#contact-form-container {
-  position: relative;
-  background: #fff;
-  border-radius: 10px;
-  padding: 20px 16px 16px;
-  box-shadow: 0 -6px 16px rgba(0, 0, 0, 0.15);
-  animation: popupFadeIn 0.25s ease;
-  font-family: sans-serif;
-}
-
-#close-contact-form {
-  position: absolute;
-  top: -3px;
-  right: 12px;
-  background: none;
-  border: none;
-  font-size: 30px;
-  cursor: pointer;
-  color: #555;
-  text-align: right;
-}
-
-/* Title in center, one line */
-.form-title {
-  text-align: center;
-  font-size: 16px;
-  margin: 0 0 20px 0;
-  font-weight: bold;
+          opacity: 0.95;
+          transition: background 0.3s;
+        }
+        .jooper-contact-form button#submit-contact:hover {
+          opacity: 1;
+          background:${this.options.iconColor};
+        }
+        .jooper-form-title {
+          text-align: center;
+          font-size: 18px;
+          margin: 0 0 20px 0;
+          font-weight: bold;
   color :black !important;
-}
-#contact-form-container input,
-#contact-form-container textarea {
-  width: 100%;
-  margin-bottom: 10px;
-  padding: 8px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  font-size: 14px;
-}
+          color: #222;
+        }
+        .jooper-contact-form #close-contact-form {
+          position: absolute;
+          top: 10px;
+          right: 16px;
+          background: none;
+          border: none;
+          font-size: 28px;
+          cursor: pointer;
+          color: #888;
+          line-height: 1;
+          box-shadow: none;
+          padding: 0;
+          transition: color 0.2s;
+        }
+        .jooper-contact-form #close-contact-form:hover {
+          color: #222;
+          background: none;
+        }
 
-#contact-form-container textarea {
-  resize: vertical;
-  min-height: 60px;
-  max-height: 100px;
-}
-
-#submit-contact {
-  background-color: ${this.options.iconColor};
-  color: #fff;
-  border: none;
-  padding-block: 8px;
-  width: 100%;
-  font-weight: bold;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-#submit-contact:hover {
-  background-color: ${this.options.iconColor};
-}
-
-@keyframes popupFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-        `;
+        .typing-indicator {
+          display: flex;
+          align-items: center;
+          height: 18px;
+          margin: 4px 0 4px 0;
+        }
+        .typing-indicator span {
+          display: inline-block;
+          width: 7px;
+          height: 7px;
+          margin: 0 2px;
+          background: #bbb;
+          border-radius: 50%;
+          opacity: 0.7;
+          animation: typing-bounce 1.2s infinite both;
+        }
+        .typing-indicator span:nth-child(2) {
+          animation-delay: 0.2s;
+        }
+        .typing-indicator span:nth-child(3) {
+          animation-delay: 0.4s;
+        }
+        @keyframes typing-bounce {
+          0%, 80%, 100% { transform: scale(0.7); opacity: 0.7; }
+          40% { transform: scale(1.2); opacity: 1; }
+        }
+      `;
       this.injectStyle(css);
       this.globalStylesInjected = true;
     },
@@ -299,34 +308,29 @@
       const positionStyles = this.getPositionStyles();
       const isBottomRight = this.options.position === "bottom-right";
       this.container.innerHTML = `
-          <div class="chat-container ${isBottomRight ? "bottom-right" : "bottom-left"
-        }" style="position: fixed; ${positionStyles}; display: flex; align-items: center;">
-            <div class="chat-icon" style="cursor: pointer; background-color: ${this.options.iconColor
-        }; color: white; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
+          <div class="jooper-chat-container ${isBottomRight ? "bottom-right" : "bottom-left"}"
+            style="position: fixed; ${positionStyles}; display: flex; align-items: center;">
+            <div class="jooper-chat-icon" style="cursor: pointer; background-color: ${this.options.iconColor}; color: white; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
               💬
             </div>
-            <div class="chat-message" id="chat-message" style="background: white; color: black; padding: 8px 12px; border-radius: 15px; box-shadow: 0px 2px 5px rgba(0,0,0,0.2); ${isBottomRight ? "margin-left: 10px;" : "margin-right: 10px;"
-        } font-size: 14px; display: none; align-items: center;">
-              ${this.options.addInitialPopupText ||
-        "Hello and welcome to GoldenBot 👋"
-        }
-              <button id="close-message" style="background: none; border: none; font-size: 16px; ${isBottomRight ? "margin-right: 8px;" : "margin-left: 8px;"
-        } cursor: pointer;">&times;</button>
+            <div class="jooper-chat-message" id="jooper-chat-message" style="background: white; color: black; padding: 8px 12px; border-radius: 15px; box-shadow: 0px 2px 5px rgba(0,0,0,0.2); ${isBottomRight ? "margin-left: 10px;" : "margin-right: 10px;"} font-size: 14px; display: none; align-items: center;">
+              ${this.options.addInitialPopupText || "Hello and welcome to GoldenBot 👋"}
+              <button id="jooper-close-message" style="background: none; border: none; font-size: 16px; ${isBottomRight ? "margin-right: 8px;" : "margin-left: 8px;"} cursor: pointer;">&times;</button>
             </div>
           </div>
         `;
       if (isBottomRight) {
-        this.container.querySelector(".chat-container").style.flexDirection =
+        this.container.querySelector(".jooper-chat-container").style.flexDirection =
           "row-reverse";
       }
       this.container
-        .querySelector(".chat-icon")
+        .querySelector(".jooper-chat-icon")
         .addEventListener("click", () => this.renderChatWindow());
-      document.getElementById("close-message").addEventListener("click", () => {
-        document.getElementById("chat-message").style.display = "none";
+      document.getElementById("jooper-close-message").addEventListener("click", () => {
+        document.getElementById("jooper-chat-message").style.display = "none";
       });
       setTimeout(() => {
-        const chatMessage = document.getElementById("chat-message");
+        const chatMessage = document.getElementById("jooper-chat-message");
         if (chatMessage) chatMessage.style.display = "flex";
       }, 2000);
     },
@@ -334,42 +338,30 @@
     renderChatWindow() {
       const positionStyles = this.getPositionStyles();
       this.container.innerHTML = `
-          <div class="chat-widget" style="${positionStyles} background-color: ${
-        this.options.chatWindowColor
-      }; color: ${this.options.fontColor}; z-index:9999;">
-            <div class="chat-header" style="background-color: ${
-              this.options.iconColor
-            }; display: flex; justify-content: space-between; align-items: center; padding: 10px 20px;">
+          <div class="jooper-chat-widget" style="${positionStyles} background-color: ${this.options.chatWindowColor}; color: ${this.options.fontColor}; z-index:9999;">
+            <div class="jooper-chat-header">
               <div style="display: flex; align-items: center;">
                 <div id="avatar-container" style="margin-right: 10px;">
-                  <img id="avatar" src=${this.options.ChatBotLogoImage ||
-        "https://www.w3schools.com/w3images/avatar2.png"
-        } alt="Avatar" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">
+                  <img id="avatar" src=${this.options.ChatBotLogoImage || "https://www.w3schools.com/w3images/avatar2.png"} alt="Avatar" />
                 </div>
                 <div style="display: flex; flex-direction: column;">
-                    <span style="color: white; font-size: 18px; font-weight: bold;">${this.options.addChatBotName || "ChatBot"
-        }</span>
-                  <div style="display: flex; align-items: center; gap: 5px; font-size: 12px; color: #fff;">
+                  <span class="jooper-chat-title">${this.options.addChatBotName || "ChatBot"}</span>
+                  <div class="jooper-chat-status">
                     <div style="width:8px; height:8px; border-radius:50%; background-color: rgb(16, 185, 129);"></div>
                     Online
                   </div>
                 </div>
               </div>
-              <button id="close-chat" style="background: none; color: white; border: none; font-size: 14px; cursor: pointer;">
+              <button id="jooper-close-chat" style="background: none; color: white; border: none; font-size: 14px; cursor: pointer;">
                 <img src="https://cdn-icons-png.flaticon.com/128/8213/8213476.png" alt="Close" width="16px" />
               </button>
             </div>
-            <div class="chat-messages" id="chat-messages" style="display: flex; flex-direction: column;"></div>
-            <div id="suggestion-box-container"></div>
-
-            ${this.options.availability
-          ? this.chatInputTemplate()
-          : this.contactFormTemplate()
-        }
+            <div class="jooper-chat-messages" id="jooper-chat-messages"></div>
+            <div id="jooper-suggestion-box-container"></div>
+            ${this.options.availability ? this.chatInputTemplate() : this.contactFormTemplate()}
           </div>
         `;
-      document.getElementById("close-chat").addEventListener("click", () => {
-        // Emit leaveThread before closing the chat
+      document.getElementById("jooper-close-chat").addEventListener("click", () => {
         if (this.threadId) {
           this.socket.emit("leaveThread", this.threadId);
         }
@@ -387,14 +379,14 @@
     },
 
     renderContactForm() {
-      const chatWidget = document.querySelector(".chat-widget");
+      const chatWidget = document.querySelector(".jooper-chat-widget");
       if (!chatWidget) return;
       if (document.getElementById("contact-form-container")) return;
       const formContainer = document.createElement("div");
       formContainer.id = "contact-form-container";
       formContainer.innerHTML = this.contactFormTemplate();
       const chatInputContainer = document.querySelector(
-        ".chat-input-container"
+        ".jooper-chat-input-container"
       );
       if (chatInputContainer) {
         chatWidget.insertBefore(formContainer, chatInputContainer);
@@ -434,15 +426,15 @@
         this.socket.emit("startChat", payload);
         this.socket.once("chatStarted", (data) => {
           this.threadId = data.threadId;
-        if (!this.chatHistory || this.chatHistory.length === 0) {
-          const greetingMessage =
-            this.options.allowCustomGreeting &&
-              this.options.customGreetingMessage
-              ? this.options.customGreetingMessage
-              : "Hello! How can I help you?";
+          if (!this.chatHistory || this.chatHistory.length === 0) {
+            const greetingMessage =
+              this.options.allowCustomGreeting &&
+                this.options.customGreetingMessage
+                ? this.options.customGreetingMessage
+                : "Hello! How can I help you?";
 
-          this.storeBotMessage(greetingMessage);
-        }
+            this.storeBotMessage(greetingMessage);
+          }
         });
       });
     },
@@ -550,10 +542,10 @@
 
     chatInputTemplate() {
       return `
-          <div class="chat-input-container">
-            <div class="chat-input-wrapper">
-              <textarea id="chat-input" style="height: 80%!important;" placeholder="Type a message..."></textarea>
-              <div class="chat-actions">
+          <div class="jooper-chat-input-container">
+            <div class="jooper-chat-input-wrapper">
+              <textarea class="jooper-chat-input" id="chat-input" style="height: 80%!important;" placeholder="Type a message..."></textarea>
+              <div class="jooper-chat-actions">
                 ${this.options.allowEmojis
           ? '<button id="emoji-picker"><img src="https://cdn-icons-png.flaticon.com/128/4989/4989500.png" alt="Emoji" width="20" height="20" /></button>'
           : ""
@@ -571,12 +563,12 @@
 
     appendSuggestion() {
       const suggestionContainerTarget = document.getElementById(
-        "suggestion-box-container"
+        "jooper-suggestion-box-container"
       );
       
 
       const suggestionsContainer = document.createElement("div");
-      suggestionsContainer.className = "suggestions-container";
+      suggestionsContainer.className = "jooper-suggestions-container";
 
       const suggestions = [
         "Ok",
@@ -588,7 +580,7 @@
 
       suggestions.forEach((text) => {
         const btn = document.createElement("button");
-        btn.className = "suggestion";
+        btn.className = "jooper-suggestion";
         btn.textContent = text;
         btn.addEventListener("click", () => {
           this.sendMessageFromSuggestion(text);
@@ -596,23 +588,19 @@
         suggestionsContainer.appendChild(btn);
       });
 
-      // Remove existing suggestion blocks before appending new
       const old = suggestionContainerTarget.querySelector(
-        ".suggestions-container"
+        ".jooper-suggestions-container"
       );
       if (old) old.remove();
 
       suggestionContainerTarget.appendChild(suggestionsContainer);
-
-      messagesContainer.appendChild(suggestionsContainer);
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
     },
 
     removeSuggestions() {
-      const suggestionBox = document.getElementById("suggestion-box-container");
+      const suggestionBox = document.getElementById("jooper-suggestion-box-container");
       if (suggestionBox) {
         const oldSuggestions = suggestionBox.querySelector(
-          ".suggestions-container"
+          ".jooper-suggestions-container"
         );
         if (oldSuggestions) oldSuggestions.remove();
       }
@@ -620,9 +608,9 @@
 
     contactFormTemplate() {
       return `
-          <div class="contact-form">
+          <div class="jooper-contact-form">
             <button id="close-contact-form">&times;</button>
-            <h3 class="form-title">Raise a ticket</h3>
+            <h3 class="jooper-form-title">Raise a ticket</h3>
             <input type="text" id="contact-name" placeholder="Your Name" required />
             <input type="email" id="contact-email" placeholder="Your Email" required />
             <textarea id="contact-message" placeholder="Your Message" rows="4" required></textarea>
@@ -647,22 +635,22 @@
       });
 
       this.socket.on("receiveMessage", (data) => {
-        if(data.sender === "Bot" && data.threadId === this.threadId){
+        if (data.sender === "Bot" && data.threadId === this.threadId) {
 
-        if (document.getElementById("typing-indicator"))
-          this.removeTypingIndicator();
+          if (document.getElementById("typing-indicator"))
+            this.removeTypingIndicator();
 
-        if (data.content && data.content.trim() !== "") {
-          this.appendMessage("ChatBot", data.content);
+          if (data.content && data.content.trim() !== "") {
+            this.appendMessage("ChatBot", data.content);
+          }
+
+          if (data.task_creation) {
+            this.removeSuggestions();
+            this.renderContactForm();
+          } else {
+            this.appendSuggestion();
+          }
         }
-
-        if (data.task_creation) {
-          this.removeSuggestions();
-          this.renderContactForm();
-        } else {
-          this.appendSuggestion();
-        }
-      }
       });
 
       this.socket.on("typing", () => this.appendTypingIndicator());
@@ -700,7 +688,12 @@
       script.onload = () => {
         const picker = document.createElement("emoji-picker");
         picker.classList.add("emoji-picker-container");
-        document.body.appendChild(picker);
+        const chatWidget = document.querySelector('.jooper-chat-widget');
+        if (chatWidget) {
+          chatWidget.appendChild(picker);
+        } else {
+          document.body.appendChild(picker);
+        }
         picker.style.setProperty("--emoji-size", "1.1rem");
         picker.style.setProperty("--num-columns", "9");
         picker.style.setProperty("--background", "#f5f5f5");
@@ -777,14 +770,14 @@
               name,
               email,
               query: message,
-              orgId:this.options.organizationId,
+              orgId: this.options.organizationId,
             });
             const formContainer = document.getElementById(
               "contact-form-container"
             );
             if (formContainer) formContainer.remove();
             const chatInputContainer = document.querySelector(
-              ".chat-input-container"
+              ".jooper-chat-input-container" // CHANGED: use new class for input area
             );
             if (chatInputContainer) {
               const successMessage = document.createElement("div");
@@ -812,12 +805,11 @@
     },
 
     appendMessage(sender, message) {
-      const messagesContainer = document.getElementById("chat-messages");
+      const messagesContainer = document.getElementById("jooper-chat-messages");
       const timeStr = this.getMessageTime();
       const msgElem = document.createElement("div");
       const timeElem = document.createElement("div");
-      msgElem.className = `message ${sender === "User" ? "user" : "agent"
-        } message-card`;
+      msgElem.className = `jooper-message ${sender === "User" ? "user" : "agent"}`;
       const lines = message.split("\n").filter((line) => line.trim() !== "");
 
       const formattedContent = [];
@@ -946,14 +938,13 @@
           ${formattedContent.join("")}
         </div>
       `;
-
       Object.assign(timeElem.style, {
         fontSize: "10px",
         color: "#6b7280",
         marginTop: "5px",
         textAlign: sender === "User" ? "right" : "left",
       });
-      timeElem.className = "message-time";
+      timeElem.className = "jooper-message-time";
       timeElem.textContent = timeStr;
       messagesContainer.append(msgElem, timeElem);
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
@@ -963,11 +954,11 @@
     },
 
     appendTypingIndicator() {
-      const messagesContainer = document.getElementById("chat-messages");
+      const messagesContainer = document.getElementById("jooper-chat-messages");
       if (!messagesContainer || document.getElementById("typing-indicator"))
         return;
       const indicator = document.createElement("div");
-      indicator.className = "message agent loading";
+      indicator.className = "jooper-message agent loading";
       indicator.id = "typing-indicator";
       indicator.innerHTML = `<div class="typing-indicator"><span></span><span></span><span></span></div>`;
       messagesContainer.appendChild(indicator);
