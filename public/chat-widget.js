@@ -211,6 +211,7 @@
   font-size: 16px;
   margin: 0 0 20px 0;
   font-weight: bold;
+  color :black !important;
 }
 #contact-form-container input,
 #contact-form-container textarea {
@@ -533,13 +534,16 @@
         aiEnabled: this.options.aiEnabled,
         faqs: this.options.faqs,
         allowNameEmail: this.options.allowNameEmail,
+        orgId:this.options.organizationId,
         createdAt: Date.now(),
       });
       if (this.onlinAgents.length === 0) this.appendTypingIndicator();
+      
       this.socket.emit("updateDashboard", {
         sender: "User",
         content: message,
         threadId: this.threadId,
+        orgId:this.options.organizationId,
         createdAt: Date.now(),
       });
     },
@@ -569,6 +573,7 @@
       const suggestionContainerTarget = document.getElementById(
         "suggestion-box-container"
       );
+      
 
       const suggestionsContainer = document.createElement("div");
       suggestionsContainer.className = "suggestions-container";
