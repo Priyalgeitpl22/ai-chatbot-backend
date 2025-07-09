@@ -254,8 +254,22 @@ export const socketSetup = (server: any) => {
         const thread = await prisma.thread.findUnique({
           where: { id: data.threadId },
         });
+        const tempthread = {...thread,orgId:data.orgId}
+        
+           
+            const isNotification  = await prisma.notification.findFirst({where:{threadId:data.threadId}})
+        // if isNotification the update the notification 
+        if(isNotification){
+            // update notification
+            const messages =[...isNotification.message,data.content] 
+            await prisma.notification.update({where:{id:isNotification.id},data:{message:messages,latestMessage:data.content}})
+        }else{
+            // create the notification
+            const messages = [data.content]
+            await prisma.notification.create({data:{threadId:data.threadId,latestMessage:data.content,message:messages,orgId:data.orgId}}) 
+        }
         console.log("Thread-User:-", thread)
-        io.emit("notification", { message: `${data.content}`, thread });
+        io.emit("notification", { message: `${data.content}`, thread:tempthread });
       } else {
         try {
           const formattedContent = Array.isArray(data.content)

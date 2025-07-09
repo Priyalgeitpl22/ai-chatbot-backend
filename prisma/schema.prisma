@@ -20,7 +20,7 @@ model access_token {
 }
 
 model Organization {
-  id                String   @id @default(uuid())
+  id                String         @id @default(uuid())
   aiOrgId           Int?
   name              String?
   phone             String?
@@ -28,7 +28,7 @@ model Organization {
   city              String?
   state             String?
   country           String?
-  openAiKey String?
+  openAiKey         String?
   zip               Int?
   domain            String?
   industry          String?
@@ -37,8 +37,9 @@ model Organization {
   faqs              FAQ[]
   emailConfig       Json?
   aiChatBotSettings Json?
-  aiEnabled         Boolean  @default(false)
-  createdAt         DateTime @default(now())
+  aiEnabled         Boolean        @default(false)
+  createdAt         DateTime       @default(now())
+  Notification      Notification[]
 }
 
 model User {
@@ -86,7 +87,8 @@ model Thread {
   type       String    @default("unassigned")
 
   // Back-reference for tasks
-  tasks Task[]
+  tasks        Task[]
+  Notification Notification[]
 }
 
 model Message {
@@ -158,4 +160,18 @@ model FAQ {
   organization Organization @relation(fields: [orgId], references: [id])
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
+}
+
+model Notification {
+  id            String       @id @default(uuid())
+  message       String[]
+  latestMessage String
+  threadId      String
+  orgId         String
+  thread        Thread       @relation(fields: [threadId], references: [id])
+  organization  Organization @relation(fields: [orgId], references: [id])
+  read          Boolean      @default(false)
+  notification  Boolean      @default(false)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 }

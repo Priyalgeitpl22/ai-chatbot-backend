@@ -9,6 +9,7 @@ import threadRoutes from "./thread.routes";
 import chatConfigRoutes from "./chatConfig.routes";
 import faqRoutes from "./faq.routes";
 import { authMiddleware } from "../middlewares/authMiddleware";
+import notificatioRoute from "../routes/notification.routes";
 
 const router = Router();
 
@@ -21,5 +22,6 @@ router.use("/message", authMiddleware, messageRoutes);
 router.use("/thread", authMiddleware,  threadRoutes);
 router.use("/faq", authMiddleware, faqRoutes );
 router.use("/chat/config", chatConfigRoutes);
+router.use("/notification",notificatioRoute)
 
 export default router;
