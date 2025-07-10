@@ -23,7 +23,7 @@ export const generateTOTP = async (req: any, res: any) => {
       return res.status(403).json({ message: '2FA not enabled for your org' });
     }
 
-    const secret = speakeasy.generateSecret({ name: `MyApp (${userData.email})` });
+    const secret = speakeasy.generateSecret({ name: `Jooper AI (${userData.email})` });
     const encryptedSecret = encrypt(secret.base32);
 
     await prisma.user.update({

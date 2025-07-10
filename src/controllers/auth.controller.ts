@@ -8,6 +8,8 @@ import multer from "multer";
 import { uploadImageToS3 } from '../aws/imageUtils';
 import { UserRoles } from '../enums';
 import { sendOrganizationDetails } from '../middlewares/botMiddleware';
+import speakeasy from 'speakeasy';
+import { decrypt } from '../utils/encryption.utils';
 
 const prisma = new PrismaClient();
 const upload = multer({ storage: multer.memoryStorage() }).single("profilePicture");
@@ -68,7 +70,7 @@ export const register = async (req: Request, res: Response): Promise<any> => {
             });
 
             await sendOtpEmail(email, otp.code);
-            res.status(201).json({ code: 200,otpExpireTime: otp.expiresAt, message: "User registered. Please verify your email with OTP." });
+            res.status(201).json({ code: 200, otpExpireTime: otp.expiresAt, message: "User registered. Please verify your email with OTP." });
         } catch (error) {
             console.error("Error:", error);
             res.status(500).json({ code: 500, message: "Server error", error });
@@ -208,6 +210,13 @@ export const login = async (req: Request, res: Response): Promise<any> => {
             return res.status(401).json({ code: 401, message: 'Invalid credentials' });
         }
 
+        
+        if (user.enable_2fa && user.two_fa_secret) {
+            // Issue a temp token for OTP step
+            const tempToken = jwt.sign({ id: user.id, twofa: true }, process.env.JWT_SECRET as string, { expiresIn: '10m' });
+            return res.status(200).json({ require2FA: true, tempToken });
+        }
+
         const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET as string, { expiresIn: '1h' });
 
         await prisma.access_token.create({
@@ -222,6 +231,37 @@ export const login = async (req: Request, res: Response): Promise<any> => {
         res.status(200).json({ code: 200, token, user: { id: user.id, email: user.email, role: user.role } });
     } catch (error) {
         res.status(500).json({ code: 500, message: 'Server error' });
+    }
+};
+
+export const verify2FA = async (req: Request, res: Response): Promise<any> => {
+    const { tempToken, otp } = req.body;
+    try {
+        const payload = jwt.verify(tempToken, process.env.JWT_SECRET as string) as any;
+        if (!payload.twofa) throw new Error();
+        const user = await prisma.user.findUnique({ where: { id: payload.id } });
+        if (!user || !user.enable_2fa || !user.two_fa_secret) return res.status(401).json({ message: 'Unauthorized' });
+
+        const decryptedSecret = decrypt(user.two_fa_secret);
+        const isValid = speakeasy.totp.verify({
+            secret: decryptedSecret,
+            encoding: 'base32',
+            token: otp,
+        });
+        if (!isValid) return res.status(401).json({ message: 'Invalid OTP' });
+
+        const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET as string, { expiresIn: '1h' });
+        await prisma.access_token.create({
+            data: {
+                user_id: user.id,
+                active: 1,
+                expiry_datetime: new Date(Date.now() + 3600 * 1000),
+                token,
+            },
+        });
+        res.status(200).json({ code: 200, token, user: { id: user.id, email: user.email, role: user.role } });
+    } catch (err) {
+        res.status(401).json({ message: 'Invalid or expired token' });
     }
 };
 
@@ -279,26 +319,26 @@ export const activateAccount = async (req: Request, res: Response): Promise<any>
 export const resendOtp = async (req: Request, res: Response): Promise<any> => {
     const { email } = req.body;
     try {
-      const user = await prisma.user.findUnique({ where: { email } });
-      if (!user)
-        return res.status(404).json({ code: 404, message: "User not found" });
-      if (user.otpExpiresAt && user.otpExpiresAt > new Date()) {
-        return res.status(429).json({
-          code: 429,
-          message: "OTP is still valid. Please wait before requesting a new OTP.",
+        const user = await prisma.user.findUnique({ where: { email } });
+        if (!user)
+            return res.status(404).json({ code: 404, message: "User not found" });
+        if (user.otpExpiresAt && user.otpExpiresAt > new Date()) {
+            return res.status(429).json({
+                code: 429,
+                message: "OTP is still valid. Please wait before requesting a new OTP.",
+            });
+        }
+        const otp = generateOtp();
+        await prisma.user.update({
+            where: { email },
+            data: { otpCode: otp.code, otpExpiresAt: otp.expiresAt },
         });
-      }
-      const otp = generateOtp();
-      await prisma.user.update({
-        where: { email },
-        data: { otpCode: otp.code, otpExpiresAt: otp.expiresAt },
-      });
-      await sendOtpEmail(email, otp.code);
-      res
-        .status(200)
-        .json({ code: 200, otp: otp.expiresAt, message: "New OTP sent. Please check your email." });
+        await sendOtpEmail(email, otp.code);
+        res
+            .status(200)
+            .json({ code: 200, otp: otp.expiresAt, message: "New OTP sent. Please check your email." });
     } catch (error) {
-      res.status(500).json({ code: 500, message: "Server error" });
+        res.status(500).json({ code: 500, message: "Server error" });
     }
-  };
+};
 
