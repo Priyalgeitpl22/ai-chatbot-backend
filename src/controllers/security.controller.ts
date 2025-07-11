@@ -1,10 +1,10 @@
-import { Request, Response } from 'express';
 import speakeasy from 'speakeasy';
 import QRCode from 'qrcode';
 import { PrismaClient } from '@prisma/client';
 import { encrypt, decrypt } from '../utils/encryption.utils'
 
 const prisma = new PrismaClient();
+import jwt from 'jsonwebtoken';
 
 export const generateTOTP = async (req: any, res: any) => {
   try {
@@ -61,18 +61,33 @@ export const generateTOTP = async (req: any, res: any) => {
 
 export const verifyTOTP = async (req: any, res: any) => {
   try {
-    const user = req.user;
-    const { token } = req.body;
+    const { token, email, isLogin = false } = req.body;
+
+    const user = await prisma.user.findUnique({
+      where: { email }
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
 
     const twoFactorAuth = await prisma.twoFactorAuth.findUnique({
       where: { userId: user.id }
     });
 
-    if (!twoFactorAuth || !twoFactorAuth.tempSecret) {
-      return res.status(400).json({ message: 'No pending 2FA setup found' });
+    if (!twoFactorAuth) {
+      return res.status(400).json({ message: '2FA not configured for this user' });
+    }
+    const secretToUse = isLogin ? twoFactorAuth.secret : twoFactorAuth.tempSecret;
+    
+    if (!secretToUse) {
+      const message = isLogin 
+        ? '2FA not enabled for this user' 
+        : 'No pending 2FA setup found';
+      return res.status(400).json({ message });
     }
 
-    const secret = decrypt(twoFactorAuth.tempSecret);
+    const secret = decrypt(secretToUse);
 
     const verified = speakeasy.totp.verify({
       secret,
@@ -83,24 +98,39 @@ export const verifyTOTP = async (req: any, res: any) => {
 
     if (!verified) return res.status(400).json({ message: 'Invalid OTP', code: 400 });
 
-    await prisma.twoFactorAuth.update({
-      where: { userId: user.id },
-      data: {
-        isEnabled: true,
-        secret: twoFactorAuth.tempSecret,
-        tempSecret: null,
-        enabledAt: new Date()
-      }
+    if (!isLogin) {
+      await prisma.twoFactorAuth.update({
+        where: { userId: user.id },
+        data: {
+          isEnabled: true,
+          secret: twoFactorAuth.tempSecret,
+          tempSecret: null,
+          enabledAt: new Date()
+        }
+      });
+
+      await prisma.organization.update({
+        where: { id: user.orgId },
+        data: {
+          enable_totp_auth: true
+        }
+      });
+
+      res.json({ message: '2FA enabled', code: 200 });
+    } else {
+      // For login verification, just return success
+      const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET as string, { expiresIn: '1h' });
+      await prisma.access_token.create({
+        data: {
+            user_id: user.id,
+            active: 1,
+            expiry_datetime: new Date(Date.now() + 3600 * 1000),
+            token,
+        },
     });
 
-    await prisma.organization.update({
-      where: { id: user.orgId },
-      data: {
-        enable_totp_auth: true
-      }
-    });
-
-    res.json({ message: '2FA enabled', code: 200 });
+      res.json({ message: 'OTP verified successfully', code: 200, token });
+    }
   } catch (error) {
     console.error('Error in verifyTOTP:', error);
     res.status(500).json({ message: 'Internal Server Error' });
@@ -201,58 +231,6 @@ export const userProfile = async (req: any, res: any) => {
         twoFAEnabledAt: user.twoFactorAuth?.enabledAt,
         authenticatorAppAddedAt: user.twoFactorAuth?.authenticatorAppAddedAt
       },
-    });
-  } catch (error) {
-    res.status(500).json({ message: "Internal Server Error" });
-  }
-};
-
-export const get2FAStatus = async (req: any, res: any) => {
-  try {
-    const userId = req.user.id;
-
-    const twoFactorAuth = await prisma.twoFactorAuth.findUnique({
-      where: { userId }
-    });
-
-    res.json({
-      isEnabled: twoFactorAuth?.isEnabled || false,
-      isAuthenticatorAppAdded: twoFactorAuth?.isAuthenticatorAppAdded || false,
-      enabledAt: twoFactorAuth?.enabledAt,
-      authenticatorAppAddedAt: twoFactorAuth?.authenticatorAppAddedAt,
-      hasBackupCodes: twoFactorAuth?.backupCodes && twoFactorAuth.backupCodes.length > 0
-    });
-  } catch (error) {
-    res.status(500).json({ message: "Internal Server Error" });
-  }
-};
-
-export const generateBackupCodes = async (req: any, res: any) => {
-  try {
-    const userId = req.user.id;
-
-    const twoFactorAuth = await prisma.twoFactorAuth.findUnique({
-      where: { userId }
-    });
-
-    if (!twoFactorAuth?.isEnabled) {
-      return res.status(400).json({ message: '2FA must be enabled to generate backup codes' });
-    }
-
-    const backupCodes = Array.from({ length: 8 }, () =>
-      Math.random().toString(36).substring(2, 8).toUpperCase()
-    );
-
-    const hashedCodes = backupCodes.map(code => encrypt(code));
-
-    await prisma.twoFactorAuth.update({
-      where: { userId },
-      data: { backupCodes: hashedCodes }
-    });
-
-    res.json({
-      backupCodes,
-      message: 'Backup codes generated successfully. Store them safely!'
     });
   } catch (error) {
     res.status(500).json({ message: "Internal Server Error" });
