@@ -12,15 +12,25 @@
     pendingUserMessage: null,
     threadId: null,
     chatHistory: [],
+    getElement(id) {
+      return this.shadowRoot ? this.shadowRoot.getElementById(id) : document.getElementById(id);
+    },
+    querySelector(sel) {
+      return this.shadowRoot ? this.shadowRoot.querySelector(sel) : document.querySelector(sel);
+    },
 
     async init(options) {
-      // const response = await fetch(
-      //   `${"http://localhost:5003"}/api/chat/config?orgId=${options.orgId}`
-      // );
-      const response = await fetch(`https://api.chat.jooper.ai/api/chat/config?orgId=${options.orgId}`);
-
-      const data = await response.json();
-
+      let data = {};
+      try {
+        // const response = await fetch(
+        //   `${"http://localhost:5003"}/api/chat/config?orgId=${options.orgId}`
+        // );
+        const response = await fetch(`https://api.chat.jooper.ai/api/chat/config?orgId=${options.orgId}`);
+        
+        data = await response.json();
+      } catch (e) {
+        data = { data: {} };
+      }
       const defaultOptions = {
         elementId: "chat-widget",
         apiEndpoint: data.data?.socketServer,
@@ -50,10 +60,16 @@
       if (!this.container) {
         return;
       }
+      if (!this.container.shadowRoot) {
+        this.shadowRoot = this.container.attachShadow({ mode: 'open' });
+      } else {
+        this.shadowRoot = this.container.shadowRoot;
+      }
       this.socket = io(this.options.socketServer);
       this.onlinAgents = [];
-      this.injectGlobalStyles();
+      this.globalStylesInjected = false;
       this.renderIcon();
+      this.injectGlobalStyles();
       this.threadId = localStorage.getItem('chatWidgetThreadId');
       const savedHistory = localStorage.getItem('chatWidgetHistory');
       this.chatHistory = savedHistory ? JSON.parse(savedHistory) : [];
@@ -68,7 +84,11 @@
     injectStyle(cssText) {
       const style = document.createElement("style");
       style.innerHTML = cssText;
-      document.head.appendChild(style);
+      if (this.shadowRoot) {
+        this.shadowRoot.appendChild(style);
+      } else {
+        document.head.appendChild(style);
+      }
     },
 
     injectGlobalStyles() {
@@ -112,7 +132,7 @@
           display: flex;
           flex-direction: column;
         }
-        .jooper-chat-messages::-webkit-scrollbar { width: 3px; background: #f5f5f5; }
+        .jooper-chat-messages::-webkit-scrollbar { width: 6px; background: #f5f5f5; }
         .jooper-chat-messages::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
         .jooper-chat-messages::-webkit-scrollbar-thumb:hover { background: #b0b7c3; }
         .jooper-chat-messages { scrollbar-width: thin; scrollbar-color: #d1d5db #f5f5f5; }
@@ -135,7 +155,6 @@
           padding: 10px;
           background: #f5f5f5;
           border-top: 1px solid #eee;
-          height: 38px;
           scrollbar-width: none;
           -ms-overflow-style: none;
           margin-top: 0;
@@ -171,7 +190,7 @@
         .emoji-picker-container::-webkit-scrollbar-thumb:hover { background: #b0b7c3; }
         .emoji-picker-container { scrollbar-width: thin; scrollbar-color: #d1d5db #f5f5f5; }
         .jooper-contact-form {
-          padding: 24px 20px 20px 20px;
+          padding: 15px 20px 10px 20px;
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -183,7 +202,7 @@
         }
         .jooper-contact-form input, .jooper-contact-form textarea {
           width: 100%;
-          margin-bottom: 12px;
+          margin-block: 6px;
           padding: 10px;
           border: 1px solid #ddd;
           border-radius: 5px;
@@ -200,13 +219,14 @@
           width: 100%;
           color: #fff;
           background-color: ${this.options.iconColor};
-  border: none;
+          border: none;
           border-radius: 5px;
           padding: 10px;
           font-size: 16px;
-  cursor: pointer;
+          cursor: pointer;
           opacity: 0.95;
           transition: background 0.3s;
+          margin-top: 4px;
         }
         .jooper-contact-form button#submit-contact:hover {
           opacity: 1;
@@ -217,8 +237,7 @@
           font-size: 18px;
           margin: 0 0 20px 0;
           font-weight: bold;
-  color :black !important;
-          color: #222;
+          color: black !important;
         }
         .jooper-contact-form #close-contact-form {
           position: absolute;
@@ -307,7 +326,9 @@
     renderIcon() {
       const positionStyles = this.getPositionStyles();
       const isBottomRight = this.options.position === "bottom-right";
-      this.container.innerHTML = `
+      if (this.shadowRoot) {
+        this.globalStylesInjected = false; 
+        this.shadowRoot.innerHTML = `
           <div class="jooper-chat-container ${isBottomRight ? "bottom-right" : "bottom-left"}"
             style="position: fixed; ${positionStyles}; display: flex; align-items: center;">
             <div class="jooper-chat-icon" style="cursor: pointer; background-color: ${this.options.iconColor}; color: white; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
@@ -319,25 +340,56 @@
             </div>
           </div>
         `;
-      if (isBottomRight) {
-        this.container.querySelector(".jooper-chat-container").style.flexDirection =
-          "row-reverse";
+        this.injectGlobalStyles(); 
+        if (isBottomRight) {
+          this.shadowRoot.querySelector(".jooper-chat-container").style.flexDirection =
+            "row-reverse";
+        }
+        this.shadowRoot
+          .querySelector(".jooper-chat-icon")
+          .addEventListener("click", () => this.renderChatWindow());
+        this.shadowRoot.getElementById("jooper-close-message").addEventListener("click", () => {
+          this.shadowRoot.getElementById("jooper-chat-message").style.display = "none";
+        });
+        setTimeout(() => {
+          const chatMessage = this.shadowRoot.getElementById("jooper-chat-message");
+          if (chatMessage) chatMessage.style.display = "flex";
+        }, 2000);
+      } else {
+        this.container.innerHTML = `
+          <div class="jooper-chat-container ${isBottomRight ? "bottom-right" : "bottom-left"}"
+            style="position: fixed; ${positionStyles}; display: flex; align-items: center;">
+            <div class="jooper-chat-icon" style="cursor: pointer; background-color: ${this.options.iconColor}; color: white; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
+              💬
+            </div>
+            <div class="jooper-chat-message" id="jooper-chat-message" style="background: white; color: black; padding: 8px 12px; border-radius: 15px; box-shadow: 0px 2px 5px rgba(0,0,0,0.2); ${isBottomRight ? "margin-left: 10px;" : "margin-right: 10px;"} font-size: 14px; display: none; align-items: center;">
+              ${this.options.addInitialPopupText || "Hello and welcome to GoldenBot 👋"}
+              <button id="jooper-close-message" style="background: none; border: none; font-size: 16px; ${isBottomRight ? "margin-right: 8px;" : "margin-left: 8px;"} cursor: pointer;">&times;</button>
+            </div>
+          </div>
+        `;
+        if (isBottomRight) {
+          this.container.querySelector(".jooper-chat-container").style.flexDirection =
+            "row-reverse";
+        }
+        this.container
+          .querySelector(".jooper-chat-icon")
+          .addEventListener("click", () => this.renderChatWindow());
+        document.getElementById("jooper-close-message").addEventListener("click", () => {
+          document.getElementById("jooper-chat-message").style.display = "none";
+        });
+        setTimeout(() => {
+          const chatMessage = document.getElementById("jooper-chat-message");
+          if (chatMessage) chatMessage.style.display = "flex";
+        }, 2000);
       }
-      this.container
-        .querySelector(".jooper-chat-icon")
-        .addEventListener("click", () => this.renderChatWindow());
-      document.getElementById("jooper-close-message").addEventListener("click", () => {
-        document.getElementById("jooper-chat-message").style.display = "none";
-      });
-      setTimeout(() => {
-        const chatMessage = document.getElementById("jooper-chat-message");
-        if (chatMessage) chatMessage.style.display = "flex";
-      }, 2000);
     },
 
     renderChatWindow() {
       const positionStyles = this.getPositionStyles();
-      this.container.innerHTML = `
+      if (this.shadowRoot) {
+        this.globalStylesInjected = false; 
+        this.shadowRoot.innerHTML = `
           <div class="jooper-chat-widget" style="${positionStyles} background-color: ${this.options.chatWindowColor}; color: ${this.options.fontColor}; z-index:9999;">
             <div class="jooper-chat-header">
               <div style="display: flex; align-items: center;">
@@ -361,31 +413,84 @@
             ${this.options.availability ? this.chatInputTemplate() : this.contactFormTemplate()}
           </div>
         `;
-      document.getElementById("jooper-close-chat").addEventListener("click", () => {
-        if (this.threadId) {
-          this.socket.emit("leaveThread", this.threadId);
+        this.injectGlobalStyles();
+        this.shadowRoot.getElementById("jooper-close-chat").addEventListener("click", () => {
+          if (this.threadId) {
+            this.socket.emit("leaveThread", this.threadId);
+          }
+          this.renderIcon();
+        });
+        if (this.options.availability) {
+          this.setupEventListeners();
+        } else {
+          this.setupContactFormListener();
         }
-        this.renderIcon();
-      });
-      if (this.options.availability) {
-        this.setupEventListeners();
+        this.startChatThread();
+        this.chatHistory.forEach(msg => {
+          this.appendMessage(msg.sender, msg.message);
+        });
+        if (!this.chatHistory || this.chatHistory.length === 0) {
+          const greetingMessage =
+            this.options.allowCustomGreeting && this.options.customGreetingMessage
+              ? this.options.customGreetingMessage
+              : "Hello! How can I help you?";
+          this.appendMessage("ChatBot", greetingMessage);
+          this.appendSuggestion();
+        }
       } else {
-        this.setupContactFormListener();
+        this.container.innerHTML = `
+          <div class="jooper-chat-widget" style="${positionStyles} background-color: ${this.options.chatWindowColor}; color: ${this.options.fontColor}; z-index:9999;">
+            <div class="jooper-chat-header">
+              <div style="display: flex; align-items: center;">
+                <div id="avatar-container" style="margin-right: 10px;">
+                  <img id="avatar" src=${this.options.ChatBotLogoImage || "https://www.w3schools.com/w3images/avatar2.png"} alt="Avatar" />
+                </div>
+                <div style="display: flex; flex-direction: column;">
+                  <span class="jooper-chat-title">${this.options.addChatBotName || "ChatBot"}</span>
+                  <div class="jooper-chat-status">
+                    <div style="width:8px; height:8px; border-radius:50%; background-color: rgb(16, 185, 129);"></div>
+                    Online
+                  </div>
+                </div>
+              </div>
+              <button id="jooper-close-chat" style="background: none; color: white; border: none; font-size: 14px; cursor: pointer;">
+                <img src="https://cdn-icons-png.flaticon.com/128/8213/8213476.png" alt="Close" width="16px" />
+              </button>
+            </div>
+            <div class="jooper-chat-messages" id="jooper-chat-messages"></div>
+            <div id="jooper-suggestion-box-container"></div>
+            ${this.options.availability ? this.chatInputTemplate() : this.contactFormTemplate()}
+          </div>
+        `;
+        if (this.options.availability) {
+          this.setupEventListeners();
+        } else {
+          this.setupContactFormListener();
+        }
+        this.startChatThread();
+        this.chatHistory.forEach(msg => {
+          this.appendMessage(msg.sender, msg.message);
+        });
+        if (!this.chatHistory || this.chatHistory.length === 0) {
+          const greetingMessage =
+            this.options.allowCustomGreeting && this.options.customGreetingMessage
+              ? this.options.customGreetingMessage
+              : "Hello! How can I help you?";
+          this.appendMessage("ChatBot", greetingMessage);
+          this.appendSuggestion();
+        }
       }
-      this.startChatThread();
-      this.chatHistory.forEach(msg => {
-        this.appendMessage(msg.sender, msg.message);
-      });
     },
 
     renderContactForm() {
-      const chatWidget = document.querySelector(".jooper-chat-widget");
+      this.removeSuggestions();
+      const chatWidget = this.querySelector(".jooper-chat-widget");
       if (!chatWidget) return;
-      if (document.getElementById("contact-form-container")) return;
+      if (this.getElement("contact-form-container")) return;
       const formContainer = document.createElement("div");
       formContainer.id = "contact-form-container";
       formContainer.innerHTML = this.contactFormTemplate();
-      const chatInputContainer = document.querySelector(
+      const chatInputContainer = this.querySelector(
         ".jooper-chat-input-container"
       );
       if (chatInputContainer) {
@@ -422,6 +527,7 @@
           ip: ipAddress,
           name: this.userName || "",
           email: this.userEmail || "",
+          orgId: this.options.organizationId,
         };
         this.socket.emit("startChat", payload);
         this.socket.once("chatStarted", (data) => {
@@ -440,7 +546,7 @@
     },
 
     sendMessage() {
-      const chatInput = document.getElementById("chat-input");
+      const chatInput = this.getElement("chat-input");
       const message = chatInput.value.trim();
       if (!message) return;
       this.appendMessage("User", message);
@@ -544,7 +650,11 @@
       return `
           <div class="jooper-chat-input-container">
             <div class="jooper-chat-input-wrapper">
-              <textarea class="jooper-chat-input" id="chat-input" style="height: 80%!important;" placeholder="Type a message..."></textarea>
+              <textarea class="jooper-chat-input" id="chat-input" style="min-height: 28px; max-height: 48px; overflow-y: auto; resize: none; scrollbar-width: none; padding: 10px;" placeholder="Type a message..."></textarea>
+              <style>
+                .jooper-chat-input::-webkit-scrollbar { display: none; }
+                .jooper-chat-input { scrollbar-width: none; -ms-overflow-style: none; }
+              </style>
               <div class="jooper-chat-actions">
                 ${this.options.allowEmojis
           ? '<button id="emoji-picker"><img src="https://cdn-icons-png.flaticon.com/128/4989/4989500.png" alt="Emoji" width="20" height="20" /></button>'
@@ -562,8 +672,8 @@
     },
 
     appendSuggestion() {
-      const suggestionContainerTarget = document.getElementById(
-        "jooper-suggestion-box-container"
+      const suggestionContainerTarget = this.querySelector(
+        "#jooper-suggestion-box-container"
       );
       
 
@@ -597,7 +707,7 @@
     },
 
     removeSuggestions() {
-      const suggestionBox = document.getElementById("jooper-suggestion-box-container");
+      const suggestionBox = this.querySelector("#jooper-suggestion-box-container");
       if (suggestionBox) {
         const oldSuggestions = suggestionBox.querySelector(
           ".jooper-suggestions-container"
@@ -612,19 +722,22 @@
             <button id="close-contact-form">&times;</button>
             <h3 class="jooper-form-title">Raise a ticket</h3>
             <input type="text" id="contact-name" placeholder="Your Name" required />
+            <span id="contact-name-error" class="jooper-error-message" style="color: red; font-size: 12px; align-self: self-start; display: none;"></span>
             <input type="email" id="contact-email" placeholder="Your Email" required />
+            <span id="contact-email-error" class="jooper-error-message" style="color: red; font-size: 12px; align-self: self-start; display: none;"></span>
             <textarea id="contact-message" placeholder="Your Message" rows="4" required></textarea>
+            <span id="contact-message-error" class="jooper-error-message" style="color: red; font-size: 12px; align-self: self-start; display: none;"></span>
             <button id="submit-contact">Submit</button>
           </div>
         `;
     },
 
     setupEventListeners() {
-      const sendMessageButton = document.getElementById("send-message");
-      const chatInput = document.getElementById("chat-input");
-      const fileUploadInput = document.getElementById("file-upload");
-      const uploadButton = document.getElementById("upload-button");
-      const emojiPickerButton = document.getElementById("emoji-picker");
+      const sendMessageButton = this.getElement("send-message");
+      const chatInput = this.getElement("chat-input");
+      const fileUploadInput = this.getElement("file-upload");
+      const uploadButton = this.getElement("upload-button");
+      const emojiPickerButton = this.getElement("emoji-picker");
 
       sendMessageButton.addEventListener("click", () => this.sendMessage());
       chatInput.addEventListener("keydown", (event) => {
@@ -633,11 +746,15 @@
           sendMessageButton.click();
         }
       });
+      chatInput.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 48) + 'px';
+      });
 
       this.socket.on("receiveMessage", (data) => {
         if (data.sender === "Bot" && data.threadId === this.threadId) {
 
-          if (document.getElementById("typing-indicator"))
+          if (this.getElement("typing-indicator"))
             this.removeTypingIndicator();
 
           if (data.content && data.content.trim() !== "") {
@@ -660,7 +777,7 @@
       });
       this.socket.on("updateDashboard", (data) => {
         if (data.sender === "Bot" && data.threadId === this.threadId) {
-          if (document.getElementById("typing-indicator"))
+          if (this.getElement("typing-indicator"))
             this.removeTypingIndicator();
           if (data.content && data.content.trim() !== "") {
             this.appendMessage("ChatBot", data.content);
@@ -688,7 +805,7 @@
       script.onload = () => {
         const picker = document.createElement("emoji-picker");
         picker.classList.add("emoji-picker-container");
-        const chatWidget = document.querySelector('.jooper-chat-widget');
+        const chatWidget = this.querySelector('.jooper-chat-widget');
         if (chatWidget) {
           chatWidget.appendChild(picker);
         } else {
@@ -716,7 +833,16 @@
               `;
             shadowRoot.appendChild(style);
           }
+          shadowRoot.addEventListener('click', function(event) {
+            event.stopPropagation();
+          });
+          shadowRoot.addEventListener('focusin', function(event) {
+            event.stopPropagation();
+          });
         }
+        picker.addEventListener('click', function(event) {
+          event.stopPropagation();
+        });
 
         emojiPickerButton.addEventListener("click", (event) => {
           event.stopPropagation();
@@ -724,6 +850,18 @@
             picker.style.display === "none" || picker.style.display === ""
               ? "block"
               : "none";
+          if (picker.style.display === "block" && picker.shadowRoot) {
+            setTimeout(() => {
+              const searchInput = picker.shadowRoot.querySelector('input[type="search"], input.search');
+              if (searchInput) {
+                searchInput.style.color = '#000';
+                searchInput.style.caretColor = '#000';
+                searchInput.style.fontSize = '14px';
+                searchInput.style.background = '#fff';
+                searchInput.focus();
+              }
+            }, 50);
+          }
         });
         document.addEventListener("click", (event) => {
           if (
@@ -742,26 +880,95 @@
     },
 
     setupContactFormListener() {
-      const submitButton = document.getElementById("submit-contact");
-      const closeButton = document.getElementById("close-contact-form");
-
+      const getEl = this.getElement.bind(this);
+      const submitButton = getEl("submit-contact");
+      const closeButton = getEl("close-contact-form");
+      const nameInput = getEl("contact-name");
+      const emailInput = getEl("contact-email");
+      const messageInput = getEl("contact-message");
+      const nameError = getEl("contact-name-error");
+      const emailError = getEl("contact-email-error");
+      const messageError = getEl("contact-message-error");
+      const iconColor = this.options.iconColor || '#007bff';
+    
+      const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    
+      const getFieldValues = () => ({
+        name: nameInput.value.trim(),
+        email: emailInput.value.trim(),
+        message: messageInput.value.trim()
+      });
+    
+      const isFormValid = () => {
+        const { name, email, message } = getFieldValues();
+        return name && email && isValidEmail(email) && message;
+      };
+    
+      const getNameError = () => !nameInput.value.trim() ? 'Name is required.' : '';
+      const getEmailError = () => {
+        const val = emailInput.value.trim();
+        return !val ? 'Email is required.' : (!isValidEmail(val) ? 'Enter a valid email.' : '');
+      };
+      const getMessageError = () => !messageInput.value.trim() ? 'Message is required.' : '';
+    
+      const clearErrors = () => {
+        [nameInput, emailInput, messageInput].forEach(input => input.style.borderColor = '');
+        [[nameError], [emailError], [messageError]].forEach(([err]) => {
+          if (err) {
+            err.textContent = '';
+            err.style.display = 'none';
+          }
+        });
+      };
+    
+      const showError = (input, errorElem, getErrorMsg) => {
+        const msg = getErrorMsg();
+        if (msg) {
+          input.style.borderColor = 'red';
+          errorElem.textContent = msg;
+          errorElem.style.display = 'block';
+        } else {
+          input.style.borderColor = '';
+          errorElem.textContent = '';
+          errorElem.style.display = 'none';
+        }
+      };    
+      const updateSubmitState = () => {
+        const valid = isFormValid();
+        submitButton.disabled = !valid;
+        submitButton.style.opacity = valid ? '1' : '0.6';
+        submitButton.style.cursor = valid ? 'pointer' : 'not-allowed';
+      };    
+      clearErrors();
+      updateSubmitState();    
+      const addInputListeners = (input, errorElem, getError) => {
+        input.addEventListener('input', updateSubmitState);
+        input.addEventListener('focus', () => input.style.borderColor = iconColor);
+        input.addEventListener('blur', () => showError(input, errorElem, getError));
+        input.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            if (isFormValid()) {
+              e.preventDefault();
+              submitButton.click();
+            }
+          }
+        });
+      };  
+      addInputListeners(nameInput, nameError, getNameError);
+      addInputListeners(emailInput, emailError, getEmailError);
+      addInputListeners(messageInput, messageError, getMessageError);
+    
       if (closeButton) {
         closeButton.addEventListener("click", () => {
-          const formContainer = document.getElementById(
-            "contact-form-container"
-          );
+          const formContainer = getEl("contact-form-container");
           if (formContainer) formContainer.remove();
         });
       }
-
+    
       if (submitButton) {
         submitButton.addEventListener("click", () => {
-          const name = document.getElementById("contact-name").value.trim();
-          const email = document.getElementById("contact-email").value.trim();
-          const message = document
-            .getElementById("contact-message")
-            .value.trim();
-          if (name && email && message) {
+          const { name, email, message } = getFieldValues();
+          if (isFormValid()) {
             this.socket.emit("createTask", {
               aiOrgId: this.options.orgId,
               aiEnabled: this.options.aiEnabled,
@@ -772,13 +979,9 @@
               query: message,
               orgId: this.options.organizationId,
             });
-            const formContainer = document.getElementById(
-              "contact-form-container"
-            );
+            const formContainer = getEl("contact-form-container");
             if (formContainer) formContainer.remove();
-            const chatInputContainer = document.querySelector(
-              ".jooper-chat-input-container" // CHANGED: use new class for input area
-            );
+            const chatInputContainer = this.querySelector(".jooper-chat-input-container");
             if (chatInputContainer) {
               const successMessage = document.createElement("div");
               successMessage.id = "task-success-message";
@@ -787,25 +990,26 @@
               successMessage.style.backgroundColor = "#d4edda";
               successMessage.style.color = "#155724";
               successMessage.textContent = "Ticket raised successfully";
-              chatInputContainer.parentNode.insertBefore(
-                successMessage,
-                chatInputContainer
-              );
+              chatInputContainer.parentNode.insertBefore(successMessage, chatInputContainer);
               this.appendMessage("Bot", "Ticket has been raised successfully, someone will reach out to you shortly. Is there anything else I can help you with?");
-
+    
               setTimeout(() => {
                 if (successMessage) successMessage.remove();
               }, 3000);
             }
           } else {
-            alert("Please fill in all fields.");
+            showError(nameInput, nameError, getNameError);
+            showError(emailInput, emailError, getEmailError);
+            showError(messageInput, messageError, getMessageError);
+            updateSubmitState();
+            alert("Please fill in all fields with valid information.");
           }
         });
       }
     },
-
+    
     appendMessage(sender, message) {
-      const messagesContainer = document.getElementById("jooper-chat-messages");
+      const messagesContainer = this.getElement("jooper-chat-messages");
       const timeStr = this.getMessageTime();
       const msgElem = document.createElement("div");
       const timeElem = document.createElement("div");
@@ -954,8 +1158,8 @@
     },
 
     appendTypingIndicator() {
-      const messagesContainer = document.getElementById("jooper-chat-messages");
-      if (!messagesContainer || document.getElementById("typing-indicator"))
+      const messagesContainer = this.getElement("jooper-chat-messages");
+      if (!messagesContainer || this.getElement("typing-indicator"))
         return;
       const indicator = document.createElement("div");
       indicator.className = "jooper-message agent loading";
@@ -965,13 +1169,13 @@
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
     },
     sendMessageFromSuggestion(text) {
-      const chatInput = document.getElementById("chat-input");
+      const chatInput = this.getElement("chat-input");
       chatInput.value = text;
       this.sendMessage();
     },
 
     removeTypingIndicator() {
-      const indicator = document.getElementById("typing-indicator");
+      const indicator = this.getElement("typing-indicator");
       if (indicator) indicator.remove();
     },
   };
