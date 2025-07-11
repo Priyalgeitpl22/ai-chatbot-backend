@@ -88,6 +88,7 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
     }
     
     console.log("user",user);
+   
     (req as any).user = user;
     console.log("middleware done");
 
