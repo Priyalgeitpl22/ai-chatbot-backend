@@ -54,9 +54,6 @@ model User {
   orgId           String
   aiOrgId         Int?
   profilePicture  String?
-  enable_2fa      Boolean      @default(false)
-  two_fa_secret   String? 
-  temp_2fa_secret String? 
   organization    Organization @relation(fields: [orgId], references: [id])
   createdAt       DateTime     @default(now())
   online          Boolean      @default(true)
@@ -74,6 +71,35 @@ model User {
   activationToken        String?
   activationTokenExpires DateTime?
   userSettings           UserSettings?
+  
+  // 2FA relationship
+  twoFactorAuth         TwoFactorAuth?
+}
+
+model TwoFactorAuth {
+  id                String   @id @default(uuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // 2FA status
+  isEnabled         Boolean  @default(false)
+  isAuthenticatorAppAdded Boolean @default(false)
+  
+  // Secret management
+  secret            String?  // Encrypted TOTP secret
+  tempSecret        String?  // Temporary secret during setup
+  
+  // Timestamps
+  enabledAt         DateTime?
+  authenticatorAppAddedAt DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Backup codes (optional)
+  backupCodes      String[] // Array of hashed backup codes
+  
+  // Last used timestamp for rate limiting
+  lastUsedAt       DateTime?
 }
 
 model Thread {

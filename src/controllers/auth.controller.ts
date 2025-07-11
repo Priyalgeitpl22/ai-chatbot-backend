@@ -196,7 +196,7 @@ export const changePassword = async (req: Request, res: Response): Promise<any> 
 export const login = async (req: Request, res: Response): Promise<any> => {
     const { email, password } = req.body;
     try {
-        const user = await prisma.user.findUnique({ where: { email } });
+        const user = await prisma.user.findUnique({ where: { email }, include: { twoFactorAuth: true, organization: true } });
 
         if (!user) return res.status(403).json({ code: 403, message: 'Invalid user' });
 
@@ -210,9 +210,7 @@ export const login = async (req: Request, res: Response): Promise<any> => {
             return res.status(401).json({ code: 401, message: 'Invalid credentials' });
         }
 
-        
-        if (user.enable_2fa && user.two_fa_secret) {
-            // Issue a temp token for OTP step
+        if (user.twoFactorAuth?.isAuthenticatorAppAdded && user.organization?.enable_totp_auth) {
             const tempToken = jwt.sign({ id: user.id, twofa: true }, process.env.JWT_SECRET as string, { expiresIn: '10m' });
             return res.status(200).json({ require2FA: true, tempToken });
         }
@@ -239,10 +237,15 @@ export const verify2FA = async (req: Request, res: Response): Promise<any> => {
     try {
         const payload = jwt.verify(tempToken, process.env.JWT_SECRET as string) as any;
         if (!payload.twofa) throw new Error();
-        const user = await prisma.user.findUnique({ where: { id: payload.id } });
-        if (!user || !user.enable_2fa || !user.two_fa_secret) return res.status(401).json({ message: 'Unauthorized' });
+        const user = await prisma.user.findUnique({ where: { id: payload.id }, include: { twoFactorAuth: true, organization: true } });
+        
+        if (!user || !user.twoFactorAuth?.isEnabled || (!user.organization?.enable_totp_auth) && user.role === 'Agent') return res.status(401).json({ message: 'Unauthorized' });
 
-        const decryptedSecret = decrypt(user.two_fa_secret);
+        if(!user.twoFactorAuth.secret) { 
+            res.status(401).json({ message: 'Unauthorized' });
+        }
+
+        const decryptedSecret = decrypt(user.twoFactorAuth.secret as string);
         const isValid = speakeasy.totp.verify({
             secret: decryptedSecret,
             encoding: 'base32',

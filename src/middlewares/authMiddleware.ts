@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { Request, Response, NextFunction } from "express";
+import { decrypt } from "../utils/encryption.utils";
 
 const prisma = new PrismaClient();
 
@@ -33,23 +34,56 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
         profilePicture: true,
         online: true,
         userSettings: true,
-        temp_2fa_secret: true,
-        two_fa_secret:true,
-
+        twoFactorAuth: {
+          select: {
+            isEnabled: true,
+            isAuthenticatorAppAdded: true,
+            secret: true,
+            tempSecret: true,
+            authenticatorAppAddedAt: true,
+            enabledAt: true
+          }
+        }
       }
     });
 
     if (!user) {
-      console.log("❌ User not found for token user_id:", access_token.user_id);
       return res.status(404).json({ code: 404, message: "User not found" });
     }
 
-    console.log("✅ User authenticated:", user.email);
+    if (user.twoFactorAuth) {
+      console.log("🔐 2FA Status:", {
+        isEnabled: user.twoFactorAuth.isEnabled,
+        isAuthenticatorAppAdded: user.twoFactorAuth.isAuthenticatorAppAdded,
+        hasSecret: !!user.twoFactorAuth.secret,
+        hasTempSecret: !!user.twoFactorAuth.tempSecret,
+        enabledAt: user.twoFactorAuth.enabledAt,
+        authenticatorAppAddedAt: user.twoFactorAuth.authenticatorAppAddedAt
+      });
+    }
+    
+    if (user.twoFactorAuth) {
+      if (user.twoFactorAuth.secret) {
+        try {
+          user.twoFactorAuth.secret = decrypt(user.twoFactorAuth.secret);
+        } catch (error) {
+          user.twoFactorAuth.secret = null;
+        }
+      }
+
+      if (user.twoFactorAuth.tempSecret) {
+        try {
+          user.twoFactorAuth.tempSecret = decrypt(user.twoFactorAuth.tempSecret);
+        } catch (error) {
+          user.twoFactorAuth.tempSecret = null;
+        }
+      }
+    }
+    
     (req as any).user = user;
 
     next();
   } catch (error) {
-    console.error("❌ Error in authMiddleware:", error);
     return res.status(403).json({ code: 403, message: "Authentication failed" });
   }
 };
