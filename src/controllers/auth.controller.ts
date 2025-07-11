@@ -196,13 +196,16 @@ export const changePassword = async (req: Request, res: Response): Promise<any> 
 export const login = async (req: Request, res: Response): Promise<any> => {
     const { email, password } = req.body;
     try {
+        console.log("login started");
         const user = await prisma.user.findUnique({ where: { email }, include: { twoFactorAuth: true, organization: true } });
 
+        console.log("user",user);
         if (!user) return res.status(403).json({ code: 403, message: 'Invalid user' });
 
         if (!user.verified) {
             return res.status(403).json({ code: 403, message: 'Please verify your email first.' });
         }
+        console.log("user verified");
 
         const isUserValid = await bcrypt.compare(password, user.password)
 
@@ -210,13 +213,16 @@ export const login = async (req: Request, res: Response): Promise<any> => {
             return res.status(401).json({ code: 401, message: 'Invalid credentials' });
         }
 
+        console.log("user.twoFactorAuth",user.twoFactorAuth);
         if (user.twoFactorAuth?.isEnabled && user.organization?.enable_totp_auth) {
+            console.log("2fa enabled");
             const tempToken = jwt.sign({ id: user.id, twofa: true }, process.env.JWT_SECRET as string, { expiresIn: '10m' });
             return res.status(200).json({ require2FA: true, tempToken });
         }
 
         const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET as string, { expiresIn: '1h' });
 
+        console.log("creating access token");
         await prisma.access_token.create({
             data: {
                 user_id: user.id,
@@ -225,6 +231,7 @@ export const login = async (req: Request, res: Response): Promise<any> => {
                 token,
             },
         });
+        console.log("access token created");
 
         res.status(200).json({ code: 200, token, user: { id: user.id, email: user.email, role: user.role } });
     } catch (error) {
