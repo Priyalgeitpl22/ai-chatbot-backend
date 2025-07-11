@@ -160,6 +160,7 @@ model Task {
   email      String?
   orgId      String?
   aiOrgId    Int
+  readed     Boolean  @default(false)
   threadId   String
   query      String
   assignedTo String?
@@ -205,3 +206,5 @@ model Notification {
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 }
+
+

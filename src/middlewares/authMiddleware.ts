@@ -88,6 +88,7 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
     }
     
     console.log("user",user);
+    // console.log("✅ User authenticated:", user.email);
     (req as any).user = user;
     console.log("middleware done");
 
