@@ -92,10 +92,8 @@ export const getUnreadTicketCount = async (req: Request, res: Response): Promise
 };
 
 export const ReadedTask  = async(taskId:any)=>{
-  console.log(taskId)
   try{
     await prisma.task.update({where:{id:taskId.data},data:{readed:true}})
-    console.log("updated sucessful")
     return
   }catch(err:any){
     console.log("error in reading task",err.message as string) 

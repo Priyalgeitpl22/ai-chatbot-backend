@@ -262,7 +262,6 @@ export const socketSetup = (server: any) => {
 
     socket.on("readedTask",async(data)=>{
      if(data){
-      console.log(data.data,"line ")
       ReadedTask(data)
       io.emit("taskReaded",data.data)
      }
