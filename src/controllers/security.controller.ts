@@ -138,7 +138,8 @@ export const disableTOTP = async (req: any, res: any) => {
         secret: null,
         tempSecret: null,
         enabledAt: null,
-        authenticatorAppAddedAt: null
+        authenticatorAppAddedAt: null,
+        isAuthenticatorAppAdded: false
       }
     });
 
@@ -161,7 +162,8 @@ export const disableTOTP = async (req: any, res: any) => {
             secret: null,
             tempSecret: null,
             enabledAt: null,
-            authenticatorAppAddedAt: null
+            authenticatorAppAddedAt: null,
+            isAuthenticatorAppAdded: false
           }
         });
       }

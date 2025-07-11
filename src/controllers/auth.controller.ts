@@ -210,7 +210,7 @@ export const login = async (req: Request, res: Response): Promise<any> => {
             return res.status(401).json({ code: 401, message: 'Invalid credentials' });
         }
 
-        if (user.twoFactorAuth?.isAuthenticatorAppAdded && user.organization?.enable_totp_auth) {
+        if (user.twoFactorAuth?.isEnabled && user.organization?.enable_totp_auth) {
             const tempToken = jwt.sign({ id: user.id, twofa: true }, process.env.JWT_SECRET as string, { expiresIn: '10m' });
             return res.status(200).json({ require2FA: true, tempToken });
         }
