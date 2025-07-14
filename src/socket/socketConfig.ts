@@ -215,10 +215,10 @@ export const socketSetup = (server: any) => {
             createdAt: new Date(data.createdAt),
           },
         });
-
         const thread = await prisma.thread.findUnique({
           where: { id: data.threadId },
         });
+        io.to(`org-${data.orgId}`).emit("newMessage",{data})
         if (
           data.sender === "User" &&
           data.allowNameEmail &&
@@ -344,6 +344,9 @@ export const socketSetup = (server: any) => {
       }
     })
 
+    socket.on("threadSeen",(data)=>{
+      io.to(`org-${data.orgId}`).emit("seenThread",{data})
+    })
 
     socket.on("startChat", async (data) => {
       try {
