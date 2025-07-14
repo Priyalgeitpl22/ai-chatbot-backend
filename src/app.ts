@@ -6,14 +6,16 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const app = express();
-// app.use(cors());
+app.use(cors());
 app.use(express.json());
 app.use(express.static("public"));
 app.use("/api", routes);
 app.use(express.static(path.join(__dirname, "public")));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.get("/", (req, res) => {
   res.send("Welcome to the AI Chatbot!!");
 });
+
 
 export default app;

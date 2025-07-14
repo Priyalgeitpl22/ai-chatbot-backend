@@ -65,7 +65,7 @@ export const createFAQ = async (req: any, res: any) => {
         orgId: orgId,
         userId: currentUserId,
         createdAt: {
-          gte: new Date(Date.now() - 1000) // Get FAQs created in the last second
+          gte: new Date(Date.now() - 1000) 
         }
       },
       orderBy: {
@@ -143,5 +143,24 @@ export const getFAQsByOrgId = async (req: any, res: any) => {
   } catch (error) {
     console.error('Error fetching FAQs:', error);
     return res.status(500).json({ message: 'Internal server error.' });
+  }
+};
+
+
+
+export const uploadFaqFile = async (req: any, res: any) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+    return res.status(200).json({
+      file_url: fileUrl,
+      file_name: req.file.originalname,
+    });
+  } catch (error: any) {
+    console.error('File upload error:', error.message);
+    res.status(500).json({ message: 'File upload failed' });
   }
 };
