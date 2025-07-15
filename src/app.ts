@@ -11,8 +11,6 @@ app.use(express.json());
 app.use(express.static("public"));
 app.use("/api", routes);
 app.use(express.static(path.join(__dirname, "public")));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
 app.get("/", (req, res) => {
   res.send("Welcome to the AI Chatbot!!");
 });
