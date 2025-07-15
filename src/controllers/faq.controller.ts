@@ -155,7 +155,6 @@ export const uploadFaqFile = async (req: any, res: any) => {
       return res.status(400).json({ message: 'No file uploaded' });
     }
 
-    // Reusing the same S3 uploader function as in register
     const fileUrl = await uploadImageToS3(req.file);
 
     //store in db 
@@ -163,11 +162,11 @@ export const uploadFaqFile = async (req: any, res: any) => {
       data: {
         fileName: req.file.originalname,
         fileUrl: fileUrl,
-        answer: req.body.answer || '', // Optional answer field
-        question: req.body.question || '', // Optional question field
-        uploadedBy: req.user.id, // make sure req.user is populated by auth middleware
+        answer: req.body.answer || '', 
+        question: req.body.question || '', 
+        uploadedBy: req.user.id, 
         uploadedAt: new Date(),
-        // Optionally add orgId if available
+        
         orgId: req.user.orgId || req.body.orgId || undefined,
       },
     });
