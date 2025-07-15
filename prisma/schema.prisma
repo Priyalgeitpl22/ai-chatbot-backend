@@ -190,6 +190,11 @@ model FAQ {
   organization Organization @relation(fields: [orgId], references: [id])
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
+  // Added for file upload support
+  fileName     String?
+  fileUrl      String?
+  uploadedBy   String?
+  uploadedAt   DateTime?
 }
 
 model Notification {

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { uploadImageToS3 } from '../aws/imageUtils';
 const prisma = new PrismaClient();
 
 export const createFAQ = async (req: any, res: any) => {
@@ -154,13 +155,38 @@ export const uploadFaqFile = async (req: any, res: any) => {
       return res.status(400).json({ message: 'No file uploaded' });
     }
 
-    const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+    // Reusing the same S3 uploader function as in register
+    const fileUrl = await uploadImageToS3(req.file);
+
+    //store in db 
+    const uploadedFile = await prisma.fAQ.create({
+      data: {
+        fileName: req.file.originalname,
+        fileUrl: fileUrl,
+        answer: req.body.answer || '', // Optional answer field
+        question: req.body.question || '', // Optional question field
+        uploadedBy: req.user.id, // make sure req.user is populated by auth middleware
+        uploadedAt: new Date(),
+        // Optionally add orgId if available
+        orgId: req.user.orgId || req.body.orgId || undefined,
+      },
+    });
+
     return res.status(200).json({
-      file_url: fileUrl,
-      file_name: req.file.originalname,
+      message: 'File uploaded successfully',
+      file: {
+        id: uploadedFile.id,
+        fileName: uploadedFile.fileName,
+        fileUrl: uploadedFile.fileUrl,
+        question: uploadedFile.question,
+        answer: uploadedFile.answer,
+        uploadedBy: uploadedFile.uploadedBy,
+        uploadedAt: uploadedFile.uploadedAt
+      }
     });
   } catch (error: any) {
     console.error('File upload error:', error.message);
     res.status(500).json({ message: 'File upload failed' });
   }
 };
+

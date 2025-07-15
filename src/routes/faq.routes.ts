@@ -11,21 +11,7 @@ const router = Router();
 router.post('/create', authMiddleware, createFAQ); 
 router.get('/:orgId', authMiddleware, getFAQsByOrgId);
 
-const uploadDir = path.join(__dirname, '..', 'uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir);
-}
-
-// Multer config
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (_req, file, cb) => {
-    const uniqueName = Date.now() + '-' + file.originalname;
-    cb(null, uniqueName);
-  },
-});
+const storage = multer.memoryStorage(); // Use memory storage for S3
 
 const upload = multer({
   storage,
@@ -43,6 +29,7 @@ const upload = multer({
     }
   },
 });
+
 
 router.post('/faq-files',authMiddleware, upload.single('file'),uploadFaqFile);
 
