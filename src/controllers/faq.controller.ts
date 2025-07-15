@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { uploadImageToS3 } from '../aws/imageUtils';
 const prisma = new PrismaClient();
 
 export const createFAQ = async (req: any, res: any) => {
@@ -65,7 +66,7 @@ export const createFAQ = async (req: any, res: any) => {
         orgId: orgId,
         userId: currentUserId,
         createdAt: {
-          gte: new Date(Date.now() - 1000) // Get FAQs created in the last second
+          gte: new Date(Date.now() - 1000) 
         }
       },
       orderBy: {
@@ -145,3 +146,46 @@ export const getFAQsByOrgId = async (req: any, res: any) => {
     return res.status(500).json({ message: 'Internal server error.' });
   }
 };
+
+
+
+export const uploadFaqFile = async (req: any, res: any) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    const fileUrl = await uploadImageToS3(req.file);
+
+    //store in db 
+    const uploadedFile = await prisma.fAQ.create({
+      data: {
+        fileName: req.file.originalname,
+        fileUrl: fileUrl,
+        answer: req.body.answer || '', 
+        question: req.body.question || '', 
+        uploadedBy: req.user.id, 
+        uploadedAt: new Date(),
+        
+        orgId: req.user.orgId || req.body.orgId || undefined,
+      },
+    });
+
+    return res.status(200).json({
+      message: 'File uploaded successfully',
+      file: {
+        id: uploadedFile.id,
+        fileName: uploadedFile.fileName,
+        fileUrl: uploadedFile.fileUrl,
+        question: uploadedFile.question,
+        answer: uploadedFile.answer,
+        uploadedBy: uploadedFile.uploadedBy,
+        uploadedAt: uploadedFile.uploadedAt
+      }
+    });
+  } catch (error: any) {
+    console.error('File upload error:', error.message);
+    res.status(500).json({ message: 'File upload failed' });
+  }
+};
+
