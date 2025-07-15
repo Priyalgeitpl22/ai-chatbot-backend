@@ -4,6 +4,9 @@
     localStorage.removeItem('chatWidgetHistory');
   });
 
+  const BACKEND_URL = "http://localhost:5003";
+  // const BACKEND_URL = "https://api.chat.jooper.ai";
+
   const ChatWidget = {
     globalStylesInjected: false,
     userName: "",
@@ -22,11 +25,9 @@
     async init(options) {
       let data = {};
       try {
-        // const response = await fetch(
-        //   `${"http://localhost:5003"}/api/chat/config?orgId=${options.orgId}`
-        // );
-        const response = await fetch(`https://api.chat.jooper.ai/api/chat/config?orgId=${options.orgId}`);
-        
+        const response = await fetch(
+          `${BACKEND_URL}/api/chat/config?orgId=${options.orgId}`
+        );
         data = await response.json();
       } catch (e) {
         data = { data: {} };
@@ -291,17 +292,20 @@
 
     // Helper function to store the user message in UI and send it to backend.
     storeUserMessage(content) {
-      this.appendMessage("User", content);
-      if (this.threadId) {
+      this.appendMessage("User", content.file_name);
+      if (this.threadId) {  
         this.socket.emit("sendMessage", {
           sender: "User",
-          content,
+          file:!!content.file_url,
+          content:content.file_name,
           threadId: this.threadId,
           aiOrgId: this.options.orgId,
           aiEnabled: this.options.aiEnabled,
           faqs: this.options.faqs,
           allowNameEmail: this.options.allowNameEmail,
           createdAt: Date.now(),
+          orgId:this.options.organizationId,
+          fileData:content
         });
       }
     },
@@ -319,6 +323,7 @@
           faqs: this.options.faqs,
           allowNameEmail: this.options.allowNameEmail,
           createdAt: Date.now(),
+          orgId:this.options.organizationId
         });
       }
     },
@@ -564,6 +569,7 @@
             faqs: this.options.faqs,
             allowNameEmail: this.options.allowNameEmail,
             createdAt: Date.now(),
+            orgId:this.options.organizationId
           });
           this.collectUserInfoState = "waitingForName";
           this.storeBotMessage("Please enter your name:");
@@ -579,6 +585,7 @@
             faqs: this.options.faqs,
             allowNameEmail: this.options.allowNameEmail,
             createdAt: Date.now(),
+            orgId:this.options.organizationId
           });
           this.collectUserInfoState = "waitingForEmail";
           this.socket.emit("updateThreadInfo", {
@@ -600,6 +607,7 @@
             faqs: this.options.faqs,
             allowNameEmail: this.options.allowNameEmail,
             createdAt: Date.now(),
+            orgId:this.options.organizationId
           });
           this.collectUserInfoState = "done";
           this.socket.emit("updateThreadInfo", {
@@ -634,6 +642,7 @@
         allowNameEmail: this.options.allowNameEmail,
         orgId:this.options.organizationId,
         createdAt: Date.now(),
+        orgId:this.options.organizationId
       });
       if (this.onlinAgents.length === 0) this.appendTypingIndicator();
       
@@ -789,7 +798,15 @@
         uploadButton.addEventListener("click", () => fileUploadInput.click());
         fileUploadInput.addEventListener("change", (event) => {
           const file = event.target.files[0];
-          if (file) this.storeUserMessage(`Uploaded: ${file.name}`);
+          const formData = new FormData();
+          formData.append("chatFile",file)
+           fetch(`${BACKEND_URL}/api/message/upload`,
+            {method:"POST",body:formData})
+           .then((res)=>res.json()).then((data)=>{
+            const response =data?.data
+            if (response) this.storeUserMessage(response);
+           }).catch((err)=>{console.log(err)})
+          
         });
       }
 

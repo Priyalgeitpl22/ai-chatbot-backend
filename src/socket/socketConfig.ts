@@ -207,7 +207,20 @@ export const socketSetup = (server: any) => {
         }
         const senderKey = data.sender === "User" ? "User" : "Bot";
         // Save every incoming message.
-        await prisma.message.create({
+        if(data.file){
+          await prisma.message.create({
+            data:{
+              content:`File Uploaded: ${data.content}`,
+              fileName:data.fileData.file_name,
+              fileType:data.fileData.file_type,
+              fileURl:data.fileData.file_url,
+              sender: senderKey,
+              threadId: data.threadId,
+              createdAt: new Date(data.createdAt),
+            }
+          })
+        }else{
+          await prisma.message.create({
           data: {
             content: data.content,
             sender: senderKey,
@@ -215,6 +228,7 @@ export const socketSetup = (server: any) => {
             createdAt: new Date(data.createdAt),
           },
         });
+        }
         const thread = await prisma.thread.findUnique({
           where: { id: data.threadId },
         });
