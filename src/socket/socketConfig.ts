@@ -213,7 +213,7 @@ export const socketSetup = (server: any) => {
               content:`File Uploaded: ${data.content}`,
               fileName:data.fileData.file_name,
               fileType:data.fileData.file_type,
-              fileURl:data.fileData.file_url,
+              fileUrl:data.fileData.file_url,
               sender: senderKey,
               threadId: data.threadId,
               createdAt: new Date(data.createdAt),

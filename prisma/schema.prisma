@@ -128,7 +128,7 @@ model Message {
   seen      Boolean  @default(false)
   threadId  String
   thread    Thread   @relation(fields: [threadId], references: [id], onDelete: Cascade)
-  fileURl   String?
+  fileUrl   String?
   fileType  String?
   fileName  String?
   createdAt DateTime @default(now())

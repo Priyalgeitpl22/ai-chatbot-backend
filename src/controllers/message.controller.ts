@@ -6,14 +6,27 @@ const prisma = new PrismaClient();
 
 const upload = multer({storage:multer.memoryStorage()}).single("chatFile")
 
-export const getMessages = async (req: Request, res: Response) => {
+export const getMessages = async (req: Request, res: Response): Promise<void> => {
     try {
         const threadId = req.params.threadId;
         const messages = await prisma.message.findMany({
             where: { threadId }, 
             orderBy: { createdAt: "asc" },
         });
-        res.status(200).json({ code: 200, data: messages, message: "success" });
+        // If there are file URLs, get presigned URLs in parallel
+        const messagesWithUrls = await Promise.all(
+          messages.map(async (msg) => {
+            if (msg.fileUrl) {
+              // Clone the message object to avoid mutating the Prisma result
+              return {
+                ...msg,
+                fileUrl: await getPresignedUrl(msg.fileUrl),
+              };
+            }
+            return msg;
+          })
+        );
+        res.status(200).json({ code: 200, data: messagesWithUrls, message: "success" });
     } catch (err) {
         res.status(500).json({ code: 500, message: "Error fetching messages" });
     }

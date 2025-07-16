@@ -285,6 +285,173 @@
           0%, 80%, 100% { transform: scale(0.7); opacity: 0.7; }
           40% { transform: scale(1.2); opacity: 1; }
         }
+        .jooper-wa-image-bubble {
+          position: relative;
+          display: inline-block;
+          margin-block: 8px;
+          border-radius: 12px;
+          overflow: hidden;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .jooper-wa-image-preview {
+          width: 100%;
+          height: auto;
+          display: block;
+        }
+        .jooper-wa-image-download-overlay {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          background: rgba(0,0,0,0.5);
+          border-radius: 12px;
+          opacity: 0;
+          transition: opacity 0.3s ease;
+          cursor: pointer;
+          z-index: 1;
+        }
+        .jooper-wa-image-bubble:hover .jooper-wa-image-download-overlay {
+          opacity: 1;
+        }
+        .jooper-wa-doc-bubble {
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          max-width: 80%;
+          margin-top: 8px;
+          padding: 8px 12px;
+          border-radius: 12px;
+          background: #e0e0e0;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .jooper-wa-doc-icon {
+          margin-right: 8px;
+          display: flex;
+          align-items: center;
+        }
+        .jooper-wa-doc-name {
+          flex-grow: 1;
+          font-size: 14px;
+          color: #333;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .jooper-wa-doc-download {
+          display: flex;
+          align-items: center;
+          margin-left: 8px;
+          opacity: 0.7;
+          transition: opacity 0.3s ease;
+        }
+        .jooper-wa-doc-bubble:hover .jooper-wa-doc-download {
+          opacity: 1;
+        }
+        .jooper-wa-doc-bubble {
+          display: flex;
+          align-items: center;
+          border-radius: 12px;
+          padding: 10px 16px;
+          margin: 8px 0;
+          max-width: 320px;
+          min-width: 180px;
+          align-self: flex-end;
+          margin-left: auto;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+          word-break: break-word;
+        }
+        .jooper-wa-doc-icon {
+          margin-right: 10px;
+          flex-shrink: 0;
+        }
+        .jooper-wa-doc-name {
+          font-weight: 500;
+          flex: 1;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .jooper-wa-doc-download {
+          margin-left: 10px;
+          display: flex;
+          align-items: center;
+          color: #fff;
+          opacity: 0.85;
+          transition: opacity 0.2s;
+          border: 2px solid ${this.options.iconColor};
+          border-radius:50%;
+          padding: 5px;
+          background:#fff;
+          outline:1px solid #fff;
+        }
+        .jooper-wa-doc-download:hover {
+          opacity: 1;
+        }
+        .jooper-wa-image-bubble {
+          position: relative;
+          display: inline-block;
+          border-radius: 12px;
+          overflow: hidden;
+          margin: 8px 0;
+          max-width: 220px;
+          align-self: flex-end;
+          margin-left: auto;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .jooper-wa-image-preview {
+          display: block;
+          width: 100%;
+          height: auto;
+          max-width: 220px;
+          max-height: 220px;
+          border-radius: 12px;
+        }
+        .jooper-wa-image-download-overlay {
+          position: absolute;
+          top: 50%; left: 50%;
+          transform: translate(-50%, -50%);
+          opacity: 0;
+          transition: opacity 0.2s;
+          z-index: 2;
+        }
+        .jooper-wa-image-bubble:hover .jooper-wa-image-download-overlay {
+          opacity: 1;
+        }
+        @media (max-width: 600px) {
+          .jooper-chat-widget { width: 100vw !important; height: 100vh !important; max-width: 100vw; max-height: 100vh; right: 0 !important; left: 0 !important; bottom: 0 !important; border-radius: 0 !important; }
+          .jooper-chat-header { border-radius: 0 !important; }
+          .jooper-wa-doc-bubble {
+            max-width: 90vw;
+            min-width: 0;
+            font-size: 15px;
+            padding: 8px 10px;
+          }
+          .jooper-wa-doc-name {
+            font-size: 15px;
+            max-width: 50vw;
+          }
+          .jooper-wa-image-bubble {
+            max-width: 90vw;
+          }
+          .jooper-wa-image-preview {
+            max-width: 90vw;
+            max-height: 40vh;
+          }
+        }
+        @media (max-width: 400px) {
+          .jooper-wa-doc-bubble {
+            font-size: 13px;
+            padding: 6px 6px;
+          }
+          .jooper-wa-doc-name {
+            font-size: 13px;
+            max-width: 35vw;
+          }
+        }
       `;
       this.injectStyle(css);
       this.globalStylesInjected = true;
@@ -292,7 +459,7 @@
 
     // Helper function to store the user message in UI and send it to backend.
     storeUserMessage(content) {
-      this.appendMessage("User", content.file_name);
+      this.appendMessage("User", content);
       if (this.threadId) {  
         this.socket.emit("sendMessage", {
           sender: "User",
@@ -434,14 +601,6 @@
         this.chatHistory.forEach(msg => {
           this.appendMessage(msg.sender, msg.message);
         });
-        if (!this.chatHistory || this.chatHistory.length === 0) {
-          const greetingMessage =
-            this.options.allowCustomGreeting && this.options.customGreetingMessage
-              ? this.options.customGreetingMessage
-              : "Hello! How can I help you?";
-          this.appendMessage("ChatBot", greetingMessage);
-          this.appendSuggestion();
-        }
       } else {
         this.container.innerHTML = `
           <div class="jooper-chat-widget" style="${positionStyles} background-color: ${this.options.chatWindowColor}; color: ${this.options.fontColor}; z-index:9999;">
@@ -476,14 +635,6 @@
         this.chatHistory.forEach(msg => {
           this.appendMessage(msg.sender, msg.message);
         });
-        if (!this.chatHistory || this.chatHistory.length === 0) {
-          const greetingMessage =
-            this.options.allowCustomGreeting && this.options.customGreetingMessage
-              ? this.options.customGreetingMessage
-              : "Hello! How can I help you?";
-          this.appendMessage("ChatBot", greetingMessage);
-          this.appendSuggestion();
-        }
       }
     },
 
@@ -539,12 +690,11 @@
           this.threadId = data.threadId;
           if (!this.chatHistory || this.chatHistory.length === 0) {
             const greetingMessage =
-              this.options.allowCustomGreeting &&
-                this.options.customGreetingMessage
+              this.options.allowCustomGreeting && this.options.customGreetingMessage
                 ? this.options.customGreetingMessage
                 : "Hello! How can I help you?";
-
             this.storeBotMessage(greetingMessage);
+            this.appendSuggestion();
           }
         });
       });
@@ -1031,127 +1181,168 @@
       const msgElem = document.createElement("div");
       const timeElem = document.createElement("div");
       msgElem.className = `jooper-message ${sender === "User" ? "user" : "agent"}`;
-      const lines = message.split("\n").filter((line) => line.trim() !== "");
 
-      const formattedContent = [];
-      let currentListItems = [];
-      let tableLines = [];
-      let inTable = false;
+      let formattedContent = [];
 
-      lines.forEach((line, index) => {
-        const isTableLine =
-          line.trim().startsWith("|") && line.trim().endsWith("|");
-
-        if (isTableLine) {
-          inTable = true;
-          tableLines.push(line);
+      // WhatsApp-like File message support for user messages
+      if (typeof message === "object" && message !== null && message.file_presigned_url) {
+        const fileUrl = message.file_presigned_url;
+        const fileName = message.file_name || "Download file";
+        const isImage = /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(fileName);
+        if (isImage) {
+          // WhatsApp-like image preview with download icon overlay, right-aligned
+          formattedContent.push(`
+            <div class="jooper-wa-image-bubble">
+              <img src="${fileUrl}" alt="${fileName}" class="jooper-wa-image-preview" />
+              <a href="${fileUrl}" download="${fileName}" target="_blank" class="jooper-wa-image-download-overlay" title="Download">
+                <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+                  <circle cx="18" cy="18" r="18" fill="rgba(0,0,0,0.5)"/>
+                  <path d="M18 11v10M18 21l-4-4m4 4l4-4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </a>
+            </div>
+          `);
         } else {
-          if (inTable) {
-            const rows = tableLines.map((row) =>
-              row
-                .split("|")
-                .map((cell) => cell.trim())
-                .filter((cell) => cell !== "")
-            );
-
-            const headerRow = rows[0];
-            const bodyRows = rows.slice(2); // Skip the separator row (e.g., |---|---|)
-
-            const headerCells = headerRow
-              .map((cell) => `<th>${cell}</th>`)
-              .join("");
-            const header = `<tr>${headerCells}</tr>`;
-
-            const body = bodyRows
-              .map((row, rowIndex) => {
-                const cells = row
-                  .map((cell, cellIndex) => {
-                    const linkMatch = cell.match(/\[(.*?)\]\((.*?)\)/);
-                    if (linkMatch) {
-                      const linkText = linkMatch[1];
-                      const linkUrl = linkMatch[2];
-                      return `<td class="${cellIndex === 0 ? "row-heading" : ""
-                        }"><a href="${linkUrl}" target="_blank" rel="noopener noreferrer">${linkText}</a></td>`;
-                    }
-                    return `<td class="${cellIndex === 0 ? "row-heading" : ""
-                      }">${cell}</td>`;
-                  })
-                  .join("");
-                return `<tr>${cells}</tr>`;
-              })
-              .join("");
-
-            formattedContent.push(`
-              <div class="message-table-wrapper">
-                <table class="info-table">${header}${body}</table>
-              </div>
-            `);
-
-            tableLines = [];
-            inTable = false;
-          }
-
-          const isNumberedPoint = line.match(/^\d+\.\s*\*\*(.*?)\*\*:\s*(.*)/);
-          if (isNumberedPoint) {
-            const title = isNumberedPoint[1];
-            const description = isNumberedPoint[2];
-            currentListItems.push(
-              `<li><span class="point-title">${title}:</span> ${description}</li>`
-            );
-          } else {
-            if (currentListItems.length > 0) {
-              formattedContent.push(`<ol>${currentListItems.join("")}</ol>`);
-              currentListItems = [];
-            }
-            formattedContent.push(`<p>${line}</p>`);
-          }
+          // WhatsApp-like document bubble, right-aligned
+          formattedContent.push(`
+            <div class="jooper-wa-doc-bubble">
+              <span class="jooper-wa-doc-icon">
+                <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                  <rect width="32" height="32" rx="6" fill="#388e3c"/>
+                  <path d="M10 8a2 2 0 0 1 2-2h8l4 4v14a2 2 0 0 1-2 2H12a2 2 0 0 1-2-2V8z" fill="#fff"/>
+                  <path d="M18 6v4a2 2 0 0 0 2 2h4" fill="#e0e0e0"/>
+                  <rect x="14" y="18" width="6" height="2" rx="1" fill="#388e3c"/>
+                  <rect x="14" y="22" width="3" height="2" rx="1" fill="#388e3c"/>
+                </svg>
+              </span>
+              <span class="jooper-wa-doc-name">${fileName}</span>
+              <a href="${fileUrl}" download="${fileName}" target="_blank" class="jooper-wa-doc-download" title="Download">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path d="M10 4v8M10 12l-3-3m3 3l3-3" stroke=${this.options.iconColor} stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <rect x="4" y="16" width="12" height="2" rx="1" fill=${this.options.iconColor}/>
+                </svg>
+              </a>
+            </div>
+          `);
         }
-      });
+      } else {
+        // Existing logic for normal messages
+        const lines = (typeof message === "string" ? message : "").split("\n").filter((line) => line.trim() !== "");
+        let currentListItems = [];
+        let tableLines = [];
+        let inTable = false;
 
-      if (inTable && tableLines.length > 0) {
-        const rows = tableLines.map((row) =>
-          row
-            .split("|")
-            .map((cell) => cell.trim())
-            .filter((cell) => cell !== "")
-        );
+        lines.forEach((line, index) => {
+          const isTableLine =
+            line.trim().startsWith("|") && line.trim().endsWith("|");
 
-        const headerRow = rows[0];
-        const bodyRows = rows.slice(2);
+          if (isTableLine) {
+            inTable = true;
+            tableLines.push(line);
+          } else {
+            if (inTable) {
+              const rows = tableLines.map((row) =>
+                row
+                  .split("|")
+                  .map((cell) => cell.trim())
+                  .filter((cell) => cell !== "")
+              );
 
-        const headerCells = headerRow
-          .map((cell) => `<th>${cell}</th>`)
-          .join("");
-        const header = `<tr>${headerCells}</tr>`;
+              const headerRow = rows[0];
+              const bodyRows = rows.slice(2); 
 
-        const body = bodyRows
-          .map((row, rowIndex) => {
-            const cells = row
-              .map((cell, cellIndex) => {
-                const linkMatch = cell.match(/\[(.*?)\]\((.*?)\)/);
-                if (linkMatch) {
-                  const linkText = linkMatch[1];
-                  const linkUrl = linkMatch[2];
-                  return `<td class="${cellIndex === 0 ? "row-heading" : ""
-                    }"><a href="${linkUrl}" target="_blank" rel="noopener noreferrer">${linkText}</a></td>`;
-                }
-                return `<td class="${cellIndex === 0 ? "row-heading" : ""
-                  }">${cell}</td>`;
-              })
-              .join("");
-            return `<tr>${cells}</tr>`;
-          })
-          .join("");
+              const headerCells = headerRow
+                .map((cell) => `<th>${cell}</th>`)
+                .join("");
+              const header = `<tr>${headerCells}</tr>`;
 
-        formattedContent.push(`
-          <div class="message-table-wrapper">
-            <table class="info-table">${header}${body}</table>
-          </div>
-        `);
-      }
+              const body = bodyRows
+                .map((row, rowIndex) => {
+                  const cells = row
+                    .map((cell, cellIndex) => {
+                      const linkMatch = cell.match(/\[(.*?)\]\((.*?)\)/);
+                      if (linkMatch) {
+                        const linkText = linkMatch[1];
+                        const linkUrl = linkMatch[2];
+                        return `<td class="${cellIndex === 0 ? "row-heading" : ""}"><a href="${linkUrl}" target="_blank" rel="noopener noreferrer">${linkText}</a></td>`;
+                      }
+                      return `<td class="${cellIndex === 0 ? "row-heading" : ""}">${cell}</td>`;
+                    })
+                    .join("");
+                  return `<tr>${cells}</tr>`;
+                })
+                .join("");
 
-      if (currentListItems.length > 0) {
-        formattedContent.push(`<ol>${currentListItems.join("")}</ol>`);
+              formattedContent.push(`
+                <div class="message-table-wrapper">
+                  <table class="info-table">${header}${body}</table>
+                </div>
+              `);
+
+              tableLines = [];
+              inTable = false;
+            }
+
+            const isNumberedPoint = line.match(/^\d+\.\s*\*\*(.*?)\*\*: \s*(.*)/);
+            if (isNumberedPoint) {
+              const title = isNumberedPoint[1];
+              const description = isNumberedPoint[2];
+              currentListItems.push(
+                `<li><span class="point-title">${title}:</span> ${description}</li>`
+              );
+            } else {
+              if (currentListItems.length > 0) {
+                formattedContent.push(`<ol>${currentListItems.join("")}</ol>`);
+                currentListItems = [];
+              }
+              formattedContent.push(`<p>${line}</p>`);
+            }
+          }
+        });
+
+        if (inTable && tableLines.length > 0) {
+          const rows = tableLines.map((row) =>
+            row
+              .split("|")
+              .map((cell) => cell.trim())
+              .filter((cell) => cell !== "")
+          );
+
+          const headerRow = rows[0];
+          const bodyRows = rows.slice(2); 
+
+          const headerCells = headerRow
+            .map((cell) => `<th>${cell}</th>`)
+            .join("");
+          const header = `<tr>${headerCells}</tr>`;
+
+          const body = bodyRows
+            .map((row, rowIndex) => {
+              const cells = row
+                .map((cell, cellIndex) => {
+                  const linkMatch = cell.match(/\[(.*?)\]\((.*?)\)/);
+                  if (linkMatch) {
+                    const linkText = linkMatch[1];
+                    const linkUrl = linkMatch[2];
+                    return `<td class="${cellIndex === 0 ? "row-heading" : ""}"><a href="${linkUrl}" target="_blank" rel="noopener noreferrer">${linkText}</a></td>`;
+                  }
+                  return `<td class="${cellIndex === 0 ? "row-heading" : ""}">${cell}</td>`;
+                })
+                .join("");
+              return `<tr>${cells}</tr>`;
+            })
+            .join("");
+
+          formattedContent.push(`
+            <div class="message-table-wrapper">
+              <table class="info-table">${header}${body}</table>
+            </div>
+          `);
+        }
+
+        if (currentListItems.length > 0) {
+          formattedContent.push(`<ol>${currentListItems.join("")}</ol>`);
+        }
       }
 
       msgElem.innerHTML = `
