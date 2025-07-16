@@ -98,3 +98,30 @@ export const sendEmailChat = async(email:string,text:string,subject:string,email
   };
   await transporter.sendMail(mailOptions);
 }
+
+export const sendChatTranscriptEmail = async ({
+  email,
+  messages,
+  threadId,
+  emailConfig,
+}: {
+  email: string;
+  messages: { sender: string; content: string; createdAt: Date }[];
+  threadId: string;
+  emailConfig: any;
+}) => {
+  const formattedMessages = messages
+    .map(
+      (msg) =>
+        `<p><strong>${msg.sender}</strong> [${new Date(msg.createdAt).toLocaleString()}]:<br/>${msg.content}</p>`
+    )
+    .join("");
+
+  const htmlContent = `
+    <h2>Chat Transcript - Thread #${threadId}</h2>
+    ${formattedMessages}
+    <p>Regards,<br/>Your Support Team</p>
+  `;
+
+  await sendEmailChat(email, htmlContent, `Chat Transcript - Thread #${threadId}`, emailConfig);
+};

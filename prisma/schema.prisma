@@ -8,6 +8,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum EndedByType {
+  user
+  bot
+}
+
+
 model access_token {
   id               String    @id @default(uuid())
   created_datetime DateTime? @default(now())
@@ -104,7 +110,7 @@ model TwoFactorAuth {
 
 model Thread {
   id         String    @id @default(uuid())
-  user       String
+  user      User     @relation(fields: [userId], references: [id])
   messages   Message[]
   aiOrgId    Int
   readed     Boolean   @default(false)
@@ -116,6 +122,9 @@ model Thread {
   createdAt  DateTime  @default(now())
   type       String    @default("unassigned")
 
+  status      String    @default("active") // "active", "ended", "ticket_created"
+  endedBy     EndedByType?
+  endedAt     DateTime?
   // Back-reference for tasks
   tasks        Task[]
   Notification Notification[]

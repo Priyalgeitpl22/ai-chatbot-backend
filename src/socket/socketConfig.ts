@@ -193,40 +193,58 @@ export const socketSetup = (server: any) => {
     );
 
     socket.on("sendMessage", async (data) => {
-      try {
-        if (!data.threadId) {
-          return socket.emit("error", { message: "Thread ID is required" });
-        }
-        const senderKey = data.sender === "User" ? "User" : "Bot";
-        // Save every incoming message.
-        await prisma.message.create({
-          data: {
-            content: data.content,
-            sender: senderKey,
-            threadId: data.threadId,
-            createdAt: new Date(data.createdAt),
-          },
-        });
+  try {
+    if (!data.threadId) {
+      return socket.emit("error", { message: "Thread ID is required" });
+    }
 
-        const thread = await prisma.thread.findUnique({
-          where: { id: data.threadId },
-        });
-        if (
-          data.sender === "User" &&
-          data.allowNameEmail &&
-          thread &&
-          ((thread.name === "" || thread.email === "") || thread.email === data?.content)
-        ) {
-          return;
-        }
-
-        console.log("Online Agents:", getOnlineAgents());
-        await processAIResponse(data, io);
-
-      } catch (error) {
-        console.error("Error handling sendMessage:", error);
-      }
+    // Check thread status
+    const thread = await prisma.thread.findUnique({
+      where: { id: data.threadId },
+      select: { status: true },
     });
+
+    if (!thread) {
+      return socket.emit("error", { message: "Thread not found" });
+    }
+
+    if (thread.status === 'ended') {
+      return socket.emit("error", { message: "This chat has been ended. No further messages allowed." });
+    }
+
+    // Proceed to store message
+    const senderKey = data.sender === "User" ? "User" : "Bot";
+    await prisma.message.create({
+      data: {
+        content: data.content,
+        sender: senderKey,
+        threadId: data.threadId,
+        createdAt: new Date(data.createdAt),
+      },
+    });
+
+    // Skip name/email collection logic
+    const fullThread = await prisma.thread.findUnique({
+      where: { id: data.threadId },
+    });
+
+    if (
+      data.sender === "User" &&
+      data.allowNameEmail &&
+      fullThread &&
+      ((fullThread.name === "" || fullThread.email === "") || fullThread.email === data?.content)
+    ) {
+      return;
+    }
+
+    console.log("Online Agents:", getOnlineAgents());
+    await processAIResponse(data, io);
+
+  } catch (error) {
+    console.error("Error handling sendMessage:", error);
+  }
+});
+
 
     socket.on("processPendingMessage", async (data) => {
       try {
