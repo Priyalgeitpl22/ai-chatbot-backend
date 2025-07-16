@@ -520,7 +520,7 @@
 
     // Helper function to store the user message in UI and send it to backend.
     storeUserMessage(content) {
-      this.appendMessage("User", content.file_name);
+      this.appendMessage("User", content);
       if (this.threadId) {    
         this.socket.emit("sendMessage", {
           sender: "User",
