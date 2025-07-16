@@ -110,7 +110,7 @@ model TwoFactorAuth {
 
 model Thread {
   id         String    @id @default(uuid())
-  user      User     @relation(fields: [userId], references: [id])
+  user       String
   messages   Message[]
   aiOrgId    Int
   readed     Boolean   @default(false)
