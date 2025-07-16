@@ -912,14 +912,17 @@
 
       this.socket.on("receiveMessage", (data) => {
         if (data.sender === "Bot" && data.threadId === this.threadId) {
-
-          if (this.getElement("typing-indicator"))
+          if(this.getElement("typing-indicator"))
             this.removeTypingIndicator();
-
-          if (data.content && data.content.trim() !== "") {
+          if (data.fileUrl) {
+            this.appendMessage("ChatBot", {
+              file_presigned_url: data.fileUrl,
+              file_type: data.fileType,
+              file_name: data.fileName
+            });
+          } else if (data.content && data.content.trim() !== "") {
             this.appendMessage("ChatBot", data.content);
           }
-
           if (data.task_creation) {
             this.removeSuggestions();
             this.renderContactForm();
@@ -935,6 +938,7 @@
         this.onlinAgents = data;
       });
       this.socket.on("updateDashboard", (data) => {
+        console.log("UpdateData----line-939---",data)
         if (data.sender === "Bot" && data.threadId === this.threadId) {
           if (this.getElement("typing-indicator"))
             this.removeTypingIndicator();

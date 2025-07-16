@@ -3,7 +3,7 @@ import { PrismaClient } from "@prisma/client";
 import { getAIResponse } from "../middlewares/botMiddleware";
 import { createTask ,ReadedTask} from "../controllers/task.controller";
 import { sendEmailChat } from '../utils/email.utils'
-
+import { getPresignedUrl } from "../aws/imageUtils";
 
 
 const prisma = new PrismaClient();
@@ -117,22 +117,27 @@ if (data.sender === 'User') {
       } else {
         answer = "I'm sorry, but I couldn't process your request.";
       }
-    } else {
-      if (online.length > 0) {
+    } else if (online.length > 0) {
+      if (
+        !agentMessageAlreadySent &&
+        (
+          (!data?.allowNameEmail && isFirstUserMessage) ||
+          (data?.allowNameEmail && thread && thread.name !== "" && thread.email !== "")
+        )
+      ) {
         answer = "An agent is available and will assist you soon. Thank you for your patience.";
-      } else {
-        answer = "I apologize, but no agents are available at the moment and AI assistance is not enabled. Would you like me to create a ticket for your query so someone can get back to you later?";
       }
+    } else {
+      answer = "I apologize, but no agents are available at the moment and AI assistance is not enabled. Would you like me to create a ticket for your query so someone can get back to you later?";
     }
   }
 }
   // Always emit a response to clear typing indicator
   const formattedAnswer = Array.isArray(answer) ? answer.map(item => `- ${item}`).join("\n") : answer || "";
-  if (formattedAnswer) {
+  if (formattedAnswer && formattedAnswer.trim() !== "") {
     await prisma.message.create({
       data: { content: formattedAnswer, sender: "Bot", threadId: data.threadId },
     });
-  }
   io.emit("receiveMessage", {
     id: Date.now().toString(),
     sender: "Bot",
@@ -143,6 +148,7 @@ if (data.sender === 'User') {
     question,
     createdAt: new Date().toISOString(),
   });
+  }
 };
 
 export const socketSetup = (server: any) => {
@@ -207,6 +213,11 @@ export const socketSetup = (server: any) => {
         }
         const senderKey = data.sender === "User" ? "User" : "Bot";
         // Save every incoming message.
+        const hasContent = data.content && data.content.trim() !== "";
+        const hasFile = data.fileData && (data.fileData.file_url || data.fileData.file_presigned_url);
+        if (!hasContent && !hasFile) {
+          return; 
+        }
         if(data.file){
           await prisma.message.create({
             data:{
@@ -218,7 +229,18 @@ export const socketSetup = (server: any) => {
               threadId: data.threadId,
               createdAt: new Date(data.createdAt),
             }
-          })
+          });
+          // Emit file message to widget with presigned URL
+          const presignedUrl = await getPresignedUrl(data.fileData.file_url);
+          io.emit("receiveMessage", {
+            id: Date.now().toString(),
+            sender: senderKey, 
+            threadId: data.threadId,
+            fileUrl: presignedUrl,
+            fileType: data.fileData.file_type,
+            fileName: data.fileData.file_name,
+            createdAt: new Date().toISOString(),
+          });
         }else{
           await prisma.message.create({
           data: {
@@ -282,7 +304,6 @@ export const socketSetup = (server: any) => {
     })
 
     socket.on("updateDashboard", async (data) => {
-      console.log("Data-User:-", data)
       if (data.sender === "User") {
         const thread = await prisma.thread.findUnique({
           where: { id: data.threadId },
@@ -345,6 +366,13 @@ export const socketSetup = (server: any) => {
               console.log("No email found for thread:", data.threadId);
             }
           }
+          io.emit("receiveMessage", {
+            id: Date.now().toString(),
+            sender: "Bot",
+            content: formattedContent,
+            threadId: data.threadId,
+            createdAt: new Date().toISOString(),
+          });
         } catch (error) {
           console.error("Error storing agent message:", error);
         }
@@ -375,7 +403,6 @@ export const socketSetup = (server: any) => {
           },
         });
         socket.join(thread.id);
-        // io.emit("notification", { message: "🔔 New Chat Initiated!" });
         socket.emit("chatStarted", { threadId: thread.id });
         io.to(`org-${data.orgId}`).emit("chatStarted",{thread:thread})
       } catch (error) {
