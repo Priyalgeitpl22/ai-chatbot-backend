@@ -137,6 +137,9 @@ model Message {
   seen      Boolean  @default(false)
   threadId  String
   thread    Thread   @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  fileUrl   String?
+  fileType  String?
+  fileName  String?
   createdAt DateTime @default(now())
 }
 
@@ -169,6 +172,7 @@ model Task {
   email      String?
   orgId      String?
   aiOrgId    Int
+  readed     Boolean  @default(false)
   threadId   String
   query      String
   assignedTo String?
@@ -219,3 +223,5 @@ model Notification {
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 }
+
+

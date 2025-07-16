@@ -133,8 +133,6 @@ export const markThreadReaded = async (req: Request, res: Response): Promise<any
         await prisma.thread.update({ where: { id: thread.id }, data: { readed: true } })
         // await prisma.message.update({where:{threadId:(threadId)},data:{sender:"true"}})
         await prisma.message.updateMany({ where: { threadId: threadId }, data: { seen: true } })
-        // await prisma.message.update({where:{threadId:(threadId)},data:{sender:"true"}})
-        await prisma.message.updateMany({ where: { threadId: threadId }, data: { seen: true } })
         return res.status(200).json({ code: 200, message: "Thread readed sucessful" })
       } else {
         return res.status(400).json({ code: 400, message: "The thread not found" })

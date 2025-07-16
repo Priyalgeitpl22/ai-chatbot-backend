@@ -81,8 +81,7 @@ export const getUnreadTicketCount = async (req: Request, res: Response): Promise
     const {orgId} = req.params;
     const count = await prisma.task.count({
       where: {
-        orgId: orgId,
-        assignedTo: null,
+        readed:false
       },
     });
     res.status(200).json({ code: 200, count });
@@ -91,6 +90,15 @@ export const getUnreadTicketCount = async (req: Request, res: Response): Promise
     res.status(500).json({ code: 500, message: "Error fetching unread ticket count" });
   }
 };
+
+export const ReadedTask  = async(taskId:any)=>{
+  try{
+    await prisma.task.update({where:{id:taskId.data},data:{readed:true}})
+    return
+  }catch(err:any){
+    console.log("error in reading task",err.message as string) 
+  }
+}
 
 export const markTaskAsResolved = async (req: Request, res: Response): Promise<any> => {
   try {
