@@ -167,6 +167,17 @@ export const createChatOrTicket = async (req: any, res: any) => {
       if (onlineAgents.length > 0) {
         return res.status(200).json({ code: 200, message: "Agent is online", connectToAgent: true });
       } else {
+        // Prevent ticket creation if a thread with this email is already ended
+        const endedThread = await prisma.thread.findFirst({
+          where: {
+            email,
+            status: 'ended',
+            aiOrgId: org.aiOrgId ?? 0,
+          },
+        });
+        if (endedThread) {
+          return res.status(400).json({ code: 400, message: "Chat already ended, cannot create ticket." });
+        }
         // Create ticket thread
         const thread = await prisma.thread.create({
           data: {

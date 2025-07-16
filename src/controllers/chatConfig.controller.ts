@@ -1,7 +1,8 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, EndedByType} from "@prisma/client";
 import { Request, Response } from "express";
 import { getPresignedUrl, uploadImageToS3 } from "../aws/imageUtils";
 import multer from "multer";
+import {sendChatTranscriptEmail} from "../utils/email.utils"
 
 const prisma = new PrismaClient();
 const upload = multer({ storage: multer.memoryStorage() }).single("ChatBotLogoImage");
@@ -132,5 +133,84 @@ export const getChatScript = async (req: Request, res: Response): Promise<void> 
         console.error("Error generating chat script:", err);
         res.status(500).send("Internal Server Error");
     }
+};
+
+export const endChat = async (req: any, res: any): Promise<void> => {
+  try {
+    const { thread_id, ended_by } = req.body;
+
+    // 1. Validate input
+    if (!thread_id || !ended_by) {
+      return res.status(400).json({ code: 400, message: 'Missing thread_id or ended_by' });
+    }
+
+    if (!Object.values(EndedByType).includes(ended_by)) {
+      return res.status(400).json({ code: 400, message: 'Invalid ended_by value' });
+    }
+
+    // 2. Fetch thread
+    const thread = await prisma.thread.findUnique({
+      where: { id: thread_id },
+    });
+
+    if (!thread) {
+      return res.status(404).json({ code: 404, message: 'Thread not found' });
+    }
+
+    if (thread.status === 'ended') {
+      return res.status(400).json({ code: 400, message: 'Chat is already ended' });
+    }
+
+    // 3. Update thread status
+    await prisma.thread.update({
+      where: { id: thread_id },
+      data: {
+        status: 'ended',
+        endedBy: ended_by,
+        endedAt: new Date(),
+      },
+    });
+
+    // 4. Fetch messages and emailConfig manually
+    const messages = await prisma.message.findMany({
+      where: { threadId: thread_id },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    const chatConfig = await prisma.chatConfig.findFirst({
+      where: { aiOrgId: thread.aiOrgId },
+      select: { emailConfig: true },
+    });
+    const organization = await prisma.organization.findFirst({
+      where: { aiOrgId: thread.aiOrgId },
+      select: { emailConfig: true },
+    });
+
+    // Use chatConfig.emailConfig if present, else organization.emailConfig
+    const emailConfig = chatConfig?.emailConfig || organization?.emailConfig;
+
+    // 5. Send email only if config and email exist
+    if (thread.email && emailConfig) {
+      try {
+        await sendChatTranscriptEmail({
+          threadId: thread.id,
+          messages,
+          email: thread.email,
+          emailConfig,
+        });
+      } catch (emailError) {
+        console.error('Failed to send chat transcript email:', emailError);
+      }
+    }
+
+    // 6. Success
+    return res.status(200).json({
+      code: 200,
+      message: 'Chat ended successfully',
+    });
+  } catch (err) {
+    console.error('Error in endChat:', err);
+    return res.status(500).json({ code: 500, message: 'Internal Server Error' });
+  }
 };
 

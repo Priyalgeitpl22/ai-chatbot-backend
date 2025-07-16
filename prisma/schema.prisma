@@ -8,6 +8,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum EndedByType {
+  user
+  bot
+}
+
+
 model access_token {
   id               String    @id @default(uuid())
   created_datetime DateTime? @default(now())
@@ -116,6 +122,9 @@ model Thread {
   createdAt  DateTime  @default(now())
   type       String    @default("unassigned")
 
+  status      String    @default("active") // "active", "ended", "ticket_created"
+  endedBy     EndedByType?
+  endedAt     DateTime?
   // Back-reference for tasks
   tasks        Task[]
   Notification Notification[]
@@ -128,6 +137,9 @@ model Message {
   seen      Boolean  @default(false)
   threadId  String
   thread    Thread   @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  fileUrl   String?
+  fileType  String?
+  fileName  String?
   createdAt DateTime @default(now())
 }
 
