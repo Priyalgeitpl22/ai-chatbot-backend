@@ -22,12 +22,29 @@ export const getOnlineAgents = () =>
 
 // Helper to emit a bot response after processing a message via AI.
 const processAIResponse = async (data: any, io: Server) => {
-  console.log("data.aiEnabled: ", data.aiEnabled);
 
   const online = getOnlineAgents();
   let answer: string | undefined;
   let taskCreation: any;
   let question = data.content;
+
+  // Handle file upload with both agent and AI available
+  if (data?.fileData && data?.aiEnabled) {
+    answer = "Thank you for uploading your file. If you have any questions or require further assistance, would you like me to create a ticket for you?";
+    await prisma.message.create({
+      data: { content: answer, sender: "Bot", threadId: data.threadId },
+    });
+    io.emit("receiveMessage", {
+      id: Date.now().toString(),
+      sender: "Bot",
+      status: 200,
+      content: answer,
+      threadId: data.threadId,
+      createdAt: new Date().toISOString(),
+      task_creation: false,
+    });
+    return;
+  }
 
 const previousMessages = await prisma.message.findMany({
   where: { threadId: data.threadId },
@@ -42,19 +59,7 @@ const thread = await prisma.thread.findUnique({
 const agentMessageAlreadySent = previousMessages.some(
   (m) => m.sender === "Bot" && m.content === "An agent is available and will assist you soon. Thank you for your patience."
 );
-// if (online.length > 0) {
-//   if (
-//     !agentMessageAlreadySent &&
-//     (
-//       (!data?.allowNameEmail && isFirstUserMessage) ||
-//       (data?.allowNameEmail && thread && thread.name !== "" && thread.email !== "")
-//     )
-//   ) {
-//     answer = "An agent is available and will assist you soon. Thank you for your patience.";
-//   }
-// } else 
 if (data.sender === 'User') {
-  // Check for task prompt logic
   const prevMsgs = await prisma.message.findMany({
     where: { threadId: data.threadId },
     orderBy: { createdAt: 'desc' },
@@ -65,29 +70,41 @@ if (data.sender === 'User') {
   const userReply = data.content.toLowerCase().trim();
 
   if (isTaskPrompt) {
-    if (
-      userReply.includes('yes') ||
-      userReply.includes('ok') ||
-      userReply.includes('sure') ||
-      userReply.includes('yes please') ||
-      userReply.includes('create') ||
-      userReply.includes('create ticket')
-    ) {
-      // User wants to create a task
-      try {
-        taskCreation = true;
-      } catch (error) {
-        console.error("Error creating ticket:", error);
-        answer = "I apologize, but there was an error creating the ticket. Please try again later.";
-      }
-    } else if (
-      userReply.includes('no') ||
-      userReply.includes('not now') ||
-      userReply.includes('later')
-    ) {
-      answer = "No problem! If you need further assistance, feel free to ask.";
+    if (userReply.includes('yes') || userReply.includes('ok') || userReply.includes('sure') || userReply.includes('yes please') || userReply.includes('create') || userReply.includes('create ticket')) {
+      // User wants to create a task (show contact form)
+      io.emit("receiveMessage", {
+        id: Date.now().toString(),
+        sender: "Bot",
+        status: 200,
+        content: "",
+        threadId: data.threadId,
+        createdAt: new Date().toISOString(),
+        task_creation: true, 
+      });
+    } else if (userReply.includes('no') ||userReply.includes('not now') ||userReply.includes('later')) {
+      // User declined
+      io.emit("receiveMessage", {
+        id: Date.now().toString(),
+        sender: "Bot",
+        status: 200,
+        content: "No problem! If you need further assistance, feel free to ask.",
+        threadId: data.threadId,
+        createdAt: new Date().toISOString(),
+        task_creation: false,
+      });
+      return;
     } else {
-      answer = "I didn't quite catch that. Would you like me to create a ticket for your query so someone can get back to you later? Please reply with 'yes' or 'no'.";
+      // Unclear response, ask again
+      io.emit("receiveMessage", {
+        id: Date.now().toString(),
+        sender: "Bot",
+        status: 200,
+        content: "I didn't quite catch that. Would you like me to create a ticket for your query so someone can get back to you later? Please reply with 'yes' or 'no'.",
+        threadId: data.threadId,
+        createdAt: new Date().toISOString(),
+        task_creation: false,
+      });
+      return;
     }
   } else if (data.sender === 'User' && data.content.toLowerCase().includes('talk to agent')) {
     answer = "Okay, let me connect you with an agent. Thank you for your patience.";
