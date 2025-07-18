@@ -10,6 +10,7 @@ const prisma = new PrismaClient();
 export const onlineAgents = new Map<string, string>(); // Map<agentId, agentName>
 const socketOrgMap = new Map<string, { orgId: string; userId: string; role: string }>();
 
+export let io: Server;
 
 export const addOnlineAgent = (agentId: string, agentName: string) =>
   onlineAgents.set(agentId, agentName);
@@ -146,7 +147,7 @@ if (data.sender === 'User') {
 };
 
 export const socketSetup = (server: any) => {
-  const io = new Server(server, {
+  io = new Server(server, {
     cors: {
       origin: "*",
       methods: ["GET", "POST"],
@@ -190,6 +191,9 @@ export const socketSetup = (server: any) => {
     socket.on("leaveThread", (threadId) => {
       socket.leave(threadId);
       console.log(`User left thread: ${threadId}`);
+    });
+    socket.on("joinThreadRoom", ({ threadId }) => {
+      socket.join(threadId);
     });
 
     socket.on("typing", ({ threadId, agentName }) =>
@@ -244,6 +248,11 @@ export const socketSetup = (server: any) => {
       },
     });
         }
+    // Update lastActivityAt on message send
+    await prisma.thread.update({
+      where: { id: data.threadId },
+      data: { lastActivityAt: new Date() },
+    });
     // Skip name/email collection logic
     const fullThread = await prisma.thread.findUnique({
       where: { id: data.threadId },

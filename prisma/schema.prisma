@@ -125,6 +125,7 @@ model Thread {
   status      String    @default("active") // "active", "ended", "ticket_created"
   endedBy     EndedByType?
   endedAt     DateTime?
+  lastActivityAt DateTime? @default(now())
   // Back-reference for tasks
   tasks        Task[]
   Notification Notification[]
