@@ -4,8 +4,8 @@
     localStorage.removeItem('chatWidgetHistory');
   });
 
-  const BACKEND_URL = "http://localhost:5003";
-  // const BACKEND_URL = "https://api.chat.jooper.ai";
+  // const BACKEND_URL = "http://localhost:5003";
+  const BACKEND_URL = "https://api.chat.jooper.ai";
 
   const ChatWidget = {
     globalStylesInjected: false,
@@ -1083,14 +1083,17 @@ this.getElement("end-chat-cancel").addEventListener("click", () => {
 
       this.socket.on("receiveMessage", (data) => {
         if (data.sender === "Bot" && data.threadId === this.threadId) {
-
-          if (this.getElement("typing-indicator"))
+          if(this.getElement("typing-indicator"))
             this.removeTypingIndicator();
-
-          if (data.content && data.content.trim() !== "") {
+          if (data.fileUrl) {
+            this.appendMessage("ChatBot", {
+              file_presigned_url: data.fileUrl,
+              file_type: data.fileType,
+              file_name: data.fileName
+            });
+          } else if (data.content && data.content.trim() !== "") {
             this.appendMessage("ChatBot", data.content);
           }
-
           if (data.task_creation) {
             this.removeSuggestions();
             this.renderContactForm();
@@ -1119,20 +1122,88 @@ this.getElement("end-chat-cancel").addEventListener("click", () => {
         uploadButton.addEventListener("click", () => fileUploadInput.click());
         fileUploadInput.addEventListener("change", (event) => {
           const file = event.target.files[0];
+          if (!file) return;
+          // Check file size (10MB = 10 * 1024 * 1024 bytes)
+          if (file.size > 10 * 1024 * 1024) {
+            this.showPopup("File size must be less than 10 MB.", "error");
+            event.target.value = "";
+            return;
+          }
           const formData = new FormData();
           formData.append("chatFile",file)
-           fetch(`${BACKEND_URL}/api/message/upload`,
-            {method:"POST",body:formData})
-           .then((res)=>res.json()).then((data)=>{
+           fetch(`${BACKEND_URL}/api/message/upload`,{method:"POST",body:formData})
+           .then((res)=>res.json())
+           .then((data)=>{
             const response =data?.data
             if (response) this.storeUserMessage(response);
            }).catch((err)=>{console.log(err)})
-          
         });
       }
 
       if (this.options.allowEmojis)
         this.setupEmojiPicker(chatInput, emojiPickerButton);
+    },
+
+    showPopup(message, type = "success") {
+      // Remove any existing popup of this type
+      let popupId = `chat-widget-${type}-popup`;
+      let popup = this.getElement(popupId);
+      if (popup) popup.remove();
+      // Find the chat widget and header
+      let chatWidget = this.shadowRoot
+        ? this.shadowRoot.querySelector(".jooper-chat-widget")
+        : document.querySelector(".jooper-chat-widget");
+      let header = chatWidget
+        ? chatWidget.querySelector(".jooper-chat-header")
+        : null;
+      // Popup style config
+      const styleMap = {
+        success: {
+          background: "#4CAF50",
+          color: "#fff"
+        },
+        error: {
+          background: "#f44336",
+          color: "#fff"
+        }
+      };
+      const style = styleMap[type] || styleMap.success;
+
+      // Create new popup
+      popup = document.createElement("div");
+      popup.id = popupId;
+      popup.style.position = "relative";
+      popup.style.margin = "0 auto";
+      popup.style.background = style.background;
+      popup.style.color = style.color;
+      popup.style.padding = "12px 24px";
+      popup.style.borderRadius = "8px";
+      popup.style.boxShadow = "0 2px 8px rgba(0,0,0,0.15)";
+      popup.style.zIndex = "99999";
+      popup.style.fontSize = "15px";
+      popup.style.textAlign = "center";
+      popup.style.maxWidth = "90%";
+      popup.style.top = "0";
+      popup.style.left = "0";
+      popup.style.right = "0";
+      popup.style.marginTop = "8px";
+      popup.textContent = message;
+      // Insert popup just after the header
+      if (chatWidget && header) {
+        if (header.nextSibling) {
+          chatWidget.insertBefore(popup, header.nextSibling);
+        } else {
+          chatWidget.appendChild(popup);
+        }
+      } else if (chatWidget) {
+        chatWidget.appendChild(popup);
+      } else {
+        (this.shadowRoot || document.body).appendChild(popup);
+      }
+      // Remove after 3 seconds
+      setTimeout(() => {
+        popup.remove();
+      }, 3000);
     },
 
     setupEmojiPicker(chatInput, emojiPickerButton) {
@@ -1319,22 +1390,8 @@ this.getElement("end-chat-cancel").addEventListener("click", () => {
             });
             const formContainer = getEl("contact-form-container");
             if (formContainer) formContainer.remove();
-            const chatInputContainer = this.querySelector(".jooper-chat-input-container");
-            if (chatInputContainer) {
-              const successMessage = document.createElement("div");
-              successMessage.id = "task-success-message";
-              successMessage.style.textAlign = "center";
-              successMessage.style.padding = "5px";
-              successMessage.style.backgroundColor = "#d4edda";
-              successMessage.style.color = "#155724";
-              successMessage.textContent = "Ticket raised successfully";
-              chatInputContainer.parentNode.insertBefore(successMessage, chatInputContainer);
-              this.appendMessage("Bot", "Ticket has been raised successfully, someone will reach out to you shortly. Is there anything else I can help you with?");
-    
-              setTimeout(() => {
-                if (successMessage) successMessage.remove();
-              }, 3000);
-            }
+            this.showPopup("Ticket raised successfully");
+            this.appendMessage("Bot", "Ticket has been raised successfully, someone will reach out to you shortly. Is there anything else I can help you with?");
           } else {
             showError(nameInput, nameError, getNameError);
             showError(emailInput, emailError, getEmailError);
