@@ -13,11 +13,9 @@ export const getMessages = async (req: Request, res: Response): Promise<void> =>
             where: { threadId }, 
             orderBy: { createdAt: "asc" },
         });
-        // If there are file URLs, get presigned URLs in parallel
         const messagesWithUrls = await Promise.all(
           messages.map(async (msg) => {
             if (msg.fileUrl) {
-              // Clone the message object to avoid mutating the Prisma result
               return {
                 ...msg,
                 fileUrl: await getPresignedUrl(msg.fileUrl),
@@ -58,7 +56,6 @@ export const chatUploadFile  = async(req:Request,res:Response):Promise<any>=>{
           return res.status(400).json({code:400,message:"Too large file must less than 10 Mb"})
         }
         const fileUrl = await uploadImageToS3(req.file)
-        // now generate pre signed url
 
         const presignedURl = await getPresignedUrl(fileUrl)
         const response = {
