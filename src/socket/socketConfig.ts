@@ -140,7 +140,7 @@ if (data.sender === 'User') {
         !agentMessageAlreadySent &&
         (
           (!data?.allowNameEmail && isFirstUserMessage) ||
-          (data?.allowNameEmail && thread && thread.name !== "" && thread.email !== "")
+          (data?.allowNameEmail && thread && thread.name !== "" && thread.email !== "") 
         )
       ) {
         answer = "An agent is available and will assist you soon. Thank you for your patience.";

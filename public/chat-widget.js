@@ -4,8 +4,8 @@
     localStorage.removeItem('chatWidgetHistory');
   });
 
-  // const BACKEND_URL = "http://localhost:5003";
-  const BACKEND_URL = "https://api.chat.jooper.ai";
+  const BACKEND_URL = "http://localhost:5003";
+  // const BACKEND_URL = "https://api.chat.jooper.ai";
 
   const ChatWidget = {
     globalStylesInjected: false,
