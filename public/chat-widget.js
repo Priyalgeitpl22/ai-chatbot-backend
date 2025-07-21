@@ -750,6 +750,7 @@ this.getElement("end-chat-cancel").addEventListener("click", () => {
         this.chatHistory.forEach(msg => {
           this.appendMessage(msg.sender, msg.message);
         });
+        this.threadId = data.threadId;
         if (!this.chatHistory || this.chatHistory.length === 0) {
           const greetingMessage =
             this.options.allowCustomGreeting && this.options.customGreetingMessage
@@ -797,6 +798,7 @@ this.getElement("end-chat-cancel").addEventListener("click", () => {
         this.chatHistory.forEach(msg => {
           this.appendMessage(msg.sender, msg.message);
         });
+        this.threadId = data.threadId;
         if (!this.chatHistory || this.chatHistory.length === 0) {
           const greetingMessage =
             this.options.allowCustomGreeting && this.options.customGreetingMessage
