@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import { getPresignedUrl, uploadImageToS3 } from "../aws/imageUtils";
 import multer from "multer";
 import {sendChatTranscriptEmail} from "../utils/email.utils"
+import { createChatSummaryFunction } from "./chatSummary.controller";
 
 const prisma = new PrismaClient();
 const upload = multer({ storage: multer.memoryStorage() }).single("ChatBotLogoImage");
@@ -166,6 +167,8 @@ export const endChat = async (req: any, res: any): Promise<void> => {
         endedAt: new Date(),
       },
     });
+
+    await createChatSummaryFunction(thread_id)
 
     const messages = await prisma.message.findMany({
       where: { threadId: thread_id },
