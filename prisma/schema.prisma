@@ -207,6 +207,7 @@ model FAQ {
   // Added for file upload support
   fileName     String?
   fileUrl      String?
+  fileContent String? @db.Text
   uploadedBy   String?
   uploadedAt   DateTime?
 }
