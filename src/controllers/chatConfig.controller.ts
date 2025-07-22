@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import { getPresignedUrl, uploadImageToS3 } from "../aws/imageUtils";
 import multer from "multer";
 import {sendChatTranscriptEmail} from "../utils/email.utils"
+import { createChatSummaryFunction } from "./chatSummary.controller";
 
 const prisma = new PrismaClient();
 const upload = multer({ storage: multer.memoryStorage() }).single("ChatBotLogoImage");
@@ -49,7 +50,6 @@ export const updateChatConfig = async (req: Request, res: Response): Promise<any
 
             let ChatBotLogoImage;
             if (ChatBotLogoImageURL) {
-                // ChatBotLogoImage = await getPresignedUrl(ChatBotLogoImageURL);
                 ChatBotLogoImage = ChatBotLogoImageURL;
             }
             const parseBoolean = (value: any) => value === "true" ? true : value === "false" ? false : value;
@@ -139,7 +139,6 @@ export const endChat = async (req: any, res: any): Promise<void> => {
   try {
     const { thread_id, ended_by } = req.body;
 
-    // 1. Validate input
     if (!thread_id || !ended_by) {
       return res.status(400).json({ code: 400, message: 'Missing thread_id or ended_by' });
     }
@@ -148,7 +147,6 @@ export const endChat = async (req: any, res: any): Promise<void> => {
       return res.status(400).json({ code: 400, message: 'Invalid ended_by value' });
     }
 
-    // 2. Fetch thread
     const thread = await prisma.thread.findUnique({
       where: { id: thread_id },
     });
@@ -161,7 +159,6 @@ export const endChat = async (req: any, res: any): Promise<void> => {
       return res.status(400).json({ code: 400, message: 'Chat is already ended' });
     }
 
-    // 3. Update thread status
     await prisma.thread.update({
       where: { id: thread_id },
       data: {
@@ -171,7 +168,8 @@ export const endChat = async (req: any, res: any): Promise<void> => {
       },
     });
 
-    // 4. Fetch messages and emailConfig manually
+    await createChatSummaryFunction(thread_id)
+
     const messages = await prisma.message.findMany({
       where: { threadId: thread_id },
       orderBy: { createdAt: 'asc' },
@@ -186,10 +184,8 @@ export const endChat = async (req: any, res: any): Promise<void> => {
       select: { emailConfig: true },
     });
 
-    // Use chatConfig.emailConfig if present, else organization.emailConfig
     const emailConfig = chatConfig?.emailConfig || organization?.emailConfig;
 
-    // 5. Send email only if config and email exist
     if (thread.email && emailConfig) {
       try {
         await sendChatTranscriptEmail({
@@ -203,7 +199,6 @@ export const endChat = async (req: any, res: any): Promise<void> => {
       }
     }
 
-    // 6. Success
     return res.status(200).json({
       code: 200,
       message: 'Chat ended successfully',
