@@ -1,9 +1,10 @@
 import { Router } from "express";
-import { getMessages ,markMessageReaded } from "../controllers/message.controller";
-
+import { getMessages ,markMessageReaded ,chatUploadFile} from "../controllers/message.controller";
+import { authMiddleware } from "../middlewares/authMiddleware";
 const router = Router();
 
-router.get("/:threadId", getMessages);
-router.patch("/:threadId/seen", markMessageReaded);
+router.get("/:threadId",authMiddleware, getMessages);
+router.patch("/:threadId/seen",authMiddleware ,markMessageReaded);
+router.post("/upload",chatUploadFile)
 
 export default router;

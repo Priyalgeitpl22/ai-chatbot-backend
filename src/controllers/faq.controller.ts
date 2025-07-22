@@ -1,19 +1,19 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { uploadImageToS3 } from '../aws/imageUtils';
+import { uploadImageToS3, getPresignedUrl } from '../aws/imageUtils';
+import pdfParse from 'pdf-parse'; 
+
+import mammoth from 'mammoth';
 const prisma = new PrismaClient();
 
 export const createFAQ = async (req: any, res: any) => {
   const { faqs, orgId, question, answer, userId } = req.body;
   
-  // Handle both single FAQ and multiple FAQs
   let faqsArray = [];
   
   if (faqs && Array.isArray(faqs)) {
-    // Multiple FAQs provided in faqs array
     faqsArray = faqs;
   } else if (question && answer && orgId) {
-    // Single FAQ provided directly
     faqsArray = [{ question, answer }];
   } else {
     return res.status(400).json({ message: 'Either provide faqs array or individual question, answer, and orgId fields.' });
@@ -23,7 +23,6 @@ export const createFAQ = async (req: any, res: any) => {
     return res.status(400).json({ message: 'At least one FAQ is required.' });
   }
 
-  // Validate each FAQ has required fields
   for (const faq of faqsArray) {
     if (!faq.question || !faq.answer) {
       return res.status(400).json({ message: 'Each FAQ must have question and answer fields.' });
@@ -50,7 +49,6 @@ export const createFAQ = async (req: any, res: any) => {
 
     const currentUserId = user.id;
 
-    // Create multiple FAQs using createMany
     const createdFaqs = await prisma.fAQ.createMany({
       data: faqsArray.map(faq => ({
         orgId: orgId,
@@ -60,7 +58,6 @@ export const createFAQ = async (req: any, res: any) => {
       })),
     });
 
-    // Fetch the created FAQs to return them
     const createdFaqsList = await prisma.fAQ.findMany({
       where: {
         orgId: orgId,
@@ -93,7 +90,6 @@ export const getFAQsByOrgId = async (req: any, res: any) => {
   }
 
   try {
-    // Check if organization exists
     const org = await prisma.organization.findUnique({
       where: { id: orgId },
       select: { aiEnabled: true },
@@ -113,7 +109,6 @@ export const getFAQsByOrgId = async (req: any, res: any) => {
       return res.status(403).json({ message: 'User does not belong to this organization.' });
     }
 
-    // Get all FAQs for the organization
     const faqs = await prisma.fAQ.findMany({
       where: {
         orgId: orgId
@@ -155,9 +150,17 @@ export const uploadFaqFile = async (req: any, res: any) => {
       return res.status(400).json({ message: 'No file uploaded' });
     }
 
+    let fileContent = '';
+    if (req.file.mimetype === 'application/pdf') {
+      fileContent = (await pdfParse(req.file.buffer)).text;
+    } else if (req.file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+      fileContent = (await mammoth.extractRawText({ buffer: req.file.buffer })).value;
+    } else {
+      fileContent = 'Preview not supported for this file type.';
+    }
+
     const fileUrl = await uploadImageToS3(req.file);
 
-    //store in db 
     const uploadedFile = await prisma.fAQ.create({
       data: {
         fileName: req.file.originalname,
@@ -166,10 +169,11 @@ export const uploadFaqFile = async (req: any, res: any) => {
         question: req.body.question || '', 
         uploadedBy: req.user.id, 
         uploadedAt: new Date(),
-        
         orgId: req.user.orgId || req.body.orgId || undefined,
+        fileContent: fileContent, 
       },
     });
+
 
     return res.status(200).json({
       message: 'File uploaded successfully',
@@ -180,7 +184,9 @@ export const uploadFaqFile = async (req: any, res: any) => {
         question: uploadedFile.question,
         answer: uploadedFile.answer,
         uploadedBy: uploadedFile.uploadedBy,
-        uploadedAt: uploadedFile.uploadedAt
+        uploadedAt: uploadedFile.uploadedAt,
+        fileContent: uploadedFile.fileContent, 
+        type: req.file.mimetype
       }
     });
   } catch (error: any) {
@@ -189,3 +195,19 @@ export const uploadFaqFile = async (req: any, res: any) => {
   }
 };
 
+export const getPresignedUrlHandler = async (req: any, res: any)=> {
+  try {
+    const fileKey = req.params.fileKey;
+
+    if (!fileKey) {
+      return res.status(400).json({ message: "File key is required" });
+    }
+
+    const url = await getPresignedUrl(fileKey);
+    
+    return res.status(200).json({ url });
+  } catch (error) {
+    console.error("Presigned URL handler error:", error);
+    return res.status(500).json({ message: "Failed to generate presigned URL" });
+  }
+};

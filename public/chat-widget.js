@@ -4,6 +4,9 @@
     localStorage.removeItem('chatWidgetHistory');
   });
 
+  // const BACKEND_URL = "http://localhost:5003";
+  const BACKEND_URL = "https://api.chat.jooper.ai";
+
   const ChatWidget = {
     globalStylesInjected: false,
     userName: "",
@@ -22,11 +25,9 @@
     async init(options) {
       let data = {};
       try {
-        // const response = await fetch(
-        //   `${"http://localhost:5003"}/api/chat/config?orgId=${options.orgId}`
-        // );
-        const response = await fetch(`https://api.chat.jooper.ai/api/chat/config?orgId=${options.orgId}`);
-        
+        const response = await fetch(
+          `${BACKEND_URL}/api/chat/config?orgId=${options.orgId}`
+        );
         data = await response.json();
       } catch (e) {
         data = { data: {} };
@@ -120,7 +121,9 @@
           z-index: 9999;
         }
        
-        .jooper-chat-header { color: white; border-radius: 8px 8px 0 0; background: ${this.options.iconColor}; display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; }
+        .jooper-chat-header { color: white; border-radius: 8px 8px 0 0; background: ${
+          this.options.iconColor
+        }; display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; }
         .jooper-chat-header .jooper-chat-title { font-size: 20px; font-weight: bold; color: #fff; }
         .jooper-chat-header .jooper-chat-status { font-size: 13px; color: #fff; display: flex; align-items: center; gap: 6px; }
         .jooper-chat-header #avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; margin-right: 12px; }
@@ -138,7 +141,9 @@
         .jooper-chat-messages { scrollbar-width: thin; scrollbar-color: #d1d5db #f5f5f5; }
         .jooper-message { padding: 1px 14px; max-width: 80%; margin-top: 8px; display: inline-block; position: relative; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
         .jooper-message.agent { background: #f5f5f5; color: #222; align-self: flex-start; }
-        .jooper-message.user { background: ${this.options.iconColor}; color: #fff; align-self: flex-end; }
+        .jooper-message.user { background: ${
+          this.options.iconColor
+        }; color: #fff; align-self: flex-end; }
         .jooper-chat-input-container { display: flex; padding: 12px; gap: 8px; border-top: 1px solid #eee; background: #fafafa; }
         .jooper-chat-input-wrapper { display: flex; width: 100%; border: 1px solid #ddd; border-radius: 6px; background: #fff; }
         .jooper-chat-input { flex: 1; border: none; border-radius: 6px; padding: 10px; font-size: 15px; background: transparent; resize: none; }
@@ -163,8 +168,12 @@
         .jooper-suggestion {
           white-space: nowrap;
           background: #fff; /* CHANGED: white background */
-          border: 2px solid ${this.options.iconColor}; /* CHANGED: outline color from iconColor */
-          color: ${this.options.iconColor}; /* CHANGED: text color from iconColor */
+          border: 2px solid ${
+            this.options.iconColor
+          }; /* CHANGED: outline color from iconColor */
+          color: ${
+            this.options.iconColor
+          }; /* CHANGED: text color from iconColor */
           border-radius: 20px;
           padding: 6px 22px;
           font-size: 16px;
@@ -174,7 +183,9 @@
           margin-bottom: 6px;
         }
         .jooper-suggestion:hover {
-          background: ${this.options.iconColor}22; /* CHANGED: more visible fill on hover */
+          background: ${
+            this.options.iconColor
+          }22; /* CHANGED: more visible fill on hover */
           color: ${this.options.iconColor};
           border-color: ${this.options.iconColor};
         }
@@ -283,6 +294,224 @@
         @keyframes typing-bounce {
           0%, 80%, 100% { transform: scale(0.7); opacity: 0.7; }
           40% { transform: scale(1.2); opacity: 1; }
+                }
+          .jooper-end-chat-popup {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 10000;
+        }
+        .jooper-popup-content {
+          background: ${this.options.chatWindowColor || "#fff"};
+          border-radius: 8px;
+          padding: 20px;
+          box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+          max-width: 300px;
+          text-align: center;
+        }
+        .jooper-popup-message {
+          font-size: 16px;
+          color: ${this.options.fontColor || "#000"};
+          margin-bottom: 20px;
+        }
+        .jooper-popup-actions {
+          display: flex;
+          justify-content: space-around;
+        }
+        .jooper-popup-button {
+          padding: 8px 16px;
+          border: none;
+          border-radius: 5px;
+          cursor: pointer;
+          font-size: 14px;
+          transition: background 0.2s;
+        }
+        #end-chat-confirm {
+          background: ${this.options.iconColor || "#007bff"};
+          color: #fff;
+        }
+        #end-chat-confirm:hover {
+          opacity: 0.9;
+        }
+        #end-chat-cancel {
+          background: #ccc;
+          color: #000;
+        }
+        #end-chat-cancel:hover {
+          background: #bbb;
+        }
+        .jooper-wa-image-bubble {
+          position: relative;
+          display: inline-block;
+          margin-block: 8px;
+          border-radius: 12px;
+          overflow: hidden;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .jooper-wa-image-preview {
+          width: 100%;
+          height: auto;
+          display: block;
+        }
+        .jooper-wa-image-download-overlay {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          background: rgba(0,0,0,0.5);
+          border-radius: 12px;
+          opacity: 0;
+          transition: opacity 0.3s ease;
+          cursor: pointer;
+          z-index: 1;
+        }
+        .jooper-wa-image-bubble:hover .jooper-wa-image-download-overlay {
+          opacity: 1;
+        }
+        .jooper-wa-doc-bubble {
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          max-width: 80%;
+          margin-top: 8px;
+          padding: 8px 12px;
+          border-radius: 12px;
+          background: #e0e0e0;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .jooper-wa-doc-icon {
+          margin-right: 8px;
+          display: flex;
+          align-items: center;
+        }
+        .jooper-wa-doc-name {
+          flex-grow: 1;
+          font-size: 14px;
+          color: #333;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .jooper-wa-doc-download {
+          display: flex;
+          align-items: center;
+          margin-left: 8px;
+          opacity: 0.7;
+          transition: opacity 0.3s ease;
+        }
+        .jooper-wa-doc-bubble:hover .jooper-wa-doc-download {
+          opacity: 1;
+        }
+        .jooper-wa-doc-bubble {
+          display: flex;
+          align-items: center;
+          border-radius: 12px;
+          padding: 10px 16px;
+          margin: 8px 0;
+          max-width: 320px;
+          min-width: 180px;
+          align-self: flex-end;
+          margin-left: auto;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+          word-break: break-word;
+        }
+        .jooper-wa-doc-icon {
+          margin-right: 10px;
+          flex-shrink: 0;
+        }
+        .jooper-wa-doc-name {
+          font-weight: 500;
+          flex: 1;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .jooper-wa-doc-download {
+          margin-left: 10px;
+          display: flex;
+          align-items: center;
+          color: #fff;
+          opacity: 0.85;
+          transition: opacity 0.2s;
+          border: 2px solid ${this.options.iconColor};
+          border-radius:50%;
+          padding: 5px;
+          background:#fff;
+          outline:1px solid #fff;
+        }
+        .jooper-wa-doc-download:hover {
+          opacity: 1;
+        }
+        .jooper-wa-image-bubble {
+          position: relative;
+          display: inline-block;
+          border-radius: 12px;
+          overflow: hidden;
+          margin: 8px 0;
+          max-width: 220px;
+          align-self: flex-end;
+          margin-left: auto;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .jooper-wa-image-preview {
+          display: block;
+          width: 100%;
+          height: auto;
+          max-width: 220px;
+          max-height: 220px;
+          border-radius: 12px;
+        }
+        .jooper-wa-image-download-overlay {
+          position: absolute;
+          top: 50%; left: 50%;
+          transform: translate(-50%, -50%);
+          opacity: 0;
+          transition: opacity 0.2s;
+          z-index: 2;
+        }
+        .jooper-wa-image-bubble:hover .jooper-wa-image-download-overlay {
+          opacity: 1;
+        }
+        @media (max-width: 600px) {
+          .jooper-chat-widget { width: 100vw !important; height: 100vh !important; max-width: 100vw; max-height: 100vh; right: 0 !important; left: 0 !important; bottom: 0 !important; border-radius: 0 !important; }
+          .jooper-chat-header { border-radius: 0 !important; }
+          .jooper-wa-doc-bubble {
+            max-width: 90vw;
+            min-width: 0;
+            font-size: 15px;
+            padding: 8px 10px;
+          }
+          .jooper-wa-doc-name {
+            font-size: 15px;
+            max-width: 50vw;
+          }
+          .jooper-wa-image-bubble {
+            max-width: 90vw;
+          }
+          .jooper-wa-image-preview {
+            max-width: 90vw;
+            max-height: 40vh;
+          }
+        }
+        @media (max-width: 400px) {
+          .jooper-wa-doc-bubble {
+            font-size: 13px;
+            padding: 6px 6px;
+          }
+          .jooper-wa-doc-name {
+            font-size: 13px;
+            max-width: 35vw;
+          }
         }
       `;
       this.injectStyle(css);
@@ -292,17 +521,30 @@
     // Helper function to store the user message in UI and send it to backend.
     storeUserMessage(content) {
       this.appendMessage("User", content);
-      if (this.threadId) {
+      if (this.threadId) {    
         this.socket.emit("sendMessage", {
           sender: "User",
-          content,
+          file:!!content.file_url,
+          content:content.file_name,
           threadId: this.threadId,
           aiOrgId: this.options.orgId,
           aiEnabled: this.options.aiEnabled,
           faqs: this.options.faqs,
           allowNameEmail: this.options.allowNameEmail,
           createdAt: Date.now(),
+          orgId:this.options.organizationId,
+          fileData:content
         });
+        this.socket.emit("updateDashboard", {
+        sender: "User",
+        file:!!content.file_url,
+        content: content.file_name,
+        threadId: this.threadId,
+        orgId:this.options.organizationId,
+        createdAt: Date.now(),
+          orgId:this.options.organizationId,
+          fileData:content
+      });
       }
     },
 
@@ -319,7 +561,9 @@
           faqs: this.options.faqs,
           allowNameEmail: this.options.allowNameEmail,
           createdAt: Date.now(),
+          orgId:this.options.organizationId
         });
+        
       }
     },
 
@@ -390,27 +634,53 @@
       if (this.shadowRoot) {
         this.globalStylesInjected = false; 
         this.shadowRoot.innerHTML = `
-          <div class="jooper-chat-widget" style="${positionStyles} background-color: ${this.options.chatWindowColor}; color: ${this.options.fontColor}; z-index:9999;">
+          <div class="jooper-chat-widget" style="${positionStyles} background-color: ${
+          this.options.chatWindowColor
+        }; color: ${this.options.fontColor}; z-index:9999;">
             <div class="jooper-chat-header">
               <div style="display: flex; align-items: center;">
                 <div id="avatar-container" style="margin-right: 10px;">
-                  <img id="avatar" src=${this.options.ChatBotLogoImage || "https://www.w3schools.com/w3images/avatar2.png"} alt="Avatar" />
+                  <img id="avatar" src=${
+                    this.options.ChatBotLogoImage ||
+                    "https://www.w3schools.com/w3images/avatar2.png"
+                  } alt="Avatar" />
                 </div>
                 <div style="display: flex; flex-direction: column;">
-                  <span class="jooper-chat-title">${this.options.addChatBotName || "ChatBot"}</span>
+                  <span class="jooper-chat-title">${
+                    this.options.addChatBotName || "ChatBot"
+                  }</span>
                   <div class="jooper-chat-status">
                     <div style="width:8px; height:8px; border-radius:50%; background-color: rgb(16, 185, 129);"></div>
                     Online
                   </div>
                 </div>
               </div>
-              <button id="jooper-close-chat" style="background: none; color: white; border: none; font-size: 14px; cursor: pointer;">
+              <div>
+               <button id="jooper-end-chat" style="background: none; color: white; border: none; font-size: 14px; cursor: pointer ">
+                <h3 style="border:2px solid white; padding:5px; border-radius:5px;  text-shadow:1px -1px 3px black">End Chat</h3>
+              </button>
+               <button id="jooper-close-chat" style="background: none; color: white; border: none; font-size: 14px; cursor: pointer;">
                 <img src="https://cdn-icons-png.flaticon.com/128/8213/8213476.png" alt="Close" width="16px" />
               </button>
+             
+              </div>
             </div>
             <div class="jooper-chat-messages" id="jooper-chat-messages"></div>
+            <div id="end-chat-popup" class="jooper-end-chat-popup" style="display: none;">
+            <div class="jooper-popup-content">
+            <p class="jooper-popup-message">Are you sure you want to end the chat? This will clear your chat history.</p>
+            <div class="jooper-popup-actions">
+            <button id="end-chat-confirm" class="jooper-popup-button">Confirm</button>
+            <button id="end-chat-cancel" class="jooper-popup-button">Cancel</button>
+             </div>
+             </div>
+            </div>
             <div id="jooper-suggestion-box-container"></div>
-            ${this.options.availability ? this.chatInputTemplate() : this.contactFormTemplate()}
+            ${
+              this.options.availability
+                ? this.chatInputTemplate()
+                : this.contactFormTemplate()
+            }
           </div>
         `;
         this.injectGlobalStyles();
@@ -420,6 +690,57 @@
           }
           this.renderIcon();
         });
+        this.getElement("jooper-end-chat").addEventListener("click", () => {
+  const popup = this.getElement("end-chat-popup");
+  if (popup) {
+    popup.style.display = "flex";
+  }
+});
+
+this.getElement("end-chat-confirm").addEventListener("click", () => {
+  if (this.threadId) {
+    fetch(`${BACKEND_URL}/api/chat/config/end`,{
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    thread_id: this.threadId,
+    ended_by: "user"
+  })
+})
+      .then(response => response.json())
+      .then(data => {
+        console.log(data)
+        if(data.code === 200){
+        this.socket.emit("leaveThread", this.threadId)
+         localStorage.removeItem('chatWidgetThreadId');
+  localStorage.removeItem('chatWidgetHistory');
+  this.chatHistory = [];
+  this.threadId = null;
+  this.renderIcon();
+  
+      }else{
+        const popup = this.getElement("end-chat-popup");
+  if (popup) {
+    popup.style.display = "none";
+  }
+      }
+})
+      .catch(error => {const popup = this.getElement("end-chat-popup");
+  if (popup) {
+    popup.style.display = "none";
+  }});
+    
+  }
+});
+
+this.getElement("end-chat-cancel").addEventListener("click", () => {
+  const popup = this.getElement("end-chat-popup");
+  if (popup) {
+    popup.style.display = "none";
+  }
+});
         if (this.options.availability) {
           this.setupEventListeners();
         } else {
@@ -429,6 +750,7 @@
         this.chatHistory.forEach(msg => {
           this.appendMessage(msg.sender, msg.message);
         });
+        this.threadId = data.threadId;
         if (!this.chatHistory || this.chatHistory.length === 0) {
           const greetingMessage =
             this.options.allowCustomGreeting && this.options.customGreetingMessage
@@ -453,9 +775,14 @@
                   </div>
                 </div>
               </div>
-              <button id="jooper-close-chat" style="background: none; color: white; border: none; font-size: 14px; cursor: pointer;">
+              <div>
+               <button id="jooper-end-chat" style="background: none; color: white; border: none; font-size: 14px; cursor: pointer;">
                 <img src="https://cdn-icons-png.flaticon.com/128/8213/8213476.png" alt="Close" width="16px" />
               </button>
+              <button id="jooper-close-chat" style="background: none; color: white; border: none; font-size: 14px; cursor: pointer;">
+                <img src="https://img.icons8.com/?size=400&id=VaHFapP3XCAj&format=png&color=FFFFFF" alt="Close" width="16px" />
+              </button>
+              </div>
             </div>
             <div class="jooper-chat-messages" id="jooper-chat-messages"></div>
             <div id="jooper-suggestion-box-container"></div>
@@ -471,6 +798,7 @@
         this.chatHistory.forEach(msg => {
           this.appendMessage(msg.sender, msg.message);
         });
+        this.threadId = data.threadId;
         if (!this.chatHistory || this.chatHistory.length === 0) {
           const greetingMessage =
             this.options.allowCustomGreeting && this.options.customGreetingMessage
@@ -479,6 +807,7 @@
           this.appendMessage("ChatBot", greetingMessage);
           this.appendSuggestion();
         }
+        
       }
     },
 
@@ -534,12 +863,11 @@
           this.threadId = data.threadId;
           if (!this.chatHistory || this.chatHistory.length === 0) {
             const greetingMessage =
-              this.options.allowCustomGreeting &&
-                this.options.customGreetingMessage
+              this.options.allowCustomGreeting && this.options.customGreetingMessage
                 ? this.options.customGreetingMessage
                 : "Hello! How can I help you?";
-
             this.storeBotMessage(greetingMessage);
+            this.appendSuggestion();
           }
         });
       });
@@ -564,6 +892,7 @@
             faqs: this.options.faqs,
             allowNameEmail: this.options.allowNameEmail,
             createdAt: Date.now(),
+            orgId:this.options.organizationId
           });
           this.collectUserInfoState = "waitingForName";
           this.storeBotMessage("Please enter your name:");
@@ -579,6 +908,7 @@
             faqs: this.options.faqs,
             allowNameEmail: this.options.allowNameEmail,
             createdAt: Date.now(),
+            orgId:this.options.organizationId
           });
           this.collectUserInfoState = "waitingForEmail";
           this.socket.emit("updateThreadInfo", {
@@ -600,6 +930,7 @@
             faqs: this.options.faqs,
             allowNameEmail: this.options.allowNameEmail,
             createdAt: Date.now(),
+            orgId:this.options.organizationId
           });
           this.collectUserInfoState = "done";
           this.socket.emit("updateThreadInfo", {
@@ -634,6 +965,7 @@
         allowNameEmail: this.options.allowNameEmail,
         orgId:this.options.organizationId,
         createdAt: Date.now(),
+        orgId:this.options.organizationId
       });
       if (this.onlinAgents.length === 0) this.appendTypingIndicator();
       
@@ -753,14 +1085,17 @@
 
       this.socket.on("receiveMessage", (data) => {
         if (data.sender === "Bot" && data.threadId === this.threadId) {
-
-          if (this.getElement("typing-indicator"))
+          if(this.getElement("typing-indicator"))
             this.removeTypingIndicator();
-
-          if (data.content && data.content.trim() !== "") {
+          if (data.fileUrl) {
+            this.appendMessage("ChatBot", {
+              file_presigned_url: data.fileUrl,
+              file_type: data.fileType,
+              file_name: data.fileName
+            });
+          } else if (data.content && data.content.trim() !== "") {
             this.appendMessage("ChatBot", data.content);
           }
-
           if (data.task_creation) {
             this.removeSuggestions();
             this.renderContactForm();
@@ -789,12 +1124,88 @@
         uploadButton.addEventListener("click", () => fileUploadInput.click());
         fileUploadInput.addEventListener("change", (event) => {
           const file = event.target.files[0];
-          if (file) this.storeUserMessage(`Uploaded: ${file.name}`);
+          if (!file) return;
+          // Check file size (10MB = 10 * 1024 * 1024 bytes)
+          if (file.size > 10 * 1024 * 1024) {
+            this.showPopup("File size must be less than 10 MB.", "error");
+            event.target.value = "";
+            return;
+          }
+          const formData = new FormData();
+          formData.append("chatFile",file)
+           fetch(`${BACKEND_URL}/api/message/upload`,{method:"POST",body:formData})
+           .then((res)=>res.json())
+           .then((data)=>{
+            const response =data?.data
+            if (response) this.storeUserMessage(response);
+           }).catch((err)=>{console.log(err)})
         });
       }
 
       if (this.options.allowEmojis)
         this.setupEmojiPicker(chatInput, emojiPickerButton);
+    },
+
+    showPopup(message, type = "success") {
+      // Remove any existing popup of this type
+      let popupId = `chat-widget-${type}-popup`;
+      let popup = this.getElement(popupId);
+      if (popup) popup.remove();
+      // Find the chat widget and header
+      let chatWidget = this.shadowRoot
+        ? this.shadowRoot.querySelector(".jooper-chat-widget")
+        : document.querySelector(".jooper-chat-widget");
+      let header = chatWidget
+        ? chatWidget.querySelector(".jooper-chat-header")
+        : null;
+      // Popup style config
+      const styleMap = {
+        success: {
+          background: "#4CAF50",
+          color: "#fff"
+        },
+        error: {
+          background: "#f44336",
+          color: "#fff"
+        }
+      };
+      const style = styleMap[type] || styleMap.success;
+
+      // Create new popup
+      popup = document.createElement("div");
+      popup.id = popupId;
+      popup.style.position = "relative";
+      popup.style.margin = "0 auto";
+      popup.style.background = style.background;
+      popup.style.color = style.color;
+      popup.style.padding = "12px 24px";
+      popup.style.borderRadius = "8px";
+      popup.style.boxShadow = "0 2px 8px rgba(0,0,0,0.15)";
+      popup.style.zIndex = "99999";
+      popup.style.fontSize = "15px";
+      popup.style.textAlign = "center";
+      popup.style.maxWidth = "90%";
+      popup.style.top = "0";
+      popup.style.left = "0";
+      popup.style.right = "0";
+      popup.style.marginTop = "8px";
+      popup.textContent = message;
+      // Insert popup just after the header
+      if (chatWidget && header) {
+        if (header.nextSibling) {
+          chatWidget.insertBefore(popup, header.nextSibling);
+        } else {
+          chatWidget.appendChild(popup);
+        }
+      } else if (chatWidget) {
+        chatWidget.appendChild(popup);
+      } else {
+        (this.shadowRoot || document.body).appendChild(popup);
+      }
+      // Remove after 3 seconds
+      setTimeout(() => {
+        popup.remove();
+      }, 3000);
     },
 
     setupEmojiPicker(chatInput, emojiPickerButton) {
@@ -981,22 +1392,8 @@
             });
             const formContainer = getEl("contact-form-container");
             if (formContainer) formContainer.remove();
-            const chatInputContainer = this.querySelector(".jooper-chat-input-container");
-            if (chatInputContainer) {
-              const successMessage = document.createElement("div");
-              successMessage.id = "task-success-message";
-              successMessage.style.textAlign = "center";
-              successMessage.style.padding = "5px";
-              successMessage.style.backgroundColor = "#d4edda";
-              successMessage.style.color = "#155724";
-              successMessage.textContent = "Ticket raised successfully";
-              chatInputContainer.parentNode.insertBefore(successMessage, chatInputContainer);
-              this.appendMessage("Bot", "Ticket has been raised successfully, someone will reach out to you shortly. Is there anything else I can help you with?");
-    
-              setTimeout(() => {
-                if (successMessage) successMessage.remove();
-              }, 3000);
-            }
+            this.showPopup("Ticket raised successfully");
+            this.appendMessage("Bot", "Ticket has been raised successfully, someone will reach out to you shortly. Is there anything else I can help you with?");
           } else {
             showError(nameInput, nameError, getNameError);
             showError(emailInput, emailError, getEmailError);
@@ -1006,135 +1403,176 @@
           }
         });
       }
-    },
-    
+    },    
+        
     appendMessage(sender, message) {
       const messagesContainer = this.getElement("jooper-chat-messages");
       const timeStr = this.getMessageTime();
       const msgElem = document.createElement("div");
       const timeElem = document.createElement("div");
       msgElem.className = `jooper-message ${sender === "User" ? "user" : "agent"}`;
-      const lines = message.split("\n").filter((line) => line.trim() !== "");
 
-      const formattedContent = [];
-      let currentListItems = [];
-      let tableLines = [];
-      let inTable = false;
+      let formattedContent = [];
 
-      lines.forEach((line, index) => {
-        const isTableLine =
-          line.trim().startsWith("|") && line.trim().endsWith("|");
-
-        if (isTableLine) {
-          inTable = true;
-          tableLines.push(line);
+      // WhatsApp-like File message support for user messages
+      if (typeof message === "object" && message !== null && message.file_presigned_url) {
+        const fileUrl = message.file_presigned_url;
+        const fileName = message.file_name || "Download file";
+        const isImage = /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(fileName);
+        if (isImage) {
+          // WhatsApp-like image preview with download icon overlay, right-aligned
+          formattedContent.push(`
+            <div class="jooper-wa-image-bubble">
+              <img src="${fileUrl}" alt="${fileName}" class="jooper-wa-image-preview" />
+              <a href="${fileUrl}" download="${fileName}" target="_blank" class="jooper-wa-image-download-overlay" title="Download">
+                <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+                  <circle cx="18" cy="18" r="18" fill="rgba(0,0,0,0.5)"/>
+                  <path d="M18 11v10M18 21l-4-4m4 4l4-4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </a>
+            </div>
+          `);
         } else {
-          if (inTable) {
-            const rows = tableLines.map((row) =>
-              row
-                .split("|")
-                .map((cell) => cell.trim())
-                .filter((cell) => cell !== "")
-            );
-
-            const headerRow = rows[0];
-            const bodyRows = rows.slice(2); // Skip the separator row (e.g., |---|---|)
-
-            const headerCells = headerRow
-              .map((cell) => `<th>${cell}</th>`)
-              .join("");
-            const header = `<tr>${headerCells}</tr>`;
-
-            const body = bodyRows
-              .map((row, rowIndex) => {
-                const cells = row
-                  .map((cell, cellIndex) => {
-                    const linkMatch = cell.match(/\[(.*?)\]\((.*?)\)/);
-                    if (linkMatch) {
-                      const linkText = linkMatch[1];
-                      const linkUrl = linkMatch[2];
-                      return `<td class="${cellIndex === 0 ? "row-heading" : ""
-                        }"><a href="${linkUrl}" target="_blank" rel="noopener noreferrer">${linkText}</a></td>`;
-                    }
-                    return `<td class="${cellIndex === 0 ? "row-heading" : ""
-                      }">${cell}</td>`;
-                  })
-                  .join("");
-                return `<tr>${cells}</tr>`;
-              })
-              .join("");
-
-            formattedContent.push(`
-              <div class="message-table-wrapper">
-                <table class="info-table">${header}${body}</table>
-              </div>
-            `);
-
-            tableLines = [];
-            inTable = false;
-          }
-
-          const isNumberedPoint = line.match(/^\d+\.\s*\*\*(.*?)\*\*:\s*(.*)/);
-          if (isNumberedPoint) {
-            const title = isNumberedPoint[1];
-            const description = isNumberedPoint[2];
-            currentListItems.push(
-              `<li><span class="point-title">${title}:</span> ${description}</li>`
-            );
-          } else {
-            if (currentListItems.length > 0) {
-              formattedContent.push(`<ol>${currentListItems.join("")}</ol>`);
-              currentListItems = [];
-            }
-            formattedContent.push(`<p>${line}</p>`);
-          }
+          // WhatsApp-like document bubble, right-aligned
+          formattedContent.push(`
+            <div class="jooper-wa-doc-bubble">
+              <span class="jooper-wa-doc-icon">
+                <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                  <rect width="32" height="32" rx="6" fill="#388e3c"/>
+                  <path d="M10 8a2 2 0 0 1 2-2h8l4 4v14a2 2 0 0 1-2 2H12a2 2 0 0 1-2-2V8z" fill="#fff"/>
+                  <path d="M18 6v4a2 2 0 0 0 2 2h4" fill="#e0e0e0"/>
+                  <rect x="14" y="18" width="6" height="2" rx="1" fill="#388e3c"/>
+                  <rect x="14" y="22" width="3" height="2" rx="1" fill="#388e3c"/>
+                </svg>
+              </span>
+              <span class="jooper-wa-doc-name">${fileName}</span>
+              <a href="${fileUrl}" download="${fileName}" target="_blank" class="jooper-wa-doc-download" title="Download">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path d="M10 4v8M10 12l-3-3m3 3l3-3" stroke=${this.options.iconColor} stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <rect x="4" y="16" width="12" height="2" rx="1" fill=${this.options.iconColor}/>
+                </svg>
+              </a>
+            </div>
+          `);
         }
-      });
+      } else {
+        // Existing logic for normal messages
+        const lines = (typeof message === "string" ? message : "").split("\n").filter((line) => line.trim() !== "");
+        let currentListItems = [];
+        let tableLines = [];
+        let inTable = false;
 
-      if (inTable && tableLines.length > 0) {
-        const rows = tableLines.map((row) =>
-          row
-            .split("|")
-            .map((cell) => cell.trim())
-            .filter((cell) => cell !== "")
-        );
+        lines.forEach((line, index) => {
+          const isTableLine =
+            line.trim().startsWith("|") && line.trim().endsWith("|");
 
-        const headerRow = rows[0];
-        const bodyRows = rows.slice(2);
+          if (isTableLine) {
+            inTable = true;
+            tableLines.push(line);
+          } else {
+            if (inTable) {
+              const rows = tableLines.map((row) =>
+                row
+                  .split("|")
+                  .map((cell) => cell.trim())
+                  .filter((cell) => cell !== "")
+              );
 
-        const headerCells = headerRow
-          .map((cell) => `<th>${cell}</th>`)
-          .join("");
-        const header = `<tr>${headerCells}</tr>`;
+              const headerRow = rows[0];
+              const bodyRows = rows.slice(2); 
 
-        const body = bodyRows
-          .map((row, rowIndex) => {
-            const cells = row
-              .map((cell, cellIndex) => {
-                const linkMatch = cell.match(/\[(.*?)\]\((.*?)\)/);
-                if (linkMatch) {
-                  const linkText = linkMatch[1];
-                  const linkUrl = linkMatch[2];
-                  return `<td class="${cellIndex === 0 ? "row-heading" : ""
-                    }"><a href="${linkUrl}" target="_blank" rel="noopener noreferrer">${linkText}</a></td>`;
-                }
-                return `<td class="${cellIndex === 0 ? "row-heading" : ""
-                  }">${cell}</td>`;
-              })
-              .join("");
-            return `<tr>${cells}</tr>`;
-          })
-          .join("");
+              const headerCells = headerRow
+                .map((cell) => `<th>${cell}</th>`)
+                .join("");
+              const header = `<tr>${headerCells}</tr>`;
 
-        formattedContent.push(`
-          <div class="message-table-wrapper">
-            <table class="info-table">${header}${body}</table>
-          </div>
-        `);
-      }
+              const body = bodyRows
+                .map((row, rowIndex) => {
+                  const cells = row
+                    .map((cell, cellIndex) => {
+                      const linkMatch = cell.match(/\[(.*?)\]\((.*?)\)/);
+                      if (linkMatch) {
+                        const linkText = linkMatch[1];
+                        const linkUrl = linkMatch[2];
+                        return `<td class="${cellIndex === 0 ? "row-heading" : ""}"><a href="${linkUrl}" target="_blank" rel="noopener noreferrer">${linkText}</a></td>`;
+                      }
+                      return `<td class="${cellIndex === 0 ? "row-heading" : ""}">${cell}</td>`;
+                    })
+                    .join("");
+                  return `<tr>${cells}</tr>`;
+                })
+                .join("");
 
-      if (currentListItems.length > 0) {
-        formattedContent.push(`<ol>${currentListItems.join("")}</ol>`);
+              formattedContent.push(`
+                <div class="message-table-wrapper">
+                  <table class="info-table">${header}${body}</table>
+                </div>
+              `);
+
+              tableLines = [];
+              inTable = false;
+            }
+
+            const isNumberedPoint = line.match(/^\d+\.\s*\*\*(.*?)\*\*: \s*(.*)/);
+            if (isNumberedPoint) {
+              const title = isNumberedPoint[1];
+              const description = isNumberedPoint[2];
+              currentListItems.push(
+                `<li><span class="point-title">${title}:</span> ${description}</li>`
+              );
+            } else {
+              if (currentListItems.length > 0) {
+                formattedContent.push(`<ol>${currentListItems.join("")}</ol>`);
+                currentListItems = [];
+              }
+              formattedContent.push(`<p>${line}</p>`);
+            }
+          }
+        });
+
+        if (inTable && tableLines.length > 0) {
+          const rows = tableLines.map((row) =>
+            row
+              .split("|")
+              .map((cell) => cell.trim())
+              .filter((cell) => cell !== "")
+          );
+
+          const headerRow = rows[0];
+          const bodyRows = rows.slice(2); 
+
+          const headerCells = headerRow
+            .map((cell) => `<th>${cell}</th>`)
+            .join("");
+          const header = `<tr>${headerCells}</tr>`;
+
+          const body = bodyRows
+            .map((row, rowIndex) => {
+              const cells = row
+                .map((cell, cellIndex) => {
+                  const linkMatch = cell.match(/\[(.*?)\]\((.*?)\)/);
+                  if (linkMatch) {
+                    const linkText = linkMatch[1];
+                    const linkUrl = linkMatch[2];
+                    return `<td class="${cellIndex === 0 ? "row-heading" : ""}"><a href="${linkUrl}" target="_blank" rel="noopener noreferrer">${linkText}</a></td>`;
+                  }
+                  return `<td class="${cellIndex === 0 ? "row-heading" : ""}">${cell}</td>`;
+                })
+                .join("");
+              return `<tr>${cells}</tr>`;
+            })
+            .join("");
+
+          formattedContent.push(`
+            <div class="message-table-wrapper">
+              <table class="info-table">${header}${body}</table>
+            </div>
+          `);
+        }
+
+        if (currentListItems.length > 0) {
+          formattedContent.push(`<ol>${currentListItems.join("")}</ol>`);
+        }
       }
 
       msgElem.innerHTML = `

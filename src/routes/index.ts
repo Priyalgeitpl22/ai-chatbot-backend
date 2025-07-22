@@ -11,6 +11,7 @@ import faqRoutes from "./faq.routes";
 import { authMiddleware } from "../middlewares/authMiddleware";
 import securityRoutes from './security.route';
 import notificatioRoute from "../routes/notification.routes";
+import chatSummary from "./chatSummary.routes"
 
 const router = Router();
 
@@ -19,11 +20,12 @@ router.use("/user", authMiddleware, userRoutes);
 router.use("/org", authMiddleware, organizationRoutes);
 router.use("/task", authMiddleware, taskRoutes);
 router.use("/agent", authMiddleware, agentRoutes);
-router.use("/message", authMiddleware, messageRoutes);
+router.use("/message", messageRoutes);
 router.use("/thread", authMiddleware,  threadRoutes);
 router.use("/faq", authMiddleware, faqRoutes );
 router.use("/chat/config", chatConfigRoutes);
 router.use('/security', securityRoutes);
 router.use("/notification",notificatioRoute)
+router.use("/chat/analyze",chatSummary)
 
 export default router;
