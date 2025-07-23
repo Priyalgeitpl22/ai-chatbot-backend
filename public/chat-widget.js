@@ -4,8 +4,8 @@
     localStorage.removeItem('chatWidgetHistory');
   });
 
-  const BACKEND_URL = "http://localhost:5003";
-  // const BACKEND_URL = "https://api.chat.jooper.ai";
+  // const BACKEND_URL = "http://localhost:5003";
+  const BACKEND_URL = "https://api.chat.jooper.ai";
 
   const ChatWidget = {
     globalStylesInjected: false,
@@ -750,6 +750,7 @@ this.getElement("end-chat-cancel").addEventListener("click", () => {
         this.chatHistory.forEach(msg => {
           this.appendMessage(msg.sender, msg.message);
         });
+        this.threadId = data.threadId;
         if (!this.chatHistory || this.chatHistory.length === 0) {
           const greetingMessage =
             this.options.allowCustomGreeting && this.options.customGreetingMessage
@@ -797,6 +798,7 @@ this.getElement("end-chat-cancel").addEventListener("click", () => {
         this.chatHistory.forEach(msg => {
           this.appendMessage(msg.sender, msg.message);
         });
+        this.threadId = data.threadId;
         if (!this.chatHistory || this.chatHistory.length === 0) {
           const greetingMessage =
             this.options.allowCustomGreeting && this.options.customGreetingMessage

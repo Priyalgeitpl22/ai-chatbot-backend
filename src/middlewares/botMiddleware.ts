@@ -37,13 +37,9 @@ export const getAIResponse = async (message: string, orgId: string, aiOrgId: num
 
 export const sendOrganizationDetails = async (data: any, organisationId: any) => {
   try {
-    let url = `${process.env.NODE_AI_URL}/api/organisation_database/?organisation_id=${organisationId}`;
-
-    if (!organisationId)
-      url = `${process.env.NODE_AI_URL}/api/organisation_database`;
-
+    let url = `${process.env.NODE_AI_URL}/api/organisation_database`;
     const organization_details = { data };
-    const requestBody = JSON.stringify({ organisation_data: organization_details });
+    const requestBody = JSON.stringify({ organisation_data: organization_details,organisation_id:organisationId || null });
 
     const response = await fetch(url, {
       method: "POST",

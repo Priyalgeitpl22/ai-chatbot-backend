@@ -13,7 +13,6 @@ enum EndedByType {
   bot
 }
 
-
 model access_token {
   id               String    @id @default(uuid())
   created_datetime DateTime? @default(now())
@@ -22,14 +21,14 @@ model access_token {
   user_id          String?   @db.VarChar(256)
   active           Int       @default(1)
   expiry_datetime  DateTime?
-  token            String? 
+  token            String?
 }
 
 model Organization {
   id                String         @id @default(uuid())
   aiOrgId           Int?
   name              String?
-  enable_totp_auth  Boolean  @default(false)
+  enable_totp_auth  Boolean        @default(false)
   phone             String?
   address           String?
   city              String?
@@ -50,25 +49,25 @@ model Organization {
 }
 
 model User {
-  id              String       @id @default(uuid())
-  email           String       @unique
-  fullName        String
-  password        String
-  phone           String?
-  role            String       @default("admin")
-  verified        Boolean      @default(false)
-  orgId           String
-  aiOrgId         Int?
-  profilePicture  String?
-  organization    Organization @relation(fields: [orgId], references: [id])
-  createdAt       DateTime     @default(now())
-  online          Boolean      @default(true)
-  schedule        Json?
-  deletedAt       DateTime?
-  faqs            FAQ[]
+  id             String       @id @default(uuid())
+  email          String       @unique
+  fullName       String
+  password       String
+  phone          String?
+  role           String       @default("admin")
+  verified       Boolean      @default(false)
+  orgId          String
+  aiOrgId        Int?
+  profilePicture String?
+  organization   Organization @relation(fields: [orgId], references: [id])
+  createdAt      DateTime     @default(now())
+  online         Boolean      @default(true)
+  schedule       Json?
+  deletedAt      DateTime?
+  faqs           FAQ[]
   // Fields for OTP verification
-  otpCode         String?
-  otpExpiresAt    DateTime?
+  otpCode        String?
+  otpExpiresAt   DateTime?
 
   // Fields for password reset
   resetToken        String?
@@ -77,35 +76,35 @@ model User {
   activationToken        String?
   activationTokenExpires DateTime?
   userSettings           UserSettings?
-  
+
   // 2FA relationship
-  twoFactorAuth         TwoFactorAuth?
+  twoFactorAuth TwoFactorAuth?
 }
 
 model TwoFactorAuth {
-  id                String   @id @default(uuid())
-  userId            String   @unique
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   // 2FA status
-  isEnabled         Boolean  @default(false)
+  isEnabled               Boolean @default(false)
   isAuthenticatorAppAdded Boolean @default(false)
-  
+
   // Secret management
-  secret            String?  // Encrypted TOTP secret
-  tempSecret        String?  // Temporary secret during setup
-  
+  secret     String? // Encrypted TOTP secret
+  tempSecret String? // Temporary secret during setup
+
   // Timestamps
-  enabledAt         DateTime?
+  enabledAt               DateTime?
   authenticatorAppAddedAt DateTime?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
   // Backup codes (optional)
-  backupCodes      String[] // Array of hashed backup codes
-  
+  backupCodes String[] // Array of hashed backup codes
+
   // Last used timestamp for rate limiting
-  lastUsedAt       DateTime?
+  lastUsedAt DateTime?
 }
 
 model Thread {
@@ -122,13 +121,14 @@ model Thread {
   createdAt  DateTime  @default(now())
   type       String    @default("unassigned")
 
-  status      String    @default("active") // "active", "ended", "ticket_created"
-  endedBy     EndedByType?
-  endedAt     DateTime?
+  status       String         @default("active") // "active", "ended", "ticket_created"
+  endedBy      EndedByType?
+  endedAt      DateTime?
   lastActivityAt DateTime? @default(now())
   // Back-reference for tasks
   tasks        Task[]
   Notification Notification[]
+  ChatSummary  ChatSummary[]
 }
 
 model Message {
@@ -226,4 +226,12 @@ model Notification {
   updatedAt     DateTime     @updatedAt
 }
 
-
+model ChatSummary {
+  id                 String @id @default(uuid())
+  threadId           String
+  summary            String
+  intent             String
+  satisfactionScore  Int
+  satisfactionReason String
+  thread             Thread @relation(fields: [threadId], references: [id])
+}
