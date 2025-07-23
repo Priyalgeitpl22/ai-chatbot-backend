@@ -1,12 +1,27 @@
 (function (global) {
-  window.addEventListener('beforeunload', function() {
-    localStorage.removeItem('chatWidgetThreadId');
-    localStorage.removeItem('chatWidgetHistory');
-  });
+  // window.addEventListener('beforeunload', function() {
+  //   localStorage.removeItem('chatWidgetThreadId');
+  //   localStorage.removeItem('chatWidgetHistory');
+  // });
 
-  // const BACKEND_URL = "http://localhost:5003";
-  const BACKEND_URL = "https://api.chat.jooper.ai";
+  const BACKEND_URL = "http://localhost:5003";
+  // const BACKEND_URL = "https://api.chat.jooper.ai";
 
+  function setCookie(name, value, days = 365) {
+    const expires = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toUTCString();
+    document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/`;
+  }
+
+  function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return decodeURIComponent(parts.pop().split(';').shift());
+    return null;
+  }
+
+  function deleteCookie(name) {
+    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+  }
   const ChatWidget = {
     globalStylesInjected: false,
     userName: "",
@@ -71,8 +86,8 @@
       this.globalStylesInjected = false;
       this.renderIcon();
       this.injectGlobalStyles();
-      this.threadId = localStorage.getItem('chatWidgetThreadId');
-      const savedHistory = localStorage.getItem('chatWidgetHistory');
+      this.threadId = getCookie('chatWidgetThreadId');
+      const savedHistory = getCookie('chatWidgetHistory');
       this.chatHistory = savedHistory ? JSON.parse(savedHistory) : [];
     },
 
@@ -121,8 +136,7 @@
           z-index: 9999;
         }
        
-        .jooper-chat-header { color: white; border-radius: 8px 8px 0 0; background: ${
-          this.options.iconColor
+        .jooper-chat-header { color: white; border-radius: 8px 8px 0 0; background: ${this.options.iconColor
         }; display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; }
         .jooper-chat-header .jooper-chat-title { font-size: 20px; font-weight: bold; color: #fff; }
         .jooper-chat-header .jooper-chat-status { font-size: 13px; color: #fff; display: flex; align-items: center; gap: 6px; }
@@ -141,8 +155,7 @@
         .jooper-chat-messages { scrollbar-width: thin; scrollbar-color: #d1d5db #f5f5f5; }
         .jooper-message { padding: 1px 14px; max-width: 80%; margin-top: 8px; display: inline-block; position: relative; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
         .jooper-message.agent { background: #f5f5f5; color: #222; align-self: flex-start; }
-        .jooper-message.user { background: ${
-          this.options.iconColor
+        .jooper-message.user { background: ${this.options.iconColor
         }; color: #fff; align-self: flex-end; }
         .jooper-chat-input-container { display: flex; padding: 12px; gap: 8px; border-top: 1px solid #eee; background: #fafafa; }
         .jooper-chat-input-wrapper { display: flex; width: 100%; border: 1px solid #ddd; border-radius: 6px; background: #fff; }
@@ -168,12 +181,10 @@
         .jooper-suggestion {
           white-space: nowrap;
           background: #fff; /* CHANGED: white background */
-          border: 2px solid ${
-            this.options.iconColor
-          }; /* CHANGED: outline color from iconColor */
-          color: ${
-            this.options.iconColor
-          }; /* CHANGED: text color from iconColor */
+          border: 2px solid ${this.options.iconColor
+        }; /* CHANGED: outline color from iconColor */
+          color: ${this.options.iconColor
+        }; /* CHANGED: text color from iconColor */
           border-radius: 20px;
           padding: 6px 22px;
           font-size: 16px;
@@ -183,9 +194,8 @@
           margin-bottom: 6px;
         }
         .jooper-suggestion:hover {
-          background: ${
-            this.options.iconColor
-          }22; /* CHANGED: more visible fill on hover */
+          background: ${this.options.iconColor
+        }22; /* CHANGED: more visible fill on hover */
           color: ${this.options.iconColor};
           border-color: ${this.options.iconColor};
         }
@@ -521,30 +531,30 @@
     // Helper function to store the user message in UI and send it to backend.
     storeUserMessage(content) {
       this.appendMessage("User", content);
-      if (this.threadId) {    
+      if (this.threadId) {
         this.socket.emit("sendMessage", {
           sender: "User",
-          file:!!content.file_url,
-          content:content.file_name,
+          file: !!content.file_url,
+          content: content.file_name,
           threadId: this.threadId,
           aiOrgId: this.options.orgId,
           aiEnabled: this.options.aiEnabled,
           faqs: this.options.faqs,
           allowNameEmail: this.options.allowNameEmail,
           createdAt: Date.now(),
-          orgId:this.options.organizationId,
-          fileData:content
+          orgId: this.options.organizationId,
+          fileData: content
         });
         this.socket.emit("updateDashboard", {
-        sender: "User",
-        file:!!content.file_url,
-        content: content.file_name,
-        threadId: this.threadId,
-        orgId:this.options.organizationId,
-        createdAt: Date.now(),
-          orgId:this.options.organizationId,
-          fileData:content
-      });
+          sender: "User",
+          file: !!content.file_url,
+          content: content.file_name,
+          threadId: this.threadId,
+          orgId: this.options.organizationId,
+          createdAt: Date.now(),
+          orgId: this.options.organizationId,
+          fileData: content
+        });
       }
     },
 
@@ -561,9 +571,9 @@
           faqs: this.options.faqs,
           allowNameEmail: this.options.allowNameEmail,
           createdAt: Date.now(),
-          orgId:this.options.organizationId
+          orgId: this.options.organizationId
         });
-        
+
       }
     },
 
@@ -571,7 +581,7 @@
       const positionStyles = this.getPositionStyles();
       const isBottomRight = this.options.position === "bottom-right";
       if (this.shadowRoot) {
-        this.globalStylesInjected = false; 
+        this.globalStylesInjected = false;
         this.shadowRoot.innerHTML = `
           <div class="jooper-chat-container ${isBottomRight ? "bottom-right" : "bottom-left"}"
             style="position: fixed; ${positionStyles}; display: flex; align-items: center;">
@@ -584,7 +594,7 @@
             </div>
           </div>
         `;
-        this.injectGlobalStyles(); 
+        this.injectGlobalStyles();
         if (isBottomRight) {
           this.shadowRoot.querySelector(".jooper-chat-container").style.flexDirection =
             "row-reverse";
@@ -632,23 +642,20 @@
     renderChatWindow() {
       const positionStyles = this.getPositionStyles();
       if (this.shadowRoot) {
-        this.globalStylesInjected = false; 
+        this.globalStylesInjected = false;
         this.shadowRoot.innerHTML = `
-          <div class="jooper-chat-widget" style="${positionStyles} background-color: ${
-          this.options.chatWindowColor
-        }; color: ${this.options.fontColor}; z-index:9999;">
+          <div class="jooper-chat-widget" style="${positionStyles} background-color: ${this.options.chatWindowColor
+          }; color: ${this.options.fontColor}; z-index:9999;">
             <div class="jooper-chat-header">
               <div style="display: flex; align-items: center;">
                 <div id="avatar-container" style="margin-right: 10px;">
-                  <img id="avatar" src=${
-                    this.options.ChatBotLogoImage ||
-                    "https://www.w3schools.com/w3images/avatar2.png"
-                  } alt="Avatar" />
+                  <img id="avatar" src=${this.options.ChatBotLogoImage ||
+          "https://www.w3schools.com/w3images/avatar2.png"
+          } alt="Avatar" />
                 </div>
                 <div style="display: flex; flex-direction: column;">
-                  <span class="jooper-chat-title">${
-                    this.options.addChatBotName || "ChatBot"
-                  }</span>
+                  <span class="jooper-chat-title">${this.options.addChatBotName || "ChatBot"
+          }</span>
                   <div class="jooper-chat-status">
                     <div style="width:8px; height:8px; border-radius:50%; background-color: rgb(16, 185, 129);"></div>
                     Online
@@ -676,11 +683,10 @@
              </div>
             </div>
             <div id="jooper-suggestion-box-container"></div>
-            ${
-              this.options.availability
-                ? this.chatInputTemplate()
-                : this.contactFormTemplate()
-            }
+            ${this.options.availability
+            ? this.chatInputTemplate()
+            : this.contactFormTemplate()
+          }
           </div>
         `;
         this.injectGlobalStyles();
@@ -691,56 +697,58 @@
           this.renderIcon();
         });
         this.getElement("jooper-end-chat").addEventListener("click", () => {
-  const popup = this.getElement("end-chat-popup");
-  if (popup) {
-    popup.style.display = "flex";
-  }
-});
+          const popup = this.getElement("end-chat-popup");
+          if (popup) {
+            popup.style.display = "flex";
+          }
+        });
 
-this.getElement("end-chat-confirm").addEventListener("click", () => {
-  if (this.threadId) {
-    fetch(`${BACKEND_URL}/api/chat/config/end`,{
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json"
-  },
-  body: JSON.stringify({
-    thread_id: this.threadId,
-    ended_by: "user"
-  })
-})
-      .then(response => response.json())
-      .then(data => {
-        console.log(data)
-        if(data.code === 200){
-        this.socket.emit("leaveThread", this.threadId)
-         localStorage.removeItem('chatWidgetThreadId');
-  localStorage.removeItem('chatWidgetHistory');
-  this.chatHistory = [];
-  this.threadId = null;
-  this.renderIcon();
-  
-      }else{
-        const popup = this.getElement("end-chat-popup");
-  if (popup) {
-    popup.style.display = "none";
-  }
-      }
-})
-      .catch(error => {const popup = this.getElement("end-chat-popup");
-  if (popup) {
-    popup.style.display = "none";
-  }});
-    
-  }
-});
+        this.getElement("end-chat-confirm").addEventListener("click", () => {
+          if (this.threadId) {
+            fetch(`${BACKEND_URL}/api/chat/config/end`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                thread_id: this.threadId,
+                ended_by: "user"
+              })
+            })
+              .then(response => response.json())
+              .then(data => {
+                console.log(data)
+                if (data.code === 200) {
+                  this.socket.emit("leaveThread", this.threadId)
+                  deleteCookie('chatWidgetThreadId');
+                  deleteCookie('chatWidgetHistory');
+                  this.chatHistory = [];
+                  this.threadId = null;
+                  this.renderIcon();
 
-this.getElement("end-chat-cancel").addEventListener("click", () => {
-  const popup = this.getElement("end-chat-popup");
-  if (popup) {
-    popup.style.display = "none";
-  }
-});
+                } else {
+                  const popup = this.getElement("end-chat-popup");
+                  if (popup) {
+                    popup.style.display = "none";
+                  }
+                }
+              })
+              .catch(error => {
+                const popup = this.getElement("end-chat-popup");
+                if (popup) {
+                  popup.style.display = "none";
+                }
+              });
+
+          }
+        });
+
+        this.getElement("end-chat-cancel").addEventListener("click", () => {
+          const popup = this.getElement("end-chat-popup");
+          if (popup) {
+            popup.style.display = "none";
+          }
+        });
         if (this.options.availability) {
           this.setupEventListeners();
         } else {
@@ -807,7 +815,7 @@ this.getElement("end-chat-cancel").addEventListener("click", () => {
           this.appendMessage("ChatBot", greetingMessage);
           this.appendSuggestion();
         }
-        
+
       }
     },
 
@@ -892,7 +900,7 @@ this.getElement("end-chat-cancel").addEventListener("click", () => {
             faqs: this.options.faqs,
             allowNameEmail: this.options.allowNameEmail,
             createdAt: Date.now(),
-            orgId:this.options.organizationId
+            orgId: this.options.organizationId
           });
           this.collectUserInfoState = "waitingForName";
           this.storeBotMessage("Please enter your name:");
@@ -908,7 +916,7 @@ this.getElement("end-chat-cancel").addEventListener("click", () => {
             faqs: this.options.faqs,
             allowNameEmail: this.options.allowNameEmail,
             createdAt: Date.now(),
-            orgId:this.options.organizationId
+            orgId: this.options.organizationId
           });
           this.collectUserInfoState = "waitingForEmail";
           this.socket.emit("updateThreadInfo", {
@@ -930,7 +938,7 @@ this.getElement("end-chat-cancel").addEventListener("click", () => {
             faqs: this.options.faqs,
             allowNameEmail: this.options.allowNameEmail,
             createdAt: Date.now(),
-            orgId:this.options.organizationId
+            orgId: this.options.organizationId
           });
           this.collectUserInfoState = "done";
           this.socket.emit("updateThreadInfo", {
@@ -963,17 +971,17 @@ this.getElement("end-chat-cancel").addEventListener("click", () => {
         aiEnabled: this.options.aiEnabled,
         faqs: this.options.faqs,
         allowNameEmail: this.options.allowNameEmail,
-        orgId:this.options.organizationId,
+        orgId: this.options.organizationId,
         createdAt: Date.now(),
-        orgId:this.options.organizationId
+        orgId: this.options.organizationId
       });
       if (this.onlinAgents.length === 0) this.appendTypingIndicator();
-      
+
       this.socket.emit("updateDashboard", {
         sender: "User",
         content: message,
         threadId: this.threadId,
-        orgId:this.options.organizationId,
+        orgId: this.options.organizationId,
         createdAt: Date.now(),
       });
     },
@@ -1007,7 +1015,7 @@ this.getElement("end-chat-cancel").addEventListener("click", () => {
       const suggestionContainerTarget = this.querySelector(
         "#jooper-suggestion-box-container"
       );
-      
+
 
       const suggestionsContainer = document.createElement("div");
       suggestionsContainer.className = "jooper-suggestions-container";
@@ -1078,14 +1086,14 @@ this.getElement("end-chat-cancel").addEventListener("click", () => {
           sendMessageButton.click();
         }
       });
-      chatInput.addEventListener('input', function() {
+      chatInput.addEventListener('input', function () {
         this.style.height = 'auto';
         this.style.height = Math.min(this.scrollHeight, 48) + 'px';
       });
 
       this.socket.on("receiveMessage", (data) => {
         if (data.sender === "Bot" && data.threadId === this.threadId) {
-          if(this.getElement("typing-indicator"))
+          if (this.getElement("typing-indicator"))
             this.removeTypingIndicator();
           if (data.fileUrl) {
             this.appendMessage("ChatBot", {
@@ -1132,13 +1140,13 @@ this.getElement("end-chat-cancel").addEventListener("click", () => {
             return;
           }
           const formData = new FormData();
-          formData.append("chatFile",file)
-           fetch(`${BACKEND_URL}/api/message/upload`,{method:"POST",body:formData})
-           .then((res)=>res.json())
-           .then((data)=>{
-            const response =data?.data
-            if (response) this.storeUserMessage(response);
-           }).catch((err)=>{console.log(err)})
+          formData.append("chatFile", file)
+          fetch(`${BACKEND_URL}/api/message/upload`, { method: "POST", body: formData })
+            .then((res) => res.json())
+            .then((data) => {
+              const response = data?.data
+              if (response) this.storeUserMessage(response);
+            }).catch((err) => { console.log(err) })
         });
       }
 
@@ -1244,14 +1252,14 @@ this.getElement("end-chat-cancel").addEventListener("click", () => {
               `;
             shadowRoot.appendChild(style);
           }
-          shadowRoot.addEventListener('click', function(event) {
+          shadowRoot.addEventListener('click', function (event) {
             event.stopPropagation();
           });
-          shadowRoot.addEventListener('focusin', function(event) {
+          shadowRoot.addEventListener('focusin', function (event) {
             event.stopPropagation();
           });
         }
-        picker.addEventListener('click', function(event) {
+        picker.addEventListener('click', function (event) {
           event.stopPropagation();
         });
 
@@ -1301,27 +1309,27 @@ this.getElement("end-chat-cancel").addEventListener("click", () => {
       const emailError = getEl("contact-email-error");
       const messageError = getEl("contact-message-error");
       const iconColor = this.options.iconColor || '#007bff';
-    
+
       const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-    
+
       const getFieldValues = () => ({
         name: nameInput.value.trim(),
         email: emailInput.value.trim(),
         message: messageInput.value.trim()
       });
-    
+
       const isFormValid = () => {
         const { name, email, message } = getFieldValues();
         return name && email && isValidEmail(email) && message;
       };
-    
+
       const getNameError = () => !nameInput.value.trim() ? 'Name is required.' : '';
       const getEmailError = () => {
         const val = emailInput.value.trim();
         return !val ? 'Email is required.' : (!isValidEmail(val) ? 'Enter a valid email.' : '');
       };
       const getMessageError = () => !messageInput.value.trim() ? 'Message is required.' : '';
-    
+
       const clearErrors = () => {
         [nameInput, emailInput, messageInput].forEach(input => input.style.borderColor = '');
         [[nameError], [emailError], [messageError]].forEach(([err]) => {
@@ -1331,7 +1339,7 @@ this.getElement("end-chat-cancel").addEventListener("click", () => {
           }
         });
       };
-    
+
       const showError = (input, errorElem, getErrorMsg) => {
         const msg = getErrorMsg();
         if (msg) {
@@ -1343,15 +1351,15 @@ this.getElement("end-chat-cancel").addEventListener("click", () => {
           errorElem.textContent = '';
           errorElem.style.display = 'none';
         }
-      };    
+      };
       const updateSubmitState = () => {
         const valid = isFormValid();
         submitButton.disabled = !valid;
         submitButton.style.opacity = valid ? '1' : '0.6';
         submitButton.style.cursor = valid ? 'pointer' : 'not-allowed';
-      };    
+      };
       clearErrors();
-      updateSubmitState();    
+      updateSubmitState();
       const addInputListeners = (input, errorElem, getError) => {
         input.addEventListener('input', updateSubmitState);
         input.addEventListener('focus', () => input.style.borderColor = iconColor);
@@ -1364,18 +1372,18 @@ this.getElement("end-chat-cancel").addEventListener("click", () => {
             }
           }
         });
-      };  
+      };
       addInputListeners(nameInput, nameError, getNameError);
       addInputListeners(emailInput, emailError, getEmailError);
       addInputListeners(messageInput, messageError, getMessageError);
-    
+
       if (closeButton) {
         closeButton.addEventListener("click", () => {
           const formContainer = getEl("contact-form-container");
           if (formContainer) formContainer.remove();
         });
       }
-    
+
       if (submitButton) {
         submitButton.addEventListener("click", () => {
           const { name, email, message } = getFieldValues();
@@ -1403,8 +1411,8 @@ this.getElement("end-chat-cancel").addEventListener("click", () => {
           }
         });
       }
-    },    
-        
+    },
+
     appendMessage(sender, message) {
       const messagesContainer = this.getElement("jooper-chat-messages");
       const timeStr = this.getMessageTime();
@@ -1479,7 +1487,7 @@ this.getElement("end-chat-cancel").addEventListener("click", () => {
               );
 
               const headerRow = rows[0];
-              const bodyRows = rows.slice(2); 
+              const bodyRows = rows.slice(2);
 
               const headerCells = headerRow
                 .map((cell) => `<th>${cell}</th>`)
@@ -1539,7 +1547,7 @@ this.getElement("end-chat-cancel").addEventListener("click", () => {
           );
 
           const headerRow = rows[0];
-          const bodyRows = rows.slice(2); 
+          const bodyRows = rows.slice(2);
 
           const headerCells = headerRow
             .map((cell) => `<th>${cell}</th>`)
@@ -1591,8 +1599,8 @@ this.getElement("end-chat-cancel").addEventListener("click", () => {
       messagesContainer.append(msgElem, timeElem);
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
       this.chatHistory.push({ sender, message, time: timeStr });
-      localStorage.setItem('chatWidgetThreadId', this.threadId);
-      localStorage.setItem('chatWidgetHistory', JSON.stringify(this.chatHistory));
+      setCookie('chatWidgetThreadId', this.threadId);
+      setCookie('chatWidgetHistory', JSON.stringify(this.chatHistory));
     },
 
     appendTypingIndicator() {

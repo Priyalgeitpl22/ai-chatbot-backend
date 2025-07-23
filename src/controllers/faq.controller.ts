@@ -204,6 +204,8 @@ export const getPresignedUrlHandler = async (req: any, res: any)=> {
     }
 
     const url = await getPresignedUrl(fileKey);
+    console.log(url);
+    
     
     return res.status(200).json({ url });
   } catch (error) {
