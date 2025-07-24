@@ -4,8 +4,8 @@
   //   localStorage.removeItem('chatWidgetHistory');
   // });
 
-  const BACKEND_URL = "http://localhost:5003";
-  // const BACKEND_URL = "https://api.chat.jooper.ai";
+  // const BACKEND_URL = "http://localhost:5003";
+  const BACKEND_URL = "https://api.chat.jooper.ai";
 
   function setCookie(name, value, days = 365) {
     const expires = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toUTCString();
