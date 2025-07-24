@@ -1,27 +1,13 @@
 (function (global) {
-  // window.addEventListener('beforeunload', function() {
-  //   localStorage.removeItem('chatWidgetThreadId');
-  //   localStorage.removeItem('chatWidgetHistory');
-  // });
+  window.addEventListener('beforeunload', function() {
+    localStorage.removeItem('chatWidgetThreadId');
+    localStorage.removeItem('chatWidgetHistory');
+  });
 
-  const BACKEND_URL = "http://localhost:5003";
-  // const BACKEND_URL = "https://api.chat.jooper.ai";
+  // const BACKEND_URL = "http://localhost:5003";
+  const BACKEND_URL = "https://api.chat.jooper.ai";
 
-  function setCookie(name, value, days = 365) {
-    const expires = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toUTCString();
-    document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/`;
-  }
 
-  function getCookie(name) {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return decodeURIComponent(parts.pop().split(';').shift());
-    return null;
-  }
-
-  function deleteCookie(name) {
-    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
-  }
   const ChatWidget = {
     globalStylesInjected: false,
     userName: "",
@@ -86,8 +72,8 @@
       this.globalStylesInjected = false;
       this.renderIcon();
       this.injectGlobalStyles();
-      this.threadId = getCookie('chatWidgetThreadId');
-      const savedHistory = getCookie('chatWidgetHistory');
+      this.threadId = localStorage.getItem('chatWidgetThreadId');
+      const savedHistory = localStorage.getItem('chatWidgetHistory');
       this.chatHistory = savedHistory ? JSON.parse(savedHistory) : [];
     },
 
@@ -720,8 +706,8 @@
                 console.log(data)
                 if (data.code === 200) {
                   this.socket.emit("leaveThread", this.threadId)
-                  deleteCookie('chatWidgetThreadId');
-                  deleteCookie('chatWidgetHistory');
+                  localStorage.removeItem('chatWidgetThreadId');
+                  localStorage.removeItem('chatWidgetHistory');
                   this.chatHistory = [];
                   this.threadId = null;
                   this.renderIcon();
@@ -1599,8 +1585,8 @@
       messagesContainer.append(msgElem, timeElem);
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
       this.chatHistory.push({ sender, message, time: timeStr });
-      setCookie('chatWidgetThreadId', this.threadId);
-      setCookie('chatWidgetHistory', JSON.stringify(this.chatHistory));
+      localStorage.setItem('chatWidgetThreadId', this.threadId);
+      localStorage.setItem('chatWidgetHistory', JSON.stringify(this.chatHistory));
     },
 
     appendTypingIndicator() {
