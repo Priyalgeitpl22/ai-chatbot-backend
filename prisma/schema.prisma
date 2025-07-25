@@ -44,22 +44,22 @@ model Organization {
 }
 
 model User {
-  id              String       @id @default(uuid())
-  email           String       @unique
-  fullName        String
-  password        String
-  phone           String?
-  role            String       @default("admin")
-  verified        Boolean      @default(false)
-  orgId           String
-  aiOrgId         Int?
-  profilePicture  String?
-  organization    Organization @relation(fields: [orgId], references: [id])
-  createdAt       DateTime     @default(now())
-  online          Boolean      @default(true)
-  schedule        Json?
-  deletedAt       DateTime?
-  faqs            FAQ[]
+  id             String       @id @default(uuid())
+  email          String       @unique
+  fullName       String
+  password       String
+  phone          String?
+  role           String       @default("admin")
+  verified       Boolean      @default(false)
+  orgId          String
+  aiOrgId        Int?
+  profilePicture String?
+  organization   Organization @relation(fields: [orgId], references: [id])
+  createdAt      DateTime     @default(now())
+  online         Boolean      @default(false)
+  schedule       Json?
+  deletedAt      DateTime?
+  faqs           FAQ[]
   // Fields for OTP verification
   otpCode         String?
   otpExpiresAt    DateTime?
