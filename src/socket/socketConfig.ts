@@ -51,14 +51,14 @@ const previousMessages = await prisma.message.findMany({
   where: { threadId: data.threadId },
 });
 const isFirstUserMessage =
-  previousMessages.filter((m) => m.sender === "User").length === 1;
+  previousMessages.filter((m:any) => m.sender === "User").length === 1;
 
 const thread = await prisma.thread.findUnique({
   where: { id: data.threadId },
 });
 
 const agentMessageAlreadySent = previousMessages.some(
-  (m) => m.sender === "Bot" && m.content === "An agent is available and will assist you soon. Thank you for your patience."
+  (m:any) => m.sender === "Bot" && m.content === "An agent is available and will assist you soon. Thank you for your patience."
 );
 if (data.sender === 'User') {
   const prevMsgs = await prisma.message.findMany({
@@ -66,7 +66,7 @@ if (data.sender === 'User') {
     orderBy: { createdAt: 'desc' },
     take: 2
   });
-  const lastBotMessage = prevMsgs.find(m => m.sender === 'Bot');
+  const lastBotMessage = prevMsgs.find((m:any) => m.sender === 'Bot');
   const isTaskPrompt = lastBotMessage && lastBotMessage.content.includes("create a ticket");
   const userReply = data.content.toLowerCase().trim();
 

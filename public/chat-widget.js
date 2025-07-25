@@ -1,11 +1,18 @@
 (function (global) {
-  window.addEventListener('beforeunload', function() {
-    localStorage.removeItem('chatWidgetThreadId');
-    localStorage.removeItem('chatWidgetHistory');
-  });
+  // window.addEventListener('beforeunload', function() {
+  //   localStorage.removeItem('chatWidgetThreadId');
+  //   localStorage.removeItem('chatWidgetHistory');
+  // });
 
   // const BACKEND_URL = "http://localhost:5003";
   const BACKEND_URL = "https://api.chat.jooper.ai";
+
+  function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return null;
+  }
 
 
   const ChatWidget = {
@@ -33,6 +40,43 @@
       } catch (e) {
         data = { data: {} };
       }
+
+      //chat persist
+      this.threadId = getCookie('chatWidgetThreadId');
+      if (this.threadId) {
+        // Always fetch full history from backend
+        fetch(`${BACKEND_URL}/api/message/chat-persist/${this.threadId}`)
+          .then(res => res.json())
+          .then(data => {
+            console.log("data.data", data.data)
+            if (data && Array.isArray(data.data) && data.data.length > 0) {
+              this.chatHistory = data.data;
+              localStorage.setItem('chatWidgetHistory', JSON.stringify(this.chatHistory));
+            } else {
+              // No history, show greeting
+              this.chatHistory = [{
+                sender: "ChatBot",
+                message: "Hello! How can I help you?",
+                time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+              }];
+              localStorage.setItem('chatWidgetHistory', JSON.stringify(this.chatHistory));
+            }
+          })
+          .catch((err) => {
+            console.log('Error fetching chat history from API:', err);
+            // If API fails, show greeting
+            this.chatHistory = [{
+              sender: "ChatBot",
+              message: "Hello! How can I help you?",
+              time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+            }];
+            localStorage.setItem('chatWidgetHistory', JSON.stringify(this.chatHistory));
+          });
+      } else {
+        // No threadId, start a new chat
+        this.startChatThread();
+      }
+
       const defaultOptions = {
         elementId: "chat-widget",
         apiEndpoint: data.data?.socketServer,
@@ -67,6 +111,7 @@
       } else {
         this.shadowRoot = this.container.shadowRoot;
       }
+
       this.socket = io(this.options.socketServer);
       this.onlinAgents = [];
       this.globalStylesInjected = false;
@@ -564,6 +609,7 @@
     },
 
     renderIcon() {
+      //to do
       const positionStyles = this.getPositionStyles();
       const isBottomRight = this.options.position === "bottom-right";
       if (this.shadowRoot) {
@@ -581,13 +627,16 @@
           </div>
         `;
         this.injectGlobalStyles();
+
         if (isBottomRight) {
           this.shadowRoot.querySelector(".jooper-chat-container").style.flexDirection =
             "row-reverse";
         }
         this.shadowRoot
           .querySelector(".jooper-chat-icon")
-          .addEventListener("click", () => this.renderChatWindow());
+          .addEventListener("click", () => {
+            this.renderChatWindow()
+          });
         this.shadowRoot.getElementById("jooper-close-message").addEventListener("click", () => {
           this.shadowRoot.getElementById("jooper-chat-message").style.display = "none";
         });
@@ -612,6 +661,7 @@
           this.container.querySelector(".jooper-chat-container").style.flexDirection =
             "row-reverse";
         }
+
         this.container
           .querySelector(".jooper-chat-icon")
           .addEventListener("click", () => this.renderChatWindow());
@@ -708,6 +758,7 @@
                   this.socket.emit("leaveThread", this.threadId)
                   localStorage.removeItem('chatWidgetThreadId');
                   localStorage.removeItem('chatWidgetHistory');
+                  document.cookie = "chatWidgetThreadId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
                   this.chatHistory = [];
                   this.threadId = null;
                   this.renderIcon();
@@ -839,6 +890,12 @@
     },
 
     startChatThread() {
+
+      const existingThreadId = getCookie("chatWidgetThreadId");
+      if (existingThreadId) {
+        this.threadId = existingThreadId;
+        return;
+      }
       const currentUrl = window.location.href;
       this.fetchIp().then((ipAddress) => {
         const payload = {
@@ -854,7 +911,7 @@
         };
         this.socket.emit("startChat", payload);
         this.socket.once("chatStarted", (data) => {
-          this.threadId = data.threadId;
+          this.threadId = data?.threadId;
           if (!this.chatHistory || this.chatHistory.length === 0) {
             const greetingMessage =
               this.options.allowCustomGreeting && this.options.customGreetingMessage
@@ -863,6 +920,7 @@
             this.storeBotMessage(greetingMessage);
             this.appendSuggestion();
           }
+document.cookie = `chatWidgetThreadId=${this.threadId}; path=/`;
         });
       });
     },
