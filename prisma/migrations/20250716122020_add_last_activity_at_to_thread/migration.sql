@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Thread" ADD COLUMN     "lastActivityAt" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP;

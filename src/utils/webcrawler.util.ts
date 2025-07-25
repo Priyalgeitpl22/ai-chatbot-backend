@@ -1,6 +1,6 @@
 import axios from "axios";
 import * as cheerio from "cheerio";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { OpenAI } from "openai";
 import { URL } from "url";
 
 const visited = new Set<string>();
@@ -55,33 +55,46 @@ async function crawl(
   }
 }
 
-async function summarizeWithGemini(text: string): Promise<string> {
-  const apiKey =process.env.GOOGLE_API_KEY;
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
-  const genAI = new GoogleGenerativeAI(apiKey||"");
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+async function summarizeWithOpenAI(text: string): Promise<string> {
+  const prompt = `You are a professional web content analyst.
 
-  const prompt = `
-You are a website analyzer. Read the content and answer:
+Your job is to deeply understand the purpose and content of the following website data. Based on the information, provide a detailed summary with the following points:
 
-1. What is this website about?
-2. What services or products does it provide?
-3. Who might benefit from this site?
+1. **Website Overview**: What is the primary purpose or mission of this website?
+2. **Key Offerings**: What main services, products, tools, or features does it provide?
+3. **Target Audience**: Who is this website primarily intended for? Be specific.
+4. **Unique Value Proposition**: What makes this website or its offerings stand out from competitors?
+5. **Content & Tone**: What is the tone and style of the content (e.g. professional, friendly, technical, sales-focused)?
+6. **Notable Features**: Mention any standout sections, tools, or pages (e.g. blog, documentation, pricing, community, integrations).
+7. **Call to Action**: What actions does the website encourage users to take?
+
+Analyze the content provided below and write your response in a clear, structured format.
+
+---
 
 Website Content:
-${text}
-`;
+${text}`
+;
 
   try {
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    console.log("\n📢 Gemini Summary:\n");
-    // console.log(response.text())
-    return response.text()
+    const result = await openai.chat.completions.create({
+      model: "gpt-4", // or "gpt-3.5-turbo"
+      messages: [
+        { role: "system", content: "You are a helpful website summarizer." },
+        { role: "user", content: prompt },
+      ],
+      temperature: 0.5,
+      max_tokens: 800,
+    });
+
+    const content = result.choices[0]?.message?.content ?? "";
+    console.log("\n📢 OpenAI Summary:\n");
+    return content;
   } catch (err: any) {
-    console.error("❌ Gemini Error:", err.message);
-    return ""
-    
+    console.error("❌ OpenAI Error:", err.message);
+    return "";
   }
 }
 
@@ -89,9 +102,9 @@ export async function webcrawl(url: string): Promise<string> {
   const base = new URL(url).origin;
   await crawl(url, base);
   const content = summaries.join("\n\n").slice(0, 12000);
-  const data =await summarizeWithGemini(content);
-  return data
+  const data = await summarizeWithOpenAI(content);
+  return data;
 }
 
-// Test
+// Example:
 // webcrawl("https://vercel.com");

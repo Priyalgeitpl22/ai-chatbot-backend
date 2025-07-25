@@ -102,7 +102,6 @@ export const assignThread = async (req: Request, res: Response): Promise<any> =>
       return res.status(400).json({ code: 400, message: "assignedTo value is required." })
     }
 
-    // if we want to unassign 
     if (!assign) {
       const thread = await prisma.thread.update({
         where: { id: threadId },
@@ -131,7 +130,6 @@ export const markThreadReaded = async (req: Request, res: Response): Promise<any
       const thread = await prisma.thread.findUnique({ where: { id: threadId } })
       if (thread) {
         await prisma.thread.update({ where: { id: thread.id }, data: { readed: true } })
-        // await prisma.message.update({where:{threadId:(threadId)},data:{sender:"true"}})
         await prisma.message.updateMany({ where: { threadId: threadId }, data: { seen: true } })
         return res.status(200).json({ code: 200, message: "Thread readed sucessful" })
       } else {
@@ -159,7 +157,7 @@ export const createChatOrTicket = async (req: any, res: any) => {
       const onlineAgents = await prisma.user.findMany({
         where: {
           orgId,
-          role: "agent", // or "admin", depending on your logic
+          role: "agent", 
           online: true,
         },
       });
@@ -167,7 +165,16 @@ export const createChatOrTicket = async (req: any, res: any) => {
       if (onlineAgents.length > 0) {
         return res.status(200).json({ code: 200, message: "Agent is online", connectToAgent: true });
       } else {
-        // Create ticket thread
+        const endedThread = await prisma.thread.findFirst({
+          where: {
+            email,
+            status: 'ended',
+            aiOrgId: org.aiOrgId ?? 0,
+          },
+        });
+        if (endedThread) {
+          return res.status(400).json({ code: 400, message: "Chat already ended, cannot create ticket." });
+        }
         const thread = await prisma.thread.create({
           data: {
             user: name,

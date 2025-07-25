@@ -10,6 +10,7 @@ const prisma = new PrismaClient();
 export const onlineAgents = new Map<string, string>(); // Map<agentId, agentName>
 const socketOrgMap = new Map<string, { orgId: string; userId: string; role: string }>();
 
+export let io: Server;
 
 export const addOnlineAgent = (agentId: string, agentName: string) =>
   onlineAgents.set(agentId, agentName);
@@ -139,7 +140,7 @@ if (data.sender === 'User') {
         !agentMessageAlreadySent &&
         (
           (!data?.allowNameEmail && isFirstUserMessage) ||
-          (data?.allowNameEmail && thread && thread.name !== "" && thread.email !== "")
+          (data?.allowNameEmail && thread && thread.name !== "" && thread.email !== "") 
         )
       ) {
         answer = "An agent is available and will assist you soon. Thank you for your patience.";
@@ -169,7 +170,7 @@ if (data.sender === 'User') {
 };
 
 export const socketSetup = (server: any) => {
-  const io = new Server(server, {
+  io = new Server(server, {
     cors: {
       origin: "*",
       methods: ["GET", "POST"],
@@ -214,6 +215,9 @@ export const socketSetup = (server: any) => {
       socket.leave(threadId);
       console.log(`User left thread: ${threadId}`);
     });
+    socket.on("joinThreadRoom", ({ threadId }) => {
+      socket.join(threadId);
+    });
 
     socket.on("typing", ({ threadId, agentName }) =>
       socket.to(threadId).emit("typing", { agentName })
@@ -224,12 +228,27 @@ export const socketSetup = (server: any) => {
     );
 
     socket.on("sendMessage", async (data) => {
-      try {
-        if (!data.threadId) {
-          return socket.emit("error", { message: "Thread ID is required" });
-        }
-        const senderKey = data.sender === "User" ? "User" : "Bot";
-        // Save every incoming message.
+  try {
+    if (!data.threadId) {
+      return socket.emit("error", { message: "Thread ID is required" });
+    }
+
+    // Check thread status
+    const thread = await prisma.thread.findUnique({
+      where: { id: data.threadId },
+      select: { status: true },
+    });
+
+    if (!thread) {
+      return socket.emit("error", { message: "Thread not found" });
+    }
+
+    if (thread.status === 'ended') {
+      return socket.emit("error", { message: "This chat has been ended. No further messages allowed." });
+    }
+
+    // Proceed to store message
+    const senderKey = data.sender === "User" ? "User" : "Bot";
         const hasContent = data.content && data.content.trim() !== "";
         const hasFile = data.fileData && (data.fileData.file_url || data.fileData.file_presigned_url);
         if (!hasContent && !hasFile) {
@@ -259,35 +278,43 @@ export const socketSetup = (server: any) => {
             createdAt: new Date().toISOString(),
           });
         }else{
-          await prisma.message.create({
-          data: {
-            content: data.content,
-            sender: senderKey,
-            threadId: data.threadId,
-            createdAt: new Date(data.createdAt),
-          },
-        });
-        }
-        const thread = await prisma.thread.findUnique({
-          where: { id: data.threadId },
-        });
-        io.to(`org-${data.orgId}`).emit("newMessage",{data})
-        if (
-          data.sender === "User" &&
-          data.allowNameEmail &&
-          thread &&
-          ((thread.name === "" || thread.email === "") || thread.email === data?.content)
-        ) {
-          return;
-        }
-
-        console.log("Online Agents:", getOnlineAgents());
-        await processAIResponse(data, io);
-
-      } catch (error) {
-        console.error("Error handling sendMessage:", error);
-      }
+      await prisma.message.create({
+      data: {
+        content: data.content,
+        sender: senderKey,
+        threadId: data.threadId,
+        createdAt: new Date(data.createdAt),
+      },
     });
+        }
+    // Update lastActivityAt on message send
+    await prisma.thread.update({
+      where: { id: data.threadId },
+      data: { lastActivityAt: new Date() },
+    });
+    // Skip name/email collection logic
+    const fullThread = await prisma.thread.findUnique({
+      where: { id: data.threadId },
+    });
+
+        io.to(`org-${data.orgId}`).emit("newMessage",{data})
+    if (
+      data.sender === "User" &&
+      data.allowNameEmail &&
+      fullThread &&
+      ((fullThread.name === "" || fullThread.email === "") || fullThread.email === data?.content)
+    ) {
+      return;
+    }
+
+    console.log("Online Agents:", getOnlineAgents());
+    await processAIResponse(data, io);
+
+  } catch (error) {
+    console.error("Error handling sendMessage:", error);
+  }
+});
+
 
     socket.on("processPendingMessage", async (data) => {
       try {
