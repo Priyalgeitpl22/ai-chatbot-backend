@@ -72,10 +72,11 @@
             }];
             localStorage.setItem('chatWidgetHistory', JSON.stringify(this.chatHistory));
           });
-      } else {
-        // No threadId, start a new chat
-        this.startChatThread();
-      }
+      } 
+      // else {
+      //   // No threadId, start a new chat
+      //   this.startChatThread();
+      // }
 
       const defaultOptions = {
         elementId: "chat-widget",
@@ -795,6 +796,7 @@
         this.chatHistory.forEach(msg => {
           this.appendMessage(msg.sender, msg.message);
         });
+        this.threadId = data.threadId;
         if (!this.chatHistory || this.chatHistory.length === 0) {
           const greetingMessage =
             this.options.allowCustomGreeting && this.options.customGreetingMessage
@@ -842,6 +844,7 @@
         this.chatHistory.forEach(msg => {
           this.appendMessage(msg.sender, msg.message);
         });
+        this.threadId = data.threadId;
         if (!this.chatHistory || this.chatHistory.length === 0) {
           const greetingMessage =
             this.options.allowCustomGreeting && this.options.customGreetingMessage
@@ -1115,12 +1118,13 @@ document.cookie = `chatWidgetThreadId=${this.threadId}; path=/`;
     },
 
     setupEventListeners() {
-      // pre existing clean up of the socket 
+    // pre existing clean up of the socket 
      this.socket.off("receiveMessage");
      this.socket.off("typing");
      this.socket.off("stopTyping");
      this.socket.off("agentStatusUpdate");
      this.socket.off("updateDashboard");
+     
       const sendMessageButton = this.getElement("send-message");
       const chatInput = this.getElement("chat-input");
       const fileUploadInput = this.getElement("file-upload");
