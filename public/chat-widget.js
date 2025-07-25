@@ -1115,6 +1115,12 @@ document.cookie = `chatWidgetThreadId=${this.threadId}; path=/`;
     },
 
     setupEventListeners() {
+      // pre existing clean up of the socket 
+     this.socket.off("receiveMessage");
+     this.socket.off("typing");
+     this.socket.off("stopTyping");
+     this.socket.off("agentStatusUpdate");
+     this.socket.off("updateDashboard");
       const sendMessageButton = this.getElement("send-message");
       const chatInput = this.getElement("chat-input");
       const fileUploadInput = this.getElement("file-upload");
