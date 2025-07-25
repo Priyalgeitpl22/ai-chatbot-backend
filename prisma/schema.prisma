@@ -61,7 +61,7 @@ model User {
   profilePicture String?
   organization   Organization @relation(fields: [orgId], references: [id])
   createdAt      DateTime     @default(now())
-  online         Boolean      @default(true)
+  online         Boolean      @default(false)
   schedule       Json?
   deletedAt      DateTime?
   faqs           FAQ[]
