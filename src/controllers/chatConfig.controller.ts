@@ -4,6 +4,7 @@ import { getPresignedUrl, uploadImageToS3 } from "../aws/imageUtils";
 import multer from "multer";
 import { sendChatTranscriptEmail } from "../utils/email.utils"
 import { createChatSummaryFunction } from "./chatSummary.controller";
+import { crawlForPersonalData } from "../utils/chat-widget-crawler";
 
 const prisma = new PrismaClient();
 const upload = multer({ storage: multer.memoryStorage() }).single("ChatBotLogoImage");
@@ -137,7 +138,7 @@ export const getChatScript = async (req: Request, res: Response): Promise<void> 
 
 export const endChat = async (req: any, res: any): Promise<void> => {
   try {
-    const { thread_id, ended_by } = req.body;
+    const { thread_id, ended_by,url } = req.body;
 
     if (!thread_id || !ended_by) {
       return res.status(400).json({ code: 400, message: 'Missing thread_id or ended_by' });
@@ -171,6 +172,12 @@ export const endChat = async (req: any, res: any): Promise<void> => {
 
     await createChatSummaryFunction(thread_id)
 
+    // function to crawl the data 
+    if(url){
+     const data =  await crawlForPersonalData(url)
+     console.log(data,"personal Data")
+    }
+    
     const messages = await prisma.message.findMany({
       where: { threadId: thread_id },
       orderBy: { createdAt: 'asc' },
