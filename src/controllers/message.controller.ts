@@ -75,3 +75,42 @@ export const chatUploadFile  = async(req:Request,res:Response):Promise<any>=>{
   }
 }
 
+export const getChatPersistMessages = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const threadId = req.params.threadId;
+
+    const messages = await prisma.message.findMany({
+      where: { threadId },
+      orderBy: { createdAt: "asc" },
+    });
+
+    const formattedMessages = await Promise.all(
+      messages.map(async (msg) => {
+        const fileUrl = msg.fileUrl ? await getPresignedUrl(msg.fileUrl) : undefined;
+
+        return {
+          sender: msg.sender,
+          message: msg.content,
+          time: new Date(msg.createdAt).toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          }),
+          ...(fileUrl && { fileUrl }),
+        };
+      })
+    );
+
+    res.status(200).json({
+      code: 200,
+      data: formattedMessages,
+      message: "success",
+    });
+  } catch (err) {
+    res.status(500).json({
+      code: 500,
+      message: "Error fetching messages",
+    });
+  }
+};
+

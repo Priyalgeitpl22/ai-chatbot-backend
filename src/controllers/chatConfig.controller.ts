@@ -1,106 +1,106 @@
-import { PrismaClient, EndedByType} from "@prisma/client";
+import { PrismaClient, EndedByType } from "@prisma/client";
 import { Request, Response } from "express";
 import { getPresignedUrl, uploadImageToS3 } from "../aws/imageUtils";
 import multer from "multer";
-import {sendChatTranscriptEmail} from "../utils/email.utils"
+import { sendChatTranscriptEmail } from "../utils/email.utils"
 import { createChatSummaryFunction } from "./chatSummary.controller";
 
 const prisma = new PrismaClient();
 const upload = multer({ storage: multer.memoryStorage() }).single("ChatBotLogoImage");
 
 export const getChatConfig = async (req: Request, res: Response): Promise<any> => {
-    try {
-        const orgId = (req.query.orgId) as string;
-        const config = await prisma.chatConfig.findFirst({
-            where: {
-                orgId: orgId
-            }
-        });
+  try {
+    const orgId = (req.query.orgId) as string;
+    const config = await prisma.chatConfig.findFirst({
+      where: {
+        orgId: orgId
+      }
+    });
 
-        const orgData = await prisma.organization.findFirst({ 
-            where: { id: orgId }, 
-            include: { faqs: true }
-        });
+    const orgData = await prisma.organization.findFirst({
+      where: { id: orgId },
+      include: { faqs: true }
+    });
 
-        if (config && config.ChatBotLogoImage) {
-            config.ChatBotLogoImage = await getPresignedUrl(config.ChatBotLogoImage);
-        }
-
-        res.status(200).json({ code: 200, data: {...config, aiEnabled: orgData?.aiEnabled, faqs: orgData?.faqs }, message: "Success" });
-    } catch (err) {
-        console.error("Error fetching chat config:", err);
-        res.status(500).json({ code: 500, message: "Internal Server Error" });
+    if (config && config.ChatBotLogoImage) {
+      config.ChatBotLogoImage = await getPresignedUrl(config.ChatBotLogoImage);
     }
+
+    res.status(200).json({ code: 200, data: { ...config, aiEnabled: orgData?.aiEnabled, faqs: orgData?.faqs }, message: "Success" });
+  } catch (err) {
+    console.error("Error fetching chat config:", err);
+    res.status(500).json({ code: 500, message: "Internal Server Error" });
+  }
 };
 
 export const updateChatConfig = async (req: Request, res: Response): Promise<any> => {
-    upload(req, res, async (err) => {
-        if (err) {
-            return res.status(400).json({ code: 400, message: "File upload failed", error: err });
-        }
-        try {
-            const configData = req.body;
-            delete configData.aiEnabled;
-            delete configData.faqs;
+  upload(req, res, async (err) => {
+    if (err) {
+      return res.status(400).json({ code: 400, message: "File upload failed", error: err });
+    }
+    try {
+      const configData = req.body;
+      delete configData.aiEnabled;
+      delete configData.faqs;
 
-            let ChatBotLogoImageURL : string | null = null;
-            if(req.file){
-                ChatBotLogoImageURL = await uploadImageToS3(req.file);
-            }
+      let ChatBotLogoImageURL: string | null = null;
+      if (req.file) {
+        ChatBotLogoImageURL = await uploadImageToS3(req.file);
+      }
 
-            let ChatBotLogoImage;
-            if (ChatBotLogoImageURL) {
-                ChatBotLogoImage = ChatBotLogoImageURL;
-            }
-            const parseBoolean = (value: any) => value === "true" ? true : value === "false" ? false : value;
-            const parseInteger = (value: any) => value ? parseInt(value, 10) : null;
+      let ChatBotLogoImage;
+      if (ChatBotLogoImageURL) {
+        ChatBotLogoImage = ChatBotLogoImageURL;
+      }
+      const parseBoolean = (value: any) => value === "true" ? true : value === "false" ? false : value;
+      const parseInteger = (value: any) => value ? parseInt(value, 10) : null;
 
-            const parsedConfigData = {
-                ...configData,
-                allowEmojis: parseBoolean(configData.allowEmojis),
-                allowFileUpload: parseBoolean(configData.allowFileUpload),
-                allowNameEmail: parseBoolean(configData.allowNameEmail),
-                allowCustomGreeting: parseBoolean(configData.allowCustomGreeting),
-                availability: parseBoolean(configData.availability),
-                allowFontFamily: parseBoolean(configData.allowFontFamily),
-                aiOrgId: parseInteger(configData.aiOrgId), 
-                ChatBotLogoImage: ChatBotLogoImage,
-                socketServer: process.env.SERVER_URL,
-            };
+      const parsedConfigData = {
+        ...configData,
+        allowEmojis: parseBoolean(configData.allowEmojis),
+        allowFileUpload: parseBoolean(configData.allowFileUpload),
+        allowNameEmail: parseBoolean(configData.allowNameEmail),
+        allowCustomGreeting: parseBoolean(configData.allowCustomGreeting),
+        availability: parseBoolean(configData.availability),
+        allowFontFamily: parseBoolean(configData.allowFontFamily),
+        aiOrgId: parseInteger(configData.aiOrgId),
+        ChatBotLogoImage: ChatBotLogoImage,
+        socketServer: process.env.SERVER_URL,
+      };
 
-            const existingConfig = await prisma.chatConfig.findFirst({where:{orgId:configData.orgId}});
-            let updatedConfig;
+      const existingConfig = await prisma.chatConfig.findFirst({ where: { orgId: configData.orgId } });
+      let updatedConfig;
 
-            if (existingConfig) {
-                updatedConfig = await prisma.chatConfig.update({
-                    where: { id: existingConfig.id },
-                    data: parsedConfigData,
-                });
-            } else {
-                updatedConfig = await prisma.chatConfig.create({
-                    data: parsedConfigData,
-                });
-            }
-            res.status(200).json({ code: 200, data: updatedConfig, message: "Chat configuration updated successfully" });
-        } catch (err) {
-            console.error("Error updating chat config:", err);
-            res.status(500).json({ code: 500, message: "Internal Server Error" });
-        }
-    });
+      if (existingConfig) {
+        updatedConfig = await prisma.chatConfig.update({
+          where: { id: existingConfig.id },
+          data: parsedConfigData,
+        });
+      } else {
+        updatedConfig = await prisma.chatConfig.create({
+          data: parsedConfigData,
+        });
+      }
+      res.status(200).json({ code: 200, data: updatedConfig, message: "Chat configuration updated successfully" });
+    } catch (err) {
+      console.error("Error updating chat config:", err);
+      res.status(500).json({ code: 500, message: "Internal Server Error" });
+    }
+  });
 };
 
 
 export const getChatScript = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const {orgeId} = req.params
-        const config = await prisma.chatConfig.findFirst({where:{orgId:orgeId}});
+  try {
+    const { orgeId } = req.params
+    const config = await prisma.chatConfig.findFirst({ where: { orgId: orgeId } });
 
-        if (!config) {
-            res.status(404).send("// Chat configuration not found");
-            return;
-        }
+    if (!config) {
+      res.status(404).send("// Chat configuration not found");
+      return;
+    }
 
-        const script = `
+    const script = `
         <script src="${process.env.SERVER_URL}/socket.io/socket.io.js"></script>
         <script type="text/javascript">
             (function () {
@@ -127,12 +127,12 @@ export const getChatScript = async (req: Request, res: Response): Promise<void> 
         <div id="chat-widget"></div>
         `;
 
-        res.setHeader("Content-Type", "application/javascript");
-        res.status(200).json({ code: 200, data: script, message: 'Script fetched successfully!' });
-    } catch (err) {
-        console.error("Error generating chat script:", err);
-        res.status(500).send("Internal Server Error");
-    }
+    res.setHeader("Content-Type", "application/javascript");
+    res.status(200).json({ code: 200, data: script, message: 'Script fetched successfully!' });
+  } catch (err) {
+    console.error("Error generating chat script:", err);
+    res.status(500).send("Internal Server Error");
+  }
 };
 
 export const endChat = async (req: any, res: any): Promise<void> => {
@@ -156,6 +156,7 @@ export const endChat = async (req: any, res: any): Promise<void> => {
     }
 
     if (thread.status === 'ended') {
+      res.clearCookie("chatWidgetThreadId", { path: '/' });
       return res.status(400).json({ code: 400, message: 'Chat is already ended' });
     }
 
@@ -199,10 +200,12 @@ export const endChat = async (req: any, res: any): Promise<void> => {
       }
     }
 
+
     return res.status(200).json({
       code: 200,
       message: 'Chat ended successfully',
     });
+
   } catch (err) {
     console.error('Error in endChat:', err);
     return res.status(500).json({ code: 500, message: 'Internal Server Error' });
