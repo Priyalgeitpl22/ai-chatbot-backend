@@ -795,6 +795,7 @@
         this.chatHistory.forEach(msg => {
           this.appendMessage(msg.sender, msg.message);
         });
+        this.threadId = data.threadId
         if (!this.chatHistory || this.chatHistory.length === 0) {
           const greetingMessage =
             this.options.allowCustomGreeting && this.options.customGreetingMessage
@@ -842,6 +843,7 @@
         this.chatHistory.forEach(msg => {
           this.appendMessage(msg.sender, msg.message);
         });
+        this.threadId = data.threadId;
         if (!this.chatHistory || this.chatHistory.length === 0) {
           const greetingMessage =
             this.options.allowCustomGreeting && this.options.customGreetingMessage
@@ -1115,7 +1117,7 @@ document.cookie = `chatWidgetThreadId=${this.threadId}; path=/`;
     },
 
     setupEventListeners() {
-      // pre existing clean up of the socket 
+        // pre existing clean up of the socket 
      this.socket.off("receiveMessage");
      this.socket.off("typing");
      this.socket.off("stopTyping");
