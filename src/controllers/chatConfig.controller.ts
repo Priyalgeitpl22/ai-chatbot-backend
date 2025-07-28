@@ -138,7 +138,7 @@ export const getChatScript = async (req: Request, res: Response): Promise<void> 
 
 export const endChat = async (req: any, res: any): Promise<void> => {
   try {
-    const { thread_id, ended_by,url } = req.body;
+    const { thread_id, ended_by,url ,header} = req.body;
 
     if (!thread_id || !ended_by) {
       return res.status(400).json({ code: 400, message: 'Missing thread_id or ended_by' });
@@ -174,7 +174,7 @@ export const endChat = async (req: any, res: any): Promise<void> => {
 
     // function to crawl the data 
     if(url){
-     const data =  await crawlForPersonalData(url)
+     const data =  await crawlForPersonalData(url,header)
      console.log(data,"personal Data")
     }
     

