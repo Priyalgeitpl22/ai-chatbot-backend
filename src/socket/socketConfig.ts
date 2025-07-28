@@ -207,7 +207,6 @@ export const socketSetup = (server: any) => {
       io.to(`org-${agentData.orgId}`).emit("agentStatusUpdate", getOnlineAgents())
     });
 
-    // socket to assign agent 
     socket.on("assignThread",({threadId,agentId,orgId})=>{
       io.to(`org-${orgId}`).emit("threadAssigned",{threadId,agentId})
     })
