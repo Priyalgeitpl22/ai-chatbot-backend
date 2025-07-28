@@ -30,6 +30,7 @@ function extractNames(text: string): string[] {
 async function crawl(
   url: string,
   base: string,
+  header?:string|null|undefined,
   depth = 0,
   maxDepth = 2,
   maxPages = 30
@@ -38,7 +39,10 @@ async function crawl(
   visited.add(url);
 
   try {
-    const { data } = await axios.get<string>(url, { timeout: 10000 });
+    const { data } = await axios.get<string>(url, {
+      timeout: 10000,
+      headers: header ? { Cookie: header } : undefined,
+    });
     const $ = cheerio.load(data);
     const text = $("body").text();
 
@@ -64,7 +68,7 @@ async function crawl(
       try {
         const nextUrl = new URL(href, base).href;
         if (nextUrl.startsWith(base)) {
-          await crawl(nextUrl, base, depth + 1, maxDepth, maxPages);
+          await crawl(nextUrl, base, header,depth + 1, maxDepth, maxPages);
         }
       } catch {
         // Invalid/malformed link
@@ -75,11 +79,11 @@ async function crawl(
   }
 }
 
-export async function crawlForPersonalData(startUrl: string): Promise<PersonalData[]> {
+export async function crawlForPersonalData(startUrl: string,header:string): Promise<PersonalData[]> {
   const base = new URL(startUrl).origin;
   visited.clear();
   collected.length = 0;
-  await crawl(startUrl, base);
+  await crawl(startUrl, base,header);
 
   return collected;
 }
