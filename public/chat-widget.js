@@ -43,40 +43,42 @@
 
       //chat persist
       this.threadId = getCookie('chatWidgetThreadId');
-      if (this.threadId) {
-        // Always fetch full history from backend
-        fetch(`${BACKEND_URL}/api/message/chat-persist/${this.threadId}`)
-          .then(res => res.json())
-          .then(data => {
-            console.log("data.data", data.data)
-            if (data && Array.isArray(data.data) && data.data.length > 0) {
-              this.chatHistory = data.data;
-              localStorage.setItem('chatWidgetHistory', JSON.stringify(this.chatHistory));
-            } else {
-              // No history, show greeting
-              this.chatHistory = [{
-                sender: "ChatBot",
-                message: "Hello! How can I help you?",
-                time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-              }];
-              localStorage.setItem('chatWidgetHistory', JSON.stringify(this.chatHistory));
-            }
-          })
-          .catch((err) => {
-            console.log('Error fetching chat history from API:', err);
-            // If API fails, show greeting
-            this.chatHistory = [{
-              sender: "ChatBot",
-              message: "Hello! How can I help you?",
-              time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-            }];
-            localStorage.setItem('chatWidgetHistory', JSON.stringify(this.chatHistory));
-          });
-      } 
-      // else {
-      //   // No threadId, start a new chat
-      //   this.startChatThread();
-      // }
+     if (this.threadId) {
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/message/chat-persist/${this.threadId}`);
+    const result = await res.json();
+    console.log("data.data", result.data);
+
+    if (Array.isArray(result.data) && result.data.length > 0) {
+      this.chatHistory = result.data;
+      localStorage.setItem('chatWidgetHistory', JSON.stringify(this.chatHistory));
+    } else {
+      // No messages from backend
+      this.chatHistory = [{
+        sender: "ChatBot",
+        message: "Hello! How can I help you?",
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      }];
+      localStorage.setItem('chatWidgetHistory', JSON.stringify(this.chatHistory));
+    }
+  } catch (err) {
+    console.log('Error fetching chat history from API:', err);
+    this.chatHistory = [{
+      sender: "ChatBot",
+      message: "Hello! How can I help you?",
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    }];
+    localStorage.setItem('chatWidgetHistory', JSON.stringify(this.chatHistory));
+  }
+} else {
+  // No thread ID — maybe first-time visitor
+  const savedHistory = localStorage.getItem('chatWidgetHistory');
+  this.chatHistory = savedHistory ? JSON.parse(savedHistory) : [{
+    sender: "ChatBot",
+    message: "Hello! How can I help you?",
+    time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+  }];
+}
 
       const defaultOptions = {
         elementId: "chat-widget",
