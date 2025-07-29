@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "FAQ" ADD COLUMN     "enabled" BOOLEAN NOT NULL DEFAULT true;
