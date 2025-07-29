@@ -207,3 +207,30 @@ export const createChatOrTicket = async (req: any, res: any) => {
     return res.status(500).json({ code: 500, message: "Error processing chat" });
   }
 };
+
+export const moveToTrash = async(ThreadId:string,trash:string)=>{
+  try{
+    if(ThreadId){
+       await prisma.thread.update({where:{id:ThreadId},data:{type:trash}})
+       return 
+    }else{
+      return 
+    }
+  }catch(err){
+    console.log(err)
+    return err
+  }
+}
+
+export const deleteThread  = async()=>{
+  try{
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate()-30)
+    await prisma.thread.deleteMany({where:{type:"trash" , createdAt:{lt:thirtyDaysAgo}}})
+    return true
+
+  }catch(err: any){
+    console.log(err)
+    return false
+  }
+}
