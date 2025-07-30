@@ -745,45 +745,55 @@
             popup.style.display = "flex";
           }
         });
-
+        
         this.getElement("end-chat-confirm").addEventListener("click", () => {
           if (this.threadId) {
-            fetch(`${BACKEND_URL}/api/chat/config/end`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json"
-              },
-              body: JSON.stringify({
-                thread_id: this.threadId,
-                ended_by: "user",
-                header:document.cookie
-              })
-            })
-              .then(response => response.json())
-              .then(data => {
-                console.log(data)
-                if (data.code === 200) {
-                  this.socket.emit("leaveThread", this.threadId)
+            if(this.socket){
+              this.socket.emit("endThread",{threadId:this.threadId,orgId:this.options.organizationId,ended_by:"user"})
+              this.socket.emit("leaveThread", this.threadId)
                   localStorage.removeItem('chatWidgetThreadId');
                   localStorage.removeItem('chatWidgetHistory');
                   document.cookie = "chatWidgetThreadId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
                   this.chatHistory = [];
                   this.threadId = null;
                   this.renderIcon();
+            }
+            // fetch(`${BACKEND_URL}/api/chat/config/end`, {
+            //   method: "POST",
+            //   headers: {
+            //     "Content-Type": "application/json"
+            //   },
+            //   body: JSON.stringify({
+            //     thread_id: this.threadId,
+            //     ended_by: "user",
+            //     header:document.cookie
+            //   })
+            // })
+            //   .then(response => response.json())
+            //   .then(data => {
+            //     console.log(data)
+            //     if (data.code === 200) {
+            //       this.socket.emit("leaveThread", this.threadId)
+            //       localStorage.removeItem('chatWidgetThreadId');
+            //       localStorage.removeItem('chatWidgetHistory');
+            //       document.cookie = "chatWidgetThreadId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+            //       this.chatHistory = [];
+            //       this.threadId = null;
+            //       this.renderIcon();
 
-                } else {
-                  const popup = this.getElement("end-chat-popup");
-                  if (popup) {
-                    popup.style.display = "none";
-                  }
-                }
-              })
-              .catch(error => {
-                const popup = this.getElement("end-chat-popup");
-                if (popup) {
-                  popup.style.display = "none";
-                }
-              });
+            //     } else {
+            //       const popup = this.getElement("end-chat-popup");
+            //       if (popup) {
+            //         popup.style.display = "none";
+            //       }
+            //     }
+            //   })
+            //   .catch(error => {
+            //     const popup = this.getElement("end-chat-popup");
+            //     if (popup) {
+            //       popup.style.display = "none";
+            //     }
+            //   });
 
           }
         });

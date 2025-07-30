@@ -1,16 +1,16 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { uploadImageToS3, getPresignedUrl } from '../aws/imageUtils';
-import pdfParse from 'pdf-parse'; 
+import pdfParse from 'pdf-parse';
 
 import mammoth from 'mammoth';
 const prisma = new PrismaClient();
 
 export const createFAQ = async (req: any, res: any) => {
   const { faqs, orgId, question, answer, userId } = req.body;
-  
+
   let faqsArray = [];
-  
+
   if (faqs && Array.isArray(faqs)) {
     faqsArray = faqs;
   } else if (question && answer && orgId) {
@@ -40,7 +40,7 @@ export const createFAQ = async (req: any, res: any) => {
     if (!org.aiEnabled) {
       return res.status(403).json({ message: 'AI is not enabled for this organization.' });
     }
-    
+
     const user = req.user;
 
     if (!user || user.orgId !== orgId) {
@@ -63,7 +63,7 @@ export const createFAQ = async (req: any, res: any) => {
         orgId: orgId,
         userId: currentUserId,
         createdAt: {
-          gte: new Date(Date.now() - 1000) 
+          gte: new Date(Date.now() - 1000)
         }
       },
       orderBy: {
@@ -84,7 +84,7 @@ export const createFAQ = async (req: any, res: any) => {
 
 export const getFAQsByOrgId = async (req: any, res: any) => {
   const { orgId } = req.params;
-  
+
   if (!orgId) {
     return res.status(400).json({ message: 'Organization ID is required.' });
   }
@@ -94,11 +94,11 @@ export const getFAQsByOrgId = async (req: any, res: any) => {
       where: { id: orgId },
       select: { aiEnabled: true },
     });
-    
+
     if (!org) {
       return res.status(404).json({ message: 'Organization not found.' });
     }
-    
+
     if (!org.aiEnabled) {
       return res.status(403).json({ message: 'AI is not enabled for this organization.' });
     }
@@ -109,9 +109,11 @@ export const getFAQsByOrgId = async (req: any, res: any) => {
       return res.status(403).json({ message: 'User does not belong to this organization.' });
     }
 
+    const isAdmin = req.user && req.user.role === 'Admin';
     const faqs = await prisma.fAQ.findMany({
       where: {
-        orgId: orgId
+        orgId: orgId,
+        ...(isAdmin ? {} : { enabled: true })
       },
       orderBy: {
         createdAt: 'desc'
@@ -120,6 +122,7 @@ export const getFAQsByOrgId = async (req: any, res: any) => {
         id: true,
         question: true,
         answer: true,
+        enabled: true,
         createdAt: true,
         updatedAt: true,
         user: {
@@ -165,12 +168,12 @@ export const uploadFaqFile = async (req: any, res: any) => {
       data: {
         fileName: req.file.originalname,
         fileUrl: fileUrl,
-        answer: req.body.answer || '', 
-        question: req.body.question || '', 
-        uploadedBy: req.user.id, 
+        answer: req.body.answer || '',
+        question: req.body.question || '',
+        uploadedBy: req.user.id,
         uploadedAt: new Date(),
         orgId: req.user.orgId || req.body.orgId || undefined,
-        fileContent: fileContent, 
+        fileContent: fileContent,
       },
     });
 
@@ -185,7 +188,7 @@ export const uploadFaqFile = async (req: any, res: any) => {
         answer: uploadedFile.answer,
         uploadedBy: uploadedFile.uploadedBy,
         uploadedAt: uploadedFile.uploadedAt,
-        fileContent: uploadedFile.fileContent, 
+        fileContent: uploadedFile.fileContent,
         type: req.file.mimetype
       }
     });
@@ -195,7 +198,7 @@ export const uploadFaqFile = async (req: any, res: any) => {
   }
 };
 
-export const getPresignedUrlHandler = async (req: any, res: any)=> {
+export const getPresignedUrlHandler = async (req: any, res: any) => {
   try {
     const fileKey = req.params.fileKey;
 
@@ -205,11 +208,33 @@ export const getPresignedUrlHandler = async (req: any, res: any)=> {
 
     const url = await getPresignedUrl(fileKey);
     console.log(url);
-    
-    
+
+
     return res.status(200).json({ url });
   } catch (error) {
     console.error("Presigned URL handler error:", error);
     return res.status(500).json({ message: "Failed to generate presigned URL" });
+  }
+};
+
+export const updateFAQStatus = async (req: any, res: any) => {
+  const { id } = req.params;
+  const { enabled } = req.body;
+
+  // Check if user is admin
+  if (!req.user || req.user.role !== 'Admin') {
+    return res.status(403).json({ message: 'Forbidden: Admins only' });
+  }
+
+  try {
+    const updatedFAQ = await prisma.fAQ.update({
+      where: { id: id },
+      data: { enabled: Boolean(enabled) },
+    });
+
+    return res.status(200).json({ message: 'FAQ status updated', faq: updatedFAQ });
+  } catch (error) {
+    console.error('Error updating FAQ status:', error);
+    return res.status(500).json({ message: 'Internal server error.' });
   }
 };
