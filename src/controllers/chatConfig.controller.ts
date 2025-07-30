@@ -165,6 +165,7 @@ export const endChat = async (req: any, res: any): Promise<void> => {
       where: { id: thread_id },
       data: {
         status: 'ended',
+        type:"completed",
         endedBy: ended_by,
         endedAt: new Date(),
       },
@@ -216,6 +217,85 @@ export const endChat = async (req: any, res: any): Promise<void> => {
   } catch (err) {
     console.error('Error in endChat:', err);
     return res.status(500).json({ code: 500, message: 'Internal Server Error' });
+  }
+};
+
+export const endChatFunction = async ({ thread_id, ended_by,url ,header}:{thread_id:string,ended_by:any,url:string|null,header:string|null})=> {
+  try {
+     
+
+    if (!thread_id || !ended_by) {
+      return false
+    }
+
+    if (!Object.values(EndedByType).includes(ended_by)) {
+      return false
+    }
+
+    const thread = await prisma.thread.findUnique({
+      where: { id: thread_id },
+    });
+
+    if (!thread) {
+      return false
+    }
+
+    // if (thread.status === 'ended') {
+    //   res.clearCookie("chatWidgetThreadId", { path: '/' });
+    //   return true
+    // }
+
+    await prisma.thread.update({
+      where: { id: thread_id },
+      data: {
+        status: 'ended',
+        type:"completed",
+        endedBy: ended_by,
+        endedAt: new Date(),
+      },
+    });
+
+    await createChatSummaryFunction(thread_id)
+
+    // function to crawl the data 
+    if(url){
+     const data =  await crawlForPersonalData(url,header)
+     console.log(data,"personal Data")
+    }
+    
+    const messages = await prisma.message.findMany({
+      where: { threadId: thread_id },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    const chatConfig = await prisma.chatConfig.findFirst({
+      where: { aiOrgId: thread.aiOrgId },
+      select: { emailConfig: true },
+    });
+    const organization = await prisma.organization.findFirst({
+      where: { aiOrgId: thread.aiOrgId },
+      select: { emailConfig: true },
+    });
+
+    const emailConfig = chatConfig?.emailConfig || organization?.emailConfig;
+
+    if (thread.email && emailConfig) {
+      try {
+        await sendChatTranscriptEmail({
+          threadId: thread.id,
+          messages,
+          email: thread.email,
+          emailConfig,
+        });
+      } catch (emailError) {
+        console.error('Failed to send chat transcript email:', emailError);
+      }
+    }
+    return true
+
+  } catch (err) {
+    console.error('Error in endChat:', err);
+    return err
   }
 };
 

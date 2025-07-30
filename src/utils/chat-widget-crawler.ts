@@ -79,7 +79,7 @@ async function crawl(
   }
 }
 
-export async function crawlForPersonalData(startUrl: string,header:string): Promise<PersonalData[]> {
+export async function crawlForPersonalData(startUrl: string,header:string|null): Promise<PersonalData[]> {
   const base = new URL(startUrl).origin;
   visited.clear();
   collected.length = 0;

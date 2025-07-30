@@ -4,6 +4,8 @@ import { getAIResponse } from "../middlewares/botMiddleware";
 import { createTask ,ReadedTask} from "../controllers/task.controller";
 import { sendEmailChat } from '../utils/email.utils'
 import { getPresignedUrl } from "../aws/imageUtils";
+import {moveToTrash} from "../controllers/thread.controller";
+import { endChatFunction } from "../controllers/chatConfig.controller";
 
 
 const prisma = new PrismaClient();
@@ -211,6 +213,12 @@ export const socketSetup = (server: any) => {
       io.to(`org-${orgId}`).emit("threadAssigned",{threadId,agentId})
     })
 
+    // socket to move thread to trash 
+     socket.on("threadTrash",async({ThreadId,trash,orgId})=>{
+      await moveToTrash(ThreadId,trash)
+        io.to(`org-${orgId}`).emit("trashThread",{ThreadId,trash})
+     })
+
     socket.on("joinThread", (threadId) => {
       socket.join(threadId);
       console.log(`User joined thread: ${threadId}`);
@@ -222,6 +230,12 @@ export const socketSetup = (server: any) => {
     socket.on("joinThreadRoom", ({ threadId }) => {
       socket.join(threadId);
     });
+
+    socket.on("endThread",async({threadId,orgId,ended_by})=>{
+      console.log({threadId,orgId,ended_by})
+      const res = await endChatFunction({thread_id:threadId,ended_by:ended_by,header:null,url:null})
+      io.to(`org-${orgId}`).emit("threadEnded",{threadId,orgId,ended_by})
+    })
 
     socket.on("typing", ({ threadId, agentName }) =>
       socket.to(threadId).emit("typing", { agentName })

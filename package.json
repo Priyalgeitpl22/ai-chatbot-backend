@@ -25,6 +25,7 @@
     "body-parser": "^2.2.0",
     "cheerio": "^1.1.0",
     "cors": "^2.8.5",
+    "cron": "^4.3.2",
     "dotenv": "^16.6.1",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
