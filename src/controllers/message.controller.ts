@@ -94,7 +94,7 @@ export const getChatPersistMessages = async (req: Request, res: Response): Promi
           time: new Date(msg.createdAt).toLocaleTimeString("en-US", {
             hour: "2-digit",
             minute: "2-digit",
-            hour12: true,
+            hour12: false,
           }),
           ...(fileUrl && { fileUrl }),
         };
