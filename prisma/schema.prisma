@@ -121,14 +121,14 @@ model Thread {
   createdAt  DateTime  @default(now())
   type       String    @default("unassigned")
 
-  status       String         @default("active") // "active", "ended", "ticket_created"
-  endedBy      EndedByType?
-  endedAt      DateTime?
-  lastActivityAt DateTime? @default(now())
+  status         String         @default("active") // "active", "ended", "ticket_created"
+  endedBy        EndedByType?
+  endedAt        DateTime?
+  lastActivityAt DateTime?      @default(now())
   // Back-reference for tasks
-  tasks        Task[]
-  Notification Notification[]
-  ChatSummary  ChatSummary[]
+  tasks          Task[]
+  Notification   Notification[]
+  ChatSummary    ChatSummary[]
 }
 
 model Message {
@@ -200,6 +200,7 @@ model FAQ {
   userId       String?
   question     String       @db.Text
   answer       String       @db.Text
+  enabled      Boolean      @default(true)
   user         User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
   organization Organization @relation(fields: [orgId], references: [id])
   createdAt    DateTime     @default(now())
@@ -207,7 +208,7 @@ model FAQ {
   // Added for file upload support
   fileName     String?
   fileUrl      String?
-  fileContent String? @db.Text
+  fileContent  String?      @db.Text
   uploadedBy   String?
   uploadedAt   DateTime?
 }
