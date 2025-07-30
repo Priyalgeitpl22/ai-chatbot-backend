@@ -14,7 +14,6 @@
     return null;
   }
 
-
   const ChatWidget = {
     globalStylesInjected: false,
     userName: "",
@@ -43,46 +42,47 @@
 
       //chat persist
       this.threadId = getCookie('chatWidgetThreadId');
-     if (this.threadId) {
-  try {
-    const res = await fetch(`${BACKEND_URL}/api/message/chat-persist/${this.threadId}`);
-    const result = await res.json();
-    console.log("data.data", result.data);
-
-    if (Array.isArray(result.data) && result.data.length > 0) {
-      this.chatHistory = result.data.map(msg => ({
-        sender: msg.sender==="Bot"?"ChatBot":msg.sender,
-        message:  msg.message, 
-        time: msg.time
-      }));
-      localStorage.setItem('chatWidgetHistory', JSON.stringify(this.chatHistory))
-    } else {
-      // No messages from backend
-      this.chatHistory = [{
-        sender: "ChatBot",
-        message: "Hello! How can I help you?",
-        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-      }];
-      localStorage.setItem('chatWidgetHistory', JSON.stringify(this.chatHistory));
-    }
-  } catch (err) {
-    console.log('Error fetching chat history from API:', err);
-    this.chatHistory = [{
-      sender: "ChatBot",
-      message: "Hello! How can I help you?",
-      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-    }];
-    localStorage.setItem('chatWidgetHistory', JSON.stringify(this.chatHistory));
-  }
-} else {
-  // No thread ID — maybe first-time visitor
-  const savedHistory = localStorage.getItem('chatWidgetHistory');
-  this.chatHistory = savedHistory ? JSON.parse(savedHistory) : [{
-    sender: "ChatBot",
-    message: "Hello! How can I help you?",
-    time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-  }];
-}
+      if (this.threadId) {
+        try {
+          const res = await fetch(`${BACKEND_URL}/api/message/chat-persist/${this.threadId}`);
+          const result = await res.json();
+          console.log("data.data", result.data);
+          if (result.code === 200 && result.data.isValid) {
+            this.chatHistory = result.data.messages.map(msg => ({
+              sender: msg.sender === "Bot" ? "ChatBot" : msg.sender,
+              message: msg.fileUrl ? { file_presigned_url: msg.fileUrl, file_name: msg.fileName, file_type: msg.fileType } : msg.message,
+              time: msg.time
+            }));
+            localStorage.setItem('chatWidgetHistory', JSON.stringify(this.chatHistory));
+            localStorage.setItem('chatWidgetLastActivity', result.data.lastActivityAt);
+          } else {
+            this.chatHistory = [{
+              sender: "ChatBot",
+              message: "Hello! How can I help you?",
+              time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+            }];
+            localStorage.setItem('chatWidgetHistory', JSON.stringify(this.chatHistory));
+            localStorage.setItem('chatWidgetLastActivity', new Date().toISOString());
+          }
+        } catch (err) {
+          console.log('Error fetching chat history from API:', err);
+          this.chatHistory = [{
+            sender: "ChatBot",
+            message: "Hello! How can I help you?",
+            time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+          }];
+          localStorage.setItem('chatWidgetHistory', JSON.stringify(this.chatHistory));
+          localStorage.setItem('chatWidgetLastActivity', new Date().toISOString());
+        }
+      } else {
+         // No thread ID — maybe first-time visitor
+          const savedHistory = localStorage.getItem('chatWidgetHistory');
+          this.chatHistory = savedHistory ? JSON.parse(savedHistory) : [{
+            sender: "ChatBot",
+            message: "Hello! How can I help you?",
+            time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+          }];
+      }
 
       const defaultOptions = {
         elementId: "chat-widget",
@@ -124,7 +124,7 @@
       this.globalStylesInjected = false;
       this.renderIcon();
       this.injectGlobalStyles();
-      this.threadId = localStorage.getItem('chatWidgetThreadId');
+    this.threadId = localStorage.getItem('chatWidgetThreadId');
       const savedHistory = localStorage.getItem('chatWidgetHistory');
       this.chatHistory = savedHistory ? JSON.parse(savedHistory) : [];
     },
@@ -238,7 +238,6 @@
           border-color: ${this.options.iconColor};
         }
         .jooper-message-time { font-size: 11px; color: #888; margin-top: 2px; text-align: right; }
-        /* Responsive styles */
         @media (max-width: 600px) {
           .jooper-chat-widget { width: 100vw !important; height: 100vh !important; max-width: 100vw; max-height: 100vh; right: 0 !important; left: 0 !important; bottom: 0 !important; border-radius: 0 !important; }
           .jooper-chat-header { border-radius: 0 !important; }
@@ -316,7 +315,6 @@
           color: #222;
           background: none;
         }
-
         .typing-indicator {
           display: flex;
           align-items: center;
@@ -342,8 +340,8 @@
         @keyframes typing-bounce {
           0%, 80%, 100% { transform: scale(0.7); opacity: 0.7; }
           40% { transform: scale(1.2); opacity: 1; }
-                }
-          .jooper-end-chat-popup {
+        }
+        .jooper-end-chat-popup {
           position: absolute;
           top: 0;
           left: 0;
@@ -566,7 +564,7 @@
       this.globalStylesInjected = true;
     },
 
-    // Helper function to store the user message in UI and send it to backend.
+    // Update lastActivityAt when storing user messages
     storeUserMessage(content) {
       this.appendMessage("User", content);
       if (this.threadId) {
@@ -593,10 +591,11 @@
           orgId: this.options.organizationId,
           fileData: content
         });
+        localStorage.setItem('chatWidgetLastActivity', new Date().toISOString());
       }
     },
 
-    // Helper function to store a bot message.
+    // Update lastActivityAt when storing bot messages
     storeBotMessage(content) {
       this.appendMessage("ChatBot", content);
       if (this.threadId) {
@@ -611,12 +610,11 @@
           createdAt: Date.now(),
           orgId: this.options.organizationId
         });
-
+        localStorage.setItem('chatWidgetLastActivity', new Date().toISOString());
       }
     },
 
     renderIcon() {
-      //to do
       const positionStyles = this.getPositionStyles();
       const isBottomRight = this.options.position === "bottom-right";
       if (this.shadowRoot) {
@@ -642,7 +640,7 @@
         this.shadowRoot
           .querySelector(".jooper-chat-icon")
           .addEventListener("click", () => {
-            this.renderChatWindow()
+            this.renderChatWindow();
           });
         this.shadowRoot.getElementById("jooper-close-message").addEventListener("click", () => {
           this.shadowRoot.getElementById("jooper-chat-message").style.display = "none";
@@ -687,18 +685,14 @@
       if (this.shadowRoot) {
         this.globalStylesInjected = false;
         this.shadowRoot.innerHTML = `
-          <div class="jooper-chat-widget" style="${positionStyles} background-color: ${this.options.chatWindowColor
-          }; color: ${this.options.fontColor}; z-index:9999;">
+          <div class="jooper-chat-widget" style="${positionStyles} background-color: ${this.options.chatWindowColor}; color: ${this.options.fontColor}; z-index:9999;">
             <div class="jooper-chat-header">
               <div style="display: flex; align-items: center;">
                 <div id="avatar-container" style="margin-right: 10px;">
-                  <img id="avatar" src=${this.options.ChatBotLogoImage ||
-          "https://www.w3schools.com/w3images/avatar2.png"
-          } alt="Avatar" />
+                  <img id="avatar" src=${this.options.ChatBotLogoImage || "https://www.w3schools.com/w3images/avatar2.png"} alt="Avatar" />
                 </div>
                 <div style="display: flex; flex-direction: column;">
-                  <span class="jooper-chat-title">${this.options.addChatBotName || "ChatBot"
-          }</span>
+                  <span class="jooper-chat-title">${this.options.addChatBotName || "ChatBot"}</span>
                   <div class="jooper-chat-status">
                     <div style="width:8px; height:8px; border-radius:50%; background-color: rgb(16, 185, 129);"></div>
                     Online
@@ -706,13 +700,12 @@
                 </div>
               </div>
               <div>
-               <button id="jooper-end-chat" style="background: none; color: white; border: none; font-size: 14px; cursor: pointer ">
-                <h3 style="border:2px solid white; padding:5px; border-radius:5px;  text-shadow:1px -1px 3px black">End Chat</h3>
+               <button id="jooper-end-chat" style="background: none; color: white; border: none; font-size: 14px; cursor: pointer">
+                <h3 style="border:2px solid white; padding:5px; border-radius:5px; text-shadow:1px -1px 3px black">End Chat</h3>
               </button>
                <button id="jooper-close-chat" style="background: none; color: white; border: none; font-size: 14px; cursor: pointer;">
                 <img src="https://cdn-icons-png.flaticon.com/128/8213/8213476.png" alt="Close" width="16px" />
               </button>
-             
               </div>
             </div>
             <div class="jooper-chat-messages" id="jooper-chat-messages"></div>
@@ -726,10 +719,7 @@
              </div>
             </div>
             <div id="jooper-suggestion-box-container"></div>
-            ${this.options.availability
-            ? this.chatInputTemplate()
-            : this.contactFormTemplate()
-          }
+            ${this.options.availability ? this.chatInputTemplate() : this.contactFormTemplate()}
           </div>
         `;
         this.injectGlobalStyles();
@@ -745,19 +735,23 @@
             popup.style.display = "flex";
           }
         });
-        
+
         this.getElement("end-chat-confirm").addEventListener("click", () => {
           if (this.threadId) {
-            if(this.socket){
-              this.socket.emit("endThread",{threadId:this.threadId,orgId:this.options.organizationId,ended_by:"user"})
-              this.socket.emit("leaveThread", this.threadId)
-                  localStorage.removeItem('chatWidgetThreadId');
-                  localStorage.removeItem('chatWidgetHistory');
-                  document.cookie = "chatWidgetThreadId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-                  this.chatHistory = [];
-                  this.threadId = null;
-                  this.renderIcon();
-            }
+            this.socket.emit("endThread", {
+              threadId: this.threadId,
+              orgId: this.options.organizationId,
+              ended_by: "user"
+            });
+            this.socket.emit("leaveThread", this.threadId);
+            localStorage.removeItem('chatWidgetThreadId');
+            localStorage.removeItem('chatWidgetHistory');
+            localStorage.removeItem('chatWidgetLastActivity');
+            document.cookie = "chatWidgetThreadId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+            this.chatHistory = [];
+            this.threadId = null;
+            this.renderIcon();
+          }
             // fetch(`${BACKEND_URL}/api/chat/config/end`, {
             //   method: "POST",
             //   headers: {
@@ -796,7 +790,7 @@
             //   });
 
           }
-        });
+        );
 
         this.getElement("end-chat-cancel").addEventListener("click", () => {
           const popup = this.getElement("end-chat-popup");
@@ -811,7 +805,7 @@
         }
         this.startChatThread();
         this.chatHistory.forEach(msg => {
-          this.appendMessage(msg.sender==='Bot' ? "ChatBot":msg.sender, msg.message, msg.time);
+          this.appendMessage(msg.sender === 'Bot' ? "ChatBot" : msg.sender, msg.message, msg.time);
         });
         this.threadId = data?.threadId;
         if (!this.chatHistory || this.chatHistory.length === 0) {
@@ -840,14 +834,23 @@
               </div>
               <div>
                <button id="jooper-end-chat" style="background: none; color: white; border: none; font-size: 14px; cursor: pointer;">
-                <img src="https://cdn-icons-png.flaticon.com/128/8213/8213476.png" alt="Close" width="16px" />
+                <h3 style="border:2px solid white; padding:5px; border-radius:5px; text-shadow:1px -1px 3px black">End Chat</h3>
               </button>
-              <button id="jooper-close-chat" style="background: none; color: white; border: none; font-size: 14px; cursor: pointer;">
-                <img src="https://img.icons8.com/?size=400&id=VaHFapP3XCAj&format=png&color=FFFFFF" alt="Close" width="16px" />
+               <button id="jooper-close-chat" style="background: none; color: white; border: none; font-size: 14px; cursor: pointer;">
+                <img src="https://cdn-icons-png.flaticon.com/128/8213/8213476.png" alt="Close" width="16px" />
               </button>
               </div>
             </div>
             <div class="jooper-chat-messages" id="jooper-chat-messages"></div>
+            <div id="end-chat-popup" class="jooper-end-chat-popup" style="display: none;">
+            <div class="jooper-popup-content">
+            <p class="jooper-popup-message">Are you sure you want to end the chat? This will clear your chat history.</p>
+            <div class="jooper-popup-actions">
+            <button id="end-chat-confirm" class="jooper-popup-button">Confirm</button>
+            <button id="end-chat-cancel" class="jooper-popup-button">Cancel</button>
+             </div>
+             </div>
+            </div>
             <div id="jooper-suggestion-box-container"></div>
             ${this.options.availability ? this.chatInputTemplate() : this.contactFormTemplate()}
           </div>
@@ -859,7 +862,7 @@
         }
         this.startChatThread();
         this.chatHistory.forEach(msg => {
-          this.appendMessage(msg.sender==='Bot' ? "ChatBot":msg.sender, msg.message, msg.time);
+          this.appendMessage(msg.sender === 'Bot' ? "ChatBot" : msg.sender, msg.message, msg.time);
         });
         this.threadId = data.threadId;
         if (!this.chatHistory || this.chatHistory.length === 0) {
@@ -930,6 +933,8 @@
         this.socket.emit("startChat", payload);
         this.socket.once("chatStarted", (data) => {
           this.threadId = data?.threadId;
+          localStorage.setItem('chatWidgetThreadId', this.threadId);
+          localStorage.setItem('chatWidgetLastActivity', new Date().toISOString());
           if (!this.chatHistory || this.chatHistory.length === 0) {
             const greetingMessage =
               this.options.allowCustomGreeting && this.options.customGreetingMessage
@@ -1046,6 +1051,7 @@ document.cookie = `chatWidgetThreadId=${this.threadId}; path=/`;
         orgId: this.options.organizationId,
         createdAt: Date.now(),
       });
+      localStorage.setItem('chatWidgetLastActivity', new Date().toISOString());
     },
 
     chatInputTemplate() {
@@ -1059,13 +1065,13 @@ document.cookie = `chatWidgetThreadId=${this.threadId}; path=/`;
               </style>
               <div class="jooper-chat-actions">
                 ${this.options.allowEmojis
-          ? '<button id="emoji-picker"><img src="https://cdn-icons-png.flaticon.com/128/4989/4989500.png" alt="Emoji" width="20" height="20" /></button>'
-          : ""
-        }
+                  ? '<button id="emoji-picker"><img src="https://cdn-icons-png.flaticon.com/128/4989/4989500.png" alt="Emoji" width="20" height="20" /></button>'
+                  : ""
+                }
                 ${this.options.allowFileUpload
-          ? '<input type="file" id="file-upload" style="display: none;" /><button id="upload-button"><img src="https://cdn-icons-png.flaticon.com/128/10847/10847957.png" alt="Upload" width="20" height="20"/></button>'
-          : ""
-        }
+                  ? '<input type="file" id="file-upload" style="display: none;" /><button id="upload-button"><img src="https://cdn-icons-png.flaticon.com/128/10847/10847957.png" alt="Upload" width="20" height="20"/></button>'
+                  : ""
+                }
                 <button id="send-message"><img src="https://cdn-icons-png.flaticon.com/128/9333/9333991.png" alt="Send" width="20" height="20"/></button>
               </div>
             </div>
@@ -1077,7 +1083,6 @@ document.cookie = `chatWidgetThreadId=${this.threadId}; path=/`;
       const suggestionContainerTarget = this.querySelector(
         "#jooper-suggestion-box-container"
       );
-
 
       const suggestionsContainer = document.createElement("div");
       suggestionsContainer.className = "jooper-suggestions-container";
@@ -1135,13 +1140,12 @@ document.cookie = `chatWidgetThreadId=${this.threadId}; path=/`;
     },
 
     setupEventListeners() {
-    // pre existing clean up of the socket 
-     this.socket.off("receiveMessage");
-     this.socket.off("typing");
-     this.socket.off("stopTyping");
-     this.socket.off("agentStatusUpdate");
-     this.socket.off("updateDashboard");
-     
+      this.socket.off("receiveMessage");
+      this.socket.off("typing");
+      this.socket.off("stopTyping");
+      this.socket.off("agentStatusUpdate");
+      this.socket.off("updateDashboard");
+
       const sendMessageButton = this.getElement("send-message");
       const chatInput = this.getElement("chat-input");
       const fileUploadInput = this.getElement("file-upload");
@@ -1179,6 +1183,7 @@ document.cookie = `chatWidgetThreadId=${this.threadId}; path=/`;
           } else {
             this.appendSuggestion();
           }
+          localStorage.setItem('chatWidgetLastActivity', new Date().toISOString());
         }
       });
 
@@ -1194,6 +1199,7 @@ document.cookie = `chatWidgetThreadId=${this.threadId}; path=/`;
           if (data.content && data.content.trim() !== "") {
             this.appendMessage("ChatBot", data.content);
           }
+          localStorage.setItem('chatWidgetLastActivity', new Date().toISOString());
         }
       });
 
@@ -1202,9 +1208,8 @@ document.cookie = `chatWidgetThreadId=${this.threadId}; path=/`;
         fileUploadInput.addEventListener("change", (event) => {
           const file = event.target.files[0];
           if (!file) return;
-          // Check file size (10MB = 10 * 1024 * 1024 bytes)
-          if (file.size > 10 * 1024 * 1024) {
-            this.showPopup("File size must be less than 10 MB.", "error");
+          if (file.size > 5 * 1024 * 1024) {
+            this.showPopup("File size must be less than 5 MB.", "error");
             event.target.value = "";
             return;
           }
@@ -1224,18 +1229,15 @@ document.cookie = `chatWidgetThreadId=${this.threadId}; path=/`;
     },
 
     showPopup(message, type = "success") {
-      // Remove any existing popup of this type
       let popupId = `chat-widget-${type}-popup`;
       let popup = this.getElement(popupId);
       if (popup) popup.remove();
-      // Find the chat widget and header
       let chatWidget = this.shadowRoot
         ? this.shadowRoot.querySelector(".jooper-chat-widget")
         : document.querySelector(".jooper-chat-widget");
       let header = chatWidget
         ? chatWidget.querySelector(".jooper-chat-header")
         : null;
-      // Popup style config
       const styleMap = {
         success: {
           background: "#4CAF50",
@@ -1248,7 +1250,6 @@ document.cookie = `chatWidgetThreadId=${this.threadId}; path=/`;
       };
       const style = styleMap[type] || styleMap.success;
 
-      // Create new popup
       popup = document.createElement("div");
       popup.id = popupId;
       popup.style.position = "relative";
@@ -1267,7 +1268,6 @@ document.cookie = `chatWidgetThreadId=${this.threadId}; path=/`;
       popup.style.right = "0";
       popup.style.marginTop = "8px";
       popup.textContent = message;
-      // Insert popup just after the header
       if (chatWidget && header) {
         if (header.nextSibling) {
           chatWidget.insertBefore(popup, header.nextSibling);
@@ -1279,7 +1279,6 @@ document.cookie = `chatWidgetThreadId=${this.threadId}; path=/`;
       } else {
         (this.shadowRoot || document.body).appendChild(popup);
       }
-      // Remove after 3 seconds
       setTimeout(() => {
         popup.remove();
       }, 3000);
@@ -1490,13 +1489,11 @@ document.cookie = `chatWidgetThreadId=${this.threadId}; path=/`;
 
       let formattedContent = [];
 
-      // WhatsApp-like File message support for user messages
       if (typeof message === "object" && message !== null && message.file_presigned_url) {
         const fileUrl = message.file_presigned_url;
         const fileName = message.file_name || "Download file";
         const isImage = /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(fileName);
         if (isImage) {
-          // WhatsApp-like image preview with download icon overlay, right-aligned
           formattedContent.push(`
             <div class="jooper-wa-image-bubble">
               <img src="${fileUrl}" alt="${fileName}" class="jooper-wa-image-preview" />
@@ -1509,7 +1506,6 @@ document.cookie = `chatWidgetThreadId=${this.threadId}; path=/`;
             </div>
           `);
         } else {
-          // WhatsApp-like document bubble, right-aligned
           formattedContent.push(`
             <div class="jooper-wa-doc-bubble">
               <span class="jooper-wa-doc-icon">
@@ -1532,7 +1528,6 @@ document.cookie = `chatWidgetThreadId=${this.threadId}; path=/`;
           `);
         }
       } else {
-        // Existing logic for normal messages
         const lines = (typeof message === "string" ? message : "").split("\n").filter((line) => line.trim() !== "");
         let currentListItems = [];
         let tableLines = [];
