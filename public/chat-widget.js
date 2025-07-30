@@ -50,8 +50,12 @@
     console.log("data.data", result.data);
 
     if (Array.isArray(result.data) && result.data.length > 0) {
-      this.chatHistory = result.data;
-      localStorage.setItem('chatWidgetHistory', JSON.stringify(this.chatHistory));
+      this.chatHistory = result.data.map(msg => ({
+        sender: msg.sender==="Bot"?"ChatBot":msg.sender,
+        message:  msg.message, 
+        time: msg.time
+      }));
+      localStorage.setItem('chatWidgetHistory', JSON.stringify(this.chatHistory))
     } else {
       // No messages from backend
       this.chatHistory = [{
@@ -797,9 +801,9 @@
         }
         this.startChatThread();
         this.chatHistory.forEach(msg => {
-          this.appendMessage(msg.sender, msg.message);
+          this.appendMessage(msg.sender==='Bot' ? "ChatBot":msg.sender, msg.message, msg.time);
         });
-        this.threadId = data.threadId;
+        this.threadId = data?.threadId;
         if (!this.chatHistory || this.chatHistory.length === 0) {
           const greetingMessage =
             this.options.allowCustomGreeting && this.options.customGreetingMessage
@@ -845,7 +849,7 @@
         }
         this.startChatThread();
         this.chatHistory.forEach(msg => {
-          this.appendMessage(msg.sender, msg.message);
+          this.appendMessage(msg.sender==='Bot' ? "ChatBot":msg.sender, msg.message, msg.time);
         });
         this.threadId = data.threadId;
         if (!this.chatHistory || this.chatHistory.length === 0) {
@@ -1468,9 +1472,8 @@ document.cookie = `chatWidgetThreadId=${this.threadId}; path=/`;
       }
     },
 
-    appendMessage(sender, message) {
+    appendMessage(sender, message, time = undefined) {
       const messagesContainer = this.getElement("jooper-chat-messages");
-      const timeStr = this.getMessageTime();
       const msgElem = document.createElement("div");
       const timeElem = document.createElement("div");
       msgElem.className = `jooper-message ${sender === "User" ? "user" : "agent"}`;
@@ -1650,12 +1653,15 @@ document.cookie = `chatWidgetThreadId=${this.threadId}; path=/`;
         textAlign: sender === "User" ? "right" : "left",
       });
       timeElem.className = "jooper-message-time";
-      timeElem.textContent = timeStr;
+      const displayTime = time || this.getMessageTime();
+      timeElem.textContent = displayTime;
       messagesContainer.append(msgElem, timeElem);
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
-      this.chatHistory.push({ sender, message, time: timeStr });
-      localStorage.setItem('chatWidgetThreadId', this.threadId);
-      localStorage.setItem('chatWidgetHistory', JSON.stringify(this.chatHistory));
+      if (!time) {
+        this.chatHistory.push({ sender, message, time: displayTime });
+        localStorage.setItem('chatWidgetThreadId', this.threadId);
+        localStorage.setItem('chatWidgetHistory', JSON.stringify(this.chatHistory));
+      }
     },
 
     appendTypingIndicator() {
