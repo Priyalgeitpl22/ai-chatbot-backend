@@ -76,40 +76,102 @@ export const chatUploadFile  = async(req:Request,res:Response):Promise<any>=>{
 }
 
 export const getChatPersistMessages = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const threadId = req.params.threadId;
+  const { threadId } = req.params;
+  const THREAD_EXPIRY_DAYS = parseInt(process.env.THREAD_EXPIRY_DAYS || "7", 10);
+  if (isNaN(THREAD_EXPIRY_DAYS)) {
+    throw new Error("THREAD_EXPIRY_DAYS is not a valid number");
+  }
 
-    const messages = await prisma.message.findMany({
-      where: { threadId },
-      orderBy: { createdAt: "asc" },
+  if (!threadId) {
+    res.status(400).json({ code: 400, message: 'Missing threadId parameter.' });
+    return;
+  }
+
+  try {
+    const threadWithMessages = await prisma.thread.findUnique({
+      where: { id: threadId },
+      select: {
+        status: true,
+        lastActivityAt: true,
+        messages: {
+          orderBy: { createdAt: 'asc' },
+          select: {
+            sender: true,
+            content: true,
+            createdAt: true,
+            fileUrl: true,
+            fileName: true,
+            fileType: true,
+          },
+        },
+      },
     });
+
+    if (!threadWithMessages) {
+      res.status(404).json({
+        code: 404,
+        message: 'Thread not found.',
+        data: { isValid: false },
+      });
+      return;
+    }
+
+    const { status, lastActivityAt, messages } = threadWithMessages;
+
+    let isValid = status === 'active';
+    if (isValid && lastActivityAt) {
+      const currentDate = new Date();
+      const lastActivityDate = new Date(lastActivityAt);
+      const diffDays = (currentDate.getTime() - lastActivityDate.getTime()) / (1000 * 60 * 60 * 24);
+      isValid = diffDays <= THREAD_EXPIRY_DAYS;
+    } else {
+      isValid = false;
+    }
+
+    if (!isValid) {
+      res.status(403).json({
+        code: 403,
+        message: 'Thread is either ended or expired.',
+        data: { isValid: false },
+      });
+      return;
+    }
+
+    if (!messages.length) {
+      res.status(200).json({
+        code: 200,
+        message: 'No messages found for the given threadId.',
+        data: { isValid: true, messages: [] },
+      });
+      return;
+    }
 
     const formattedMessages = await Promise.all(
       messages.map(async (msg) => {
         const fileUrl = msg.fileUrl ? await getPresignedUrl(msg.fileUrl) : undefined;
-
         return {
           sender: msg.sender,
           message: msg.content,
-          time: new Date(msg.createdAt).toLocaleTimeString("en-US", {
-            hour: "2-digit",
-            minute: "2-digit",
+          time: msg.createdAt.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
             hour12: false,
           }),
-          ...(fileUrl && { fileUrl }),
+          ...(fileUrl && { fileUrl, fileName: msg.fileName, fileType: msg.fileType }),
         };
       })
     );
 
     res.status(200).json({
       code: 200,
-      data: formattedMessages,
-      message: "success",
+      data: { isValid: true, messages: formattedMessages, lastActivityAt },
+      message: 'Messages retrieved successfully.',
     });
-  } catch (err) {
+  } catch (error) {
     res.status(500).json({
       code: 500,
-      message: "Error fetching messages",
+      message: 'Internal server error while fetching messages.',
+      data: { isValid: false },
     });
   }
 };

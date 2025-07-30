@@ -222,15 +222,37 @@ export const moveToTrash = async(ThreadId:string,trash:string)=>{
   }
 }
 
-export const deleteThread  = async()=>{
-  try{
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate()-30)
-    await prisma.thread.deleteMany({where:{type:"trash" , createdAt:{lt:thirtyDaysAgo}}})
-    return true
+export const deleteThread = async (): Promise<boolean> => {
+  try {
+    const THREAD_EXPIRY_DAYS = parseInt(process.env.THREAD_EXPIRY_DAYS || "7", 10);
+    if (isNaN(THREAD_EXPIRY_DAYS)) {
+      throw new Error("THREAD_EXPIRY_DAYS is not a valid number");
+    }
 
-  }catch(err: any){
-    console.log(err)
-    return false
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    await prisma.$transaction([
+      prisma.thread.deleteMany({
+        where: {
+          type: "trash",
+          createdAt: { lt: thirtyDaysAgo },
+        },
+      }),
+      prisma.thread.updateMany({
+        where: {
+          lastActivityAt: {
+            lte: new Date(Date.now() - THREAD_EXPIRY_DAYS * 24 * 60 * 60 * 1000),
+          },
+          status: "active",
+        },
+        data: { status: "ended" },
+      }),
+    ]);
+    return true;
+  } catch (err: unknown) {
+    return false;
+  } finally {
+    await prisma.$disconnect(); 
   }
-}
+};
