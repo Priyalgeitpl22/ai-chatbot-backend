@@ -9,7 +9,7 @@ dotenv.config();
 
 const app = express();
 app.use(cors({
-  origin: ["http://localhost:5173", "https://aichatboat.jooper.ai"],
+  origin: ["http://localhost  :5173", "https://aichatboat.jooper.ai", "https://api.chat.jooper.ai"],
   credentials: true,
 }));
 app.use(express.json());
