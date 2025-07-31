@@ -72,6 +72,19 @@ if (data.sender === 'User') {
   const isTaskPrompt = lastBotMessage && lastBotMessage.content.includes("create a ticket");
   const userReply = data.content.toLowerCase().trim();
 
+  if(userReply.includes('create ticket')){
+      io.emit("receiveMessage", {
+        id: Date.now().toString(),
+        sender: "Bot",
+        status: 200,
+        content: "",
+        threadId: data.threadId,
+        createdAt: new Date().toISOString(),
+        task_creation: true, 
+      });
+      return;
+  }
+
   if (isTaskPrompt) {
     if (userReply.includes('yes') || userReply.includes('ok') || userReply.includes('sure') || userReply.includes('yes please') || userReply.includes('create') || userReply.includes('create ticket')) {
       // User wants to create a task (show contact form)
@@ -233,8 +246,8 @@ export const socketSetup = (server: any) => {
 
     socket.on("endThread",async({threadId,orgId,ended_by})=>{
       console.log({threadId,orgId,ended_by})
-      const res = await endChatFunction({thread_id:threadId,ended_by:ended_by,header:null,url:null})
-      io.to(`org-${orgId}`).emit("threadEnded",{threadId,orgId,ended_by})
+      await endChatFunction({thread_id:threadId,ended_by:ended_by,header:null,url:null})
+      io.emit("threadEnded",{threadId,orgId,ended_by})
     })
 
     socket.on("typing", ({ threadId, agentName }) =>
