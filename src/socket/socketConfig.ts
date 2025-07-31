@@ -6,6 +6,7 @@ import { sendEmailChat } from '../utils/email.utils'
 import { getPresignedUrl } from "../aws/imageUtils";
 import {moveToTrash} from "../controllers/thread.controller";
 import { endChatFunction } from "../controllers/chatConfig.controller";
+import { threadId } from "worker_threads";
 
 
 const prisma = new PrismaClient();
@@ -222,7 +223,22 @@ export const socketSetup = (server: any) => {
       io.to(`org-${agentData.orgId}`).emit("agentStatusUpdate", getOnlineAgents())
     });
 
-    socket.on("assignThread",({threadId,agentId,orgId})=>{
+    socket.on("assignThread",async({threadId,agentId,orgId})=>{
+      const agent = await prisma.user.findFirst({where:{id:agentId}})
+      const isAssigned =await  prisma.thread.findUnique({where:{id:threadId}})
+          if(!isAssigned?.assignedTo){
+            io.emit("receiveMessage", {
+        id: Date.now().toString(),
+        sender: "Bot",
+        status: 200,
+        content: `An agent ${agent?.fullName} has been assigned to you, for further assistance `,
+        threadId:threadId,
+        createdAt: new Date().toISOString(),
+        task_creation: false, 
+      });
+          await prisma.thread.update({ where: { id: threadId }, data: { assignedTo: agentId, type: "assigned" } })
+          }
+
       io.to(`org-${orgId}`).emit("threadAssigned",{threadId,agentId})
     })
 
@@ -337,6 +353,10 @@ export const socketSetup = (server: any) => {
     ) {
       return;
     }
+    // if the agent is assigned return
+    if(fullThread?.assignedTo){
+      return
+    }  
 
     console.log("Online Agents:", getOnlineAgents());
     await processAIResponse(data, io);
@@ -413,7 +433,6 @@ export const socketSetup = (server: any) => {
               seen: true
             },
           });
-          await prisma.thread.update({ where: { id: data.threadId }, data: { assignedTo: data.agentId, type: "assigned" } })
           data.content = formattedContent;
           const room = io.sockets.adapter.rooms.get(data.threadId);
           const userInRoom = room && room.size > 0;
