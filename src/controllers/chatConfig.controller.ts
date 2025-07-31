@@ -299,3 +299,59 @@ export const endChatFunction = async ({ thread_id, ended_by,url ,header}:{thread
   }
 };
 
+export const chatThreadEmailTranscript = async(req:Request,res:Response) : Promise<any> =>{
+  try{
+     const { thread_id,email} = req.body;
+    if (!thread_id ) {
+      return res.status(400).json({ code: 400, message: 'Missing thread_id' });
+    }
+    const thread = await prisma.thread.findUnique({
+      where: { id: thread_id },
+    });
+    if (!thread) {
+      return res.status(404).json({ code: 404, message: 'Thread not found' });
+    }
+    const messages = await prisma.message.findMany({
+      where: { threadId: thread_id },
+      orderBy: { createdAt: 'asc' },
+    });
+    const chatConfig = await prisma.chatConfig.findFirst({
+      where: { aiOrgId: thread.aiOrgId },
+      select: { emailConfig: true },
+    });
+    const organization = await prisma.organization.findFirst({
+      where: { aiOrgId: thread.aiOrgId },
+      select: { emailConfig: true },
+    });
+
+    const emailConfig = chatConfig?.emailConfig || organization?.emailConfig;
+    console.log(emailConfig)
+
+    if (email && emailConfig) {
+      try {
+        await sendChatTranscriptEmail({
+          threadId: thread.id,
+          messages,
+          email: email,
+          emailConfig,
+        });
+        
+      } catch (emailError) {
+        console.error('Failed to send chat transcript email:', emailError);
+      }
+       return res.status(200).json({
+      code: 200,
+      message: 'chat transcribe send successfully',
+    });
+    }else{
+      return res.status(400).json({
+      code: 400,
+      message: 'Email configuration not found',
+    });
+    }
+  }catch(err:any){
+    return res.status(500).json({ code: 500, message: 'Internal Server Error' })
+  }
+
+}
+

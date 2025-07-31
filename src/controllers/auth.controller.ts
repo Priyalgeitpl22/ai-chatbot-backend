@@ -277,12 +277,17 @@ export const verify2FA = async (req: Request, res: Response): Promise<any> => {
 
 export const logout = async (req: Request, res: Response): Promise<any> => {
     const token = req.headers.authorization?.split(" ")[1];
+    const {userId} = req.body
 
     if (!token) {
         return res.status(400).json({ code: 400, message: 'No token provided' });
     }
 
     try {
+
+        if(userId){
+            await prisma.user.update({where:{id:userId},data:{online:false}})
+        }
         await prisma.access_token.updateMany({
             where: { token },
             data: { active: 0 },
