@@ -228,7 +228,7 @@ export const updateFAQStatus = async (req: any, res: any) => {
 
   try {
     const updatedFAQ = await prisma.fAQ.update({
-      where: { id: id },
+      where: { id: parseInt(id, 10) },
       data: { enabled: Boolean(enabled) },
     });
 
