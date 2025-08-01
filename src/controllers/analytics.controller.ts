@@ -100,6 +100,8 @@ const getDashboardStats = async (req: Request, res: Response, user: any): Promis
         createdAt: { gte: currentPeriodStart }
       }
     });
+    console.log("aiChatsCurrent",aiChatsCurrent);
+    
 
     const aiChatsPrevious = await prisma.thread.count({
       where: {
@@ -112,6 +114,8 @@ const getDashboardStats = async (req: Request, res: Response, user: any): Promis
         }
       }
     });
+    console.log("aiChatsPrevious",aiChatsPrevious);
+    
 
     // Completed Chats (ended status)
     const completedChatsCurrent = await prisma.thread.count({
@@ -122,6 +126,8 @@ const getDashboardStats = async (req: Request, res: Response, user: any): Promis
         createdAt: { gte: currentPeriodStart }
       }
     });
+    console.log("completedChatsCurrent",completedChatsCurrent);
+    
 
     const completedChatsPrevious = await prisma.thread.count({
       where: {
@@ -134,6 +140,8 @@ const getDashboardStats = async (req: Request, res: Response, user: any): Promis
         }
       }
     });
+    console.log("completedChatsPrevious",completedChatsPrevious);
+    
 
     // Calculate trends
     const calculateTrend = (current: number, previous: number): string => {
