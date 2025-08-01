@@ -8,13 +8,7 @@ import { deleteThread } from "./controllers/thread.controller";
 dotenv.config();
 
 const app = express();
-// app.use(cors({
-//   origin: true, // Allow all origins (not recommended for production)
-//   credentials: true,
-//   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-//   allowedHeaders: ["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"],
-//   optionsSuccessStatus: 200
-// }));
+app.use(cors());
 app.use(express.json());
 app.use(express.static("public"));
 app.use("/api", routes);
