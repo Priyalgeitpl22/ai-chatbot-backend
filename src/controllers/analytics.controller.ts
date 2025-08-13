@@ -50,8 +50,7 @@ const getDashboardStats = async (req: Request, res: Response, user: any): Promis
     const totalChatsCurrent = await prisma.thread.count({
       where: {
         aiOrgId: user.aiOrgId,
-        type: { not: "trash" },
-        createdAt: { gte: currentPeriodStart }
+        type: { not: "trash" }
       }
     });
     console.log("totalChatsCurrent", totalChatsCurrent);
@@ -76,8 +75,7 @@ const getDashboardStats = async (req: Request, res: Response, user: any): Promis
       where: {
         aiOrgId: user.aiOrgId,
         type: { not: "trash" },
-        assignedTo: { not: null },
-        createdAt: { gte: currentPeriodStart }
+        assignedTo: { not: null }
       }
     });
     console.log("agentChatsCurrent", agentChatsCurrent);
@@ -102,8 +100,7 @@ const getDashboardStats = async (req: Request, res: Response, user: any): Promis
       where: {
         aiOrgId: user.aiOrgId,
         type: { not: "trash" },
-        assignedTo: null,
-        createdAt: { gte: currentPeriodStart }
+        assignedTo: null
       }
     });
     console.log("aiChatsCurrent", aiChatsCurrent);
@@ -128,8 +125,7 @@ const getDashboardStats = async (req: Request, res: Response, user: any): Promis
       where: {
         aiOrgId: user.aiOrgId,
         type: { not: "trash" },
-        status: "ended",
-        createdAt: { gte: currentPeriodStart }
+        status: "ended"
       }
     });
     console.log("completedChatsCurrent", completedChatsCurrent);
@@ -293,8 +289,8 @@ const getAIEffectivenessData = async (req: Request, res: Response, user: any): P
 
     const effectivenessData = [
       { name: "Answered by AI", value: Math.max(0, successfulAI) },
-      { name: "Failed → Agent", value: failedToAgent },
-      { name: "Failed → Ticket", value: failedToTicket }
+      { name: "Agent", value: failedToAgent },
+      { name: "Ticket", value: failedToTicket }
     ];
 
     res.status(200).json({
