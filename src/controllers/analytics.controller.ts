@@ -186,16 +186,47 @@ const getDashboardStats = async (req: Request, res: Response, user: any): Promis
 // Chat volume data function
 const getChatVolumeData = async (req: Request, res: Response, user: any): Promise<any> => {
   try {
-    // Get data for the last 7 days
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - 7);
+    const { startDate, endDate, period } = req.query;
+
+    let dateRange: { start: Date; end: Date };
+    let daysToShow: number;
+
+    if (startDate && endDate) {
+      dateRange = {
+        start: new Date(startDate as string),
+        end: new Date(endDate as string)
+      };
+      daysToShow = Math.ceil((dateRange.end.getTime() - dateRange.start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    } else {
+      const end = new Date();
+      let start = new Date();
+
+      switch (period) {
+        case '7days':
+          start.setDate(start.getDate() - 7);
+          daysToShow = 7;
+          break;
+        case '30days':
+          start.setDate(start.getDate() - 30);
+          daysToShow = 30;
+          break;
+        case '90days':
+          start.setDate(start.getDate() - 90);
+          daysToShow = 90;
+          break;
+        default:
+          start.setDate(start.getDate() - 7);
+          daysToShow = 7;
+      }
+
+      dateRange = { start, end };
+    }
 
     const chatVolumeData = [];
 
-    for (let i = 0; i < 7; i++) {
-      const currentDate = new Date(startDate);
-      currentDate.setDate(startDate.getDate() + i);
+    for (let i = 0; i < daysToShow; i++) {
+      const currentDate = new Date(dateRange.start);
+      currentDate.setDate(dateRange.start.getDate() + i);
 
       const dayStart = new Date(currentDate);
       dayStart.setHours(0, 0, 0, 0);
@@ -251,9 +282,36 @@ const getChatVolumeData = async (req: Request, res: Response, user: any): Promis
 
 const getAIEffectivenessData = async (req: Request, res: Response, user: any): Promise<any> => {
   try {
-    // Get current month data
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const { period } = req.query;
+
+    // use default (all time)
+    let dateFilter = {};
+    if (period) {
+      const now = new Date();
+      let startDate = new Date();
+
+      switch (period) {
+        case '7days':
+          startDate.setDate(startDate.getDate() - 7);
+          break;
+        case '30days':
+          startDate.setDate(startDate.getDate() - 30);
+          break;
+        case '90days':
+          startDate.setDate(startDate.getDate() - 90);
+          break;
+        default:
+          // No date filter for all time
+          dateFilter = {};
+          break;
+      }
+
+      if (period !== 'all') {
+        dateFilter = {
+          createdAt: { gte: startDate }
+        };
+      }
+    }
 
     // Total AI chats (unassigned threads)
     const totalAIChats = await prisma.thread.count({
@@ -261,7 +319,7 @@ const getAIEffectivenessData = async (req: Request, res: Response, user: any): P
         aiOrgId: user.aiOrgId,
         type: { not: "trash" },
         assignedTo: null,
-        createdAt: { gte: monthStart }
+        ...dateFilter
       }
     });
 
@@ -271,7 +329,7 @@ const getAIEffectivenessData = async (req: Request, res: Response, user: any): P
         aiOrgId: user.aiOrgId,
         type: { not: "trash" },
         assignedTo: { not: null },
-        createdAt: { gte: monthStart }
+        ...dateFilter
       }
     });
 
@@ -280,11 +338,10 @@ const getAIEffectivenessData = async (req: Request, res: Response, user: any): P
       where: {
         aiOrgId: user.aiOrgId,
         type: "ticket",
-        createdAt: { gte: monthStart }
+        ...dateFilter
       }
     });
 
-    // Successful AI chats (completed without assignment)
     const successfulAI = totalAIChats - failedToAgent - failedToTicket;
 
     const effectivenessData = [
@@ -309,7 +366,6 @@ const getChatStatusBreakdown = async (req: Request, res: Response, user: any): P
   try {
     const { startDate, endDate } = req.query;
 
-    // Parse date range or use default (current month)
     let dateFilter = {};
     if (startDate && endDate) {
       dateFilter = {
@@ -319,11 +375,7 @@ const getChatStatusBreakdown = async (req: Request, res: Response, user: any): P
         }
       };
     } else {
-      const now = new Date();
-      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-      dateFilter = {
-        createdAt: { gte: monthStart }
-      };
+      dateFilter = {};
     }
 
     // Get counts for each status
@@ -497,7 +549,6 @@ const getEmailTranscriptCount = async (req: Request, res: Response, user: any): 
   try {
     const { startDate, endDate, download } = req.query;
 
-    // Parse date range or use default (current month)
     let dateFilter = {};
     if (startDate && endDate) {
       dateFilter = {
@@ -507,11 +558,7 @@ const getEmailTranscriptCount = async (req: Request, res: Response, user: any): 
         }
       };
     } else {
-      const now = new Date();
-      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-      dateFilter = {
-        createdAt: { gte: monthStart }
-      };
+      dateFilter = {};
     }
 
 
