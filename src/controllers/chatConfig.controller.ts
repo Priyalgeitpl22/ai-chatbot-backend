@@ -301,7 +301,7 @@ export const endChatFunction = async ({ thread_id, ended_by,url ,header}:{thread
 
 export const chatThreadEmailTranscript = async(req:Request,res:Response) : Promise<any> =>{
   try{
-     const { thread_id,email} = req.body;
+     const { thread_id,email,cc} = req.body;
     if (!thread_id ) {
       return res.status(400).json({ code: 400, message: 'Missing thread_id' });
     }
@@ -334,6 +334,7 @@ export const chatThreadEmailTranscript = async(req:Request,res:Response) : Promi
           messages,
           email: email,
           emailConfig,
+          cc
         });
         
       } catch (emailError) {

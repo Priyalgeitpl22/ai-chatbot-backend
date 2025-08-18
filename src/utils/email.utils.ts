@@ -76,7 +76,8 @@ export const sendEmailToVerify = async (transporterOptions: any) => {
 
   await transporter.sendMail(mailOptions);
 }
-export const sendEmailChat = async(email:string,text:string,subject:string,emailConfig: any) => {
+export const sendEmailChat = async(email:string,text:string,subject:string,emailConfig: any,cc?: string | string[],
+  bcc?: string | string[]) => {
 
   console.log("emailConfig",emailConfig);
   const transporter = nodemailer.createTransport({
@@ -94,6 +95,7 @@ export const sendEmailChat = async(email:string,text:string,subject:string,email
     from: emailConfig.user,
     to: email,
     subject: subject,
+    cc: cc && cc.length ? cc : undefined,   
     html: text,
   };
   await transporter.sendMail(mailOptions);
@@ -101,25 +103,46 @@ export const sendEmailChat = async(email:string,text:string,subject:string,email
 
 export const sendChatTranscriptEmail = async ({
   email,
+  cc,
   messages,
   threadId,
   emailConfig,
 }: {
   email: string;
+  cc?: string[] | string;
   messages: { sender: string; content: string; createdAt: Date }[];
   threadId: string;
   emailConfig: any;
 }) => {
   const formattedMessages = messages
-    .map((msg, index) => {
+    .map((msg) => {
+      const isUser = msg.sender === "User";
       return `
-        <div style="border:1px solid #ddd; border-radius:8px; padding:16px; margin-bottom:16px;">
-          <h3 style="margin-top:0;">${msg.sender === 'User' ? `Question #${index + 1}` : 'Answer'}</h3>
-          <p style="margin: 8px 0; font-weight: ${msg.sender === 'User' ? 'bold' : 'normal'};">
-            ${msg.content}
-          </p>
-          <small style="color:#888;">${new Date(msg.createdAt).toLocaleString()}</small>
-        </div>
+        <table width="100%" cellspacing="0" cellpadding="0" style="margin:6px 0;">
+          <tr>
+            <td align="${isUser ? "left" : "right"}">
+              <div style="
+                display:inline-block;
+                max-width:60%;
+                background:${isUser ? "#f1f1f1" : "#cce5ff"};
+                color:#000;
+                padding:12px 16px;
+                border-radius:18px;
+                border-top-${isUser ? "left" : "right"}-radius:4px;
+                box-shadow:0 1px 3px rgba(0,0,0,0.1);
+                font-family:Arial, sans-serif;
+                text-align:left;
+              ">
+                <div style="font-size:12px; color:#666; margin-bottom:4px;">
+                  ${msg.sender} • ${new Date(msg.createdAt).toLocaleDateString()}
+                </div>
+                <div style="font-size:14px; line-height:1.4;">
+                  ${msg.content}
+                </div>
+              </div>
+            </td>
+          </tr>
+        </table>
       `;
     })
     .join("");
@@ -128,9 +151,10 @@ export const sendChatTranscriptEmail = async ({
     <div style="font-family:Arial,sans-serif;">
       <h2 style="color:#333;">Chat Transcript - Thread #${threadId}</h2>
       ${formattedMessages}
-      <p>Regards,<br/>Your Support Team</p>
+      <p style="margin-top:20px;">Regards,<br/>Your Support Team</p>
     </div>
   `;
 
-  await sendEmailChat(email, htmlContent, `Chat Transcript - Thread #${threadId}`, emailConfig);
+  await sendEmailChat(email, htmlContent, `Chat Transcript - Thread #${threadId}`, emailConfig, cc);
 };
+
