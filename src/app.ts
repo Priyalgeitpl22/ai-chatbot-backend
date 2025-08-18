@@ -3,8 +3,6 @@ import routes from "./routes";
 import cors from "cors";
 const path = require("path");
 import dotenv from 'dotenv';
-import { CronJob } from "cron";
-import { deleteThread } from "./controllers/thread.controller";
 dotenv.config();
 
 const app = express();
@@ -16,9 +14,6 @@ app.use(express.static(path.join(__dirname, "public")));
 app.get("/", (req, res) => {
   res.send("Welcome to the AI Chatbot!!");
 });
-const job = new CronJob('0 0 * * *', async () => {
-  await deleteThread();
-}, null, true);
 
 
 export default app;

@@ -260,9 +260,9 @@ export const socketSetup = (server: any) => {
       socket.join(threadId);
     });
 
-    socket.on("endThread",async({threadId,orgId,ended_by})=>{
+    socket.on("endThread",async({threadId,orgId,ended_by,url,cookie,browserData})=>{
       console.log({threadId,orgId,ended_by})
-      await endChatFunction({thread_id:threadId,ended_by:ended_by,header:null,url:null})
+      await endChatFunction({thread_id:threadId,ended_by:ended_by,url:url,header:cookie,browserData})
       io.emit("threadEnded",{threadId,orgId,ended_by})
     })
 

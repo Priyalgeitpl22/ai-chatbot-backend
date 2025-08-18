@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 import { Request, Response } from "express";
 
 const prisma = new PrismaClient();
@@ -7,12 +7,18 @@ export const getAllThreads = async (req: Request, res: Response): Promise<any> =
   try {
 
     const user = (req as any).user;
+    const limit = (req.query.limit)||3
+    const page = Number(req.query.page)||1
+    const skipData = (page-1)*Number(limit) 
 
     if (!user) {
       return res.status(400).json({ code: 400, message: "Invalid user" });
     }
 
     const threads = await prisma.thread.findMany({
+      skip:skipData,
+      take:Number
+      (limit),
       where: {
         aiOrgId: user.aiOrgId,
       },
@@ -31,13 +37,19 @@ export const getAllThreads = async (req: Request, res: Response): Promise<any> =
       },
     });
 
+    const totalCount = await prisma.thread.count({
+    where: {
+    aiOrgId: user.aiOrgId,
+    },
+    });
+
     const result = threads.map((thread) => ({
       ...thread,
       latestMessage: thread.messages[0] || null,
       unseenCount: thread.messages.filter((msg) => !msg.seen).length,
     }));
 
-    res.status(200).json({ code: 200, data: { threads: result, TotalThreads: threads.length }, message: "success" });
+    res.status(200).json({ code: 200, data: { threads: result, TotalThreads: totalCount }, message: "success" });
 
   } catch (err) {
     res.status(500).json({ code: 500, message: "Error fetching threads" });
@@ -102,6 +114,7 @@ export const assignThread = async (req: Request, res: Response): Promise<any> =>
       return res.status(400).json({ code: 400, message: "assignedTo value is required." })
     }
 
+    // if we want to unassign 
     if (!assign) {
       const thread = await prisma.thread.update({
         where: { id: threadId },
@@ -130,6 +143,7 @@ export const markThreadReaded = async (req: Request, res: Response): Promise<any
       const thread = await prisma.thread.findUnique({ where: { id: threadId } })
       if (thread) {
         await prisma.thread.update({ where: { id: thread.id }, data: { readed: true } })
+        // await prisma.message.update({where:{threadId:(threadId)},data:{sender:"true"}})
         await prisma.message.updateMany({ where: { threadId: threadId }, data: { seen: true } })
         return res.status(200).json({ code: 200, message: "Thread readed sucessful" })
       } else {
@@ -157,7 +171,7 @@ export const createChatOrTicket = async (req: any, res: any) => {
       const onlineAgents = await prisma.user.findMany({
         where: {
           orgId,
-          role: "agent", 
+          role: "agent", // or "admin", depending on your logic
           online: true,
         },
       });
@@ -165,6 +179,7 @@ export const createChatOrTicket = async (req: any, res: any) => {
       if (onlineAgents.length > 0) {
         return res.status(200).json({ code: 200, message: "Agent is online", connectToAgent: true });
       } else {
+        // Prevent ticket creation if a thread with this email is already ended
         const endedThread = await prisma.thread.findFirst({
           where: {
             email,
@@ -175,6 +190,7 @@ export const createChatOrTicket = async (req: any, res: any) => {
         if (endedThread) {
           return res.status(400).json({ code: 400, message: "Chat already ended, cannot create ticket." });
         }
+        // Create ticket thread
         const thread = await prisma.thread.create({
           data: {
             user: name,
@@ -232,13 +248,42 @@ export const deleteThread = async (): Promise<boolean> => {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    await prisma.$transaction([
-      prisma.thread.deleteMany({
-        where: {
+    const organizations  = await prisma.chatConfig.findMany()
+
+    await Promise.all(
+        organizations.map(async(elem)=>{
+          let days=30
+          if(elem.CustomRecycleClear){
+            const DaysAgo = new Date();
+          DaysAgo.setDate(DaysAgo.getDate() - elem.CustomRecycleClear);
+          await prisma.thread.deleteMany({
+            where: {
           type: "trash",
-          createdAt: { lt: thirtyDaysAgo },
-        },
-      }),
+          createdAt: { lt: DaysAgo },
+          aiOrgId:elem.aiOrgId||-1
+          },
+          })
+          }else{
+             const DaysAgo = new Date();
+          DaysAgo.setDate(DaysAgo.getDate() - days);
+          await prisma.thread.deleteMany({
+            where: {
+          type: "trash",
+          createdAt: { lt: DaysAgo },
+          aiOrgId:elem.aiOrgId||-1
+          },
+          })
+          }
+       })
+      )
+      
+    await prisma.$transaction([
+      // prisma.thread.deleteMany({
+      //   where: {
+      //     type: "trash",
+      //     createdAt: { lt: thirtyDaysAgo },
+      //   },
+      // }),
       prisma.thread.updateMany({
         where: {
           lastActivityAt: {
