@@ -7,18 +7,12 @@ export const getAllThreads = async (req: Request, res: Response): Promise<any> =
   try {
 
     const user = (req as any).user;
-    const limit = (req.query.limit)||3
-    const page = Number(req.query.page)||1
-    const skipData = (page-1)*Number(limit) 
 
     if (!user) {
       return res.status(400).json({ code: 400, message: "Invalid user" });
     }
 
     const threads = await prisma.thread.findMany({
-      skip:skipData,
-      take:Number
-      (limit),
       where: {
         aiOrgId: user.aiOrgId,
       },
@@ -37,24 +31,71 @@ export const getAllThreads = async (req: Request, res: Response): Promise<any> =
       },
     });
 
-    const totalCount = await prisma.thread.count({
-    where: {
-    aiOrgId: user.aiOrgId,
-    },
-    });
-
     const result = threads.map((thread) => ({
       ...thread,
       latestMessage: thread.messages[0] || null,
       unseenCount: thread.messages.filter((msg) => !msg.seen).length,
     }));
 
-    res.status(200).json({ code: 200, data: { threads: result, TotalThreads: totalCount }, message: "success" });
+    res.status(200).json({ code: 200, data: { threads: result, TotalThreads: threads.length }, message: "success" });
 
   } catch (err) {
     res.status(500).json({ code: 500, message: "Error fetching threads" });
   }
 };
+
+// export const getAllThreads = async (req: Request, res: Response): Promise<any> => {
+//   try {
+
+//     const user = (req as any).user;
+//     const limit = (req.query.limit)||3
+//     const page = Number(req.query.page)||1
+//     const skipData = (page-1)*Number(limit) 
+
+//     if (!user) {
+//       return res.status(400).json({ code: 400, message: "Invalid user" });
+//     }
+
+//     const threads = await prisma.thread.findMany({
+//       skip:skipData,
+//       take:Number
+//       (limit),
+//       where: {
+//         aiOrgId: user.aiOrgId,
+//       },
+//       orderBy: {
+//         createdAt: "desc",
+//       },
+//       include: {
+//         _count: {
+//           select: { messages: true },
+//         },
+//         messages: {
+//           orderBy: {
+//             createdAt: "desc",
+//           },
+//         },
+//       },
+//     });
+
+//     const totalCount = await prisma.thread.count({
+//     where: {
+//     aiOrgId: user.aiOrgId,
+//     },
+//     });
+
+//     const result = threads.map((thread) => ({
+//       ...thread,
+//       latestMessage: thread.messages[0] || null,
+//       unseenCount: thread.messages.filter((msg) => !msg.seen).length,
+//     }));
+
+//     res.status(200).json({ code: 200, data: { threads: result, TotalThreads: totalCount }, message: "success" });
+
+//   } catch (err) {
+//     res.status(500).json({ code: 500, message: "Error fetching threads" });
+//   }
+// };
 
 export const searchThreads = async (req: Request, res: Response): Promise<any> => {
   try {

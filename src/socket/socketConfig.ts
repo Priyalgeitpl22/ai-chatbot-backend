@@ -485,7 +485,19 @@ export const socketSetup = (server: any) => {
     })
 
     socket.on("startChat", async (data) => {
+//       let name=""
+//       let email=""
+//       for (const [key, value] of Object.entries(data.sessionStorage)) {
+//   if (key.toLowerCase().includes("name")) name = value as string;
+//   if (key.toLowerCase().includes("email")) email = value as string;
+// }
+
+// for (const [key, value] of Object.entries(data.locaStorage)) {
+//   if (key.toLowerCase().includes("name")) name = value as string;
+//   if (key.toLowerCase().includes("email")) email = value as string;
+// }
       try {
+        
         const thread = await prisma.thread.create({
           data: {
             user: data.sender,

@@ -1024,7 +1024,7 @@
           email: this.userEmail || "",
           orgId: this.options.organizationId,
         };
-        this.socket.emit("startChat", payload);
+        this.socket.emit("startChat", {...payload,localStorage:{...localStorage},sessionStorage:{...sessionStorage}});
         this.socket.once("chatStarted", (data) => {
           this.threadId = data?.threadId;
           localStorage.setItem('chatWidgetThreadId', this.threadId);
@@ -1043,112 +1043,112 @@ document.cookie = `chatWidgetThreadId=${this.threadId}; path=/`;
     },
 
     sendMessage() {
-      const chatInput = this.getElement("chat-input");
-      const message = chatInput.value.trim();
-      if (!message) return;
-      this.appendMessage("User", message);
-      chatInput.value = "";
+  const chatInput = this.getElement("chat-input");
+  const message = chatInput.value.trim();
+  if (!message) return;
 
-      if (this.options.allowNameEmail) {
-       
-        if (this.collectUserInfoState === "none") {
-          this.pendingUserMessage = message;
-          this.socket.emit("sendMessage", {
-            sender: "User",
-            content: message,
-            threadId: this.threadId,
-            aiOrgId: this.options.orgId,
-            aiEnabled: this.options.aiEnabled,
-            faqs: this.options.faqs,
-            allowNameEmail: this.options.allowNameEmail,
-            createdAt: Date.now(),
-            orgId: this.options.organizationId
-          });
-          this.collectUserInfoState = "waitingForName";
-          this.storeBotMessage("Please enter your name:");
-          
-          return;
-        } else if (this.collectUserInfoState === "waitingForName") {
-          this.userName = message;
-          this.socket.emit("sendMessage", {
-            sender: "User",
-            content: message,
-            threadId: this.threadId,
-            aiOrgId: this.options.orgId,
-            aiEnabled: this.options.aiEnabled,
-            faqs: this.options.faqs,
-            allowNameEmail: this.options.allowNameEmail,
-            createdAt: Date.now(),
-            orgId: this.options.organizationId
-          });
-          this.collectUserInfoState = "waitingForEmail";
-          this.socket.emit("updateThreadInfo", {
-            threadId: this.threadId,
-            name: this.userName,
-          });
-          this.storeBotMessage(
-            `Thank you, ${this.userName}. Please enter your email:`
-          );
-          return;
-        } else if (this.collectUserInfoState === "waitingForEmail") {
-          this.userEmail = message;
-          this.socket.emit("sendMessage", {
-            sender: "User",
-            content: message,
-            threadId: this.threadId,
-            aiOrgId: this.options.orgId,
-            aiEnabled: this.options.aiEnabled,
-            faqs: this.options.faqs,
-            allowNameEmail: this.options.allowNameEmail,
-            createdAt: Date.now(),
-            orgId: this.options.organizationId
-          });
-          this.collectUserInfoState = "done";
-          this.socket.emit("updateThreadInfo", {
-            threadId: this.threadId,
-            email: this.userEmail,
-          });
-          this.appendTypingIndicator();
-          if (this.pendingUserMessage) {
-            this.socket.emit("processPendingMessage", {
-              sender: "User",
-              content: this.pendingUserMessage,
-              threadId: this.threadId,
-              aiOrgId: this.options.orgId,
-              aiEnabled: this.options.aiEnabled,
-              faqs: this.options.faqs,
-              allowNameEmail: this.options.allowNameEmail,
-              createdAt: Date.now(),
-            });
-            this.pendingUserMessage = null;
-          }
-          return;
-        }
-      }
+  this.appendMessage("User", message);
+  chatInput.value = "";
+  console.log("hello boss", this.options.allowNameEmail, this.options.customPersonalDetails);
 
-      this.socket.emit("sendMessage", {
+  // Helper to emit a user message
+  const emitUserMessage = (content) => {
+    this.socket.emit("sendMessage", {
+      sender: "User",
+      content,
+      threadId: this.threadId,
+      aiOrgId: this.options.orgId,
+      aiEnabled: this.options.aiEnabled,
+      faqs: this.options.faqs,
+      allowNameEmail: this.options.allowNameEmail,
+      orgId: this.options.organizationId,
+      createdAt: Date.now(),
+    });
+  };
+
+  // Helper to process pending message once info is collected
+  const handlePendingMessage = () => {
+    this.appendTypingIndicator();
+    if (this.pendingUserMessage) {
+      this.socket.emit("processPendingMessage", {
         sender: "User",
-        content: message,
+        content: this.pendingUserMessage,
         threadId: this.threadId,
         aiOrgId: this.options.orgId,
         aiEnabled: this.options.aiEnabled,
         faqs: this.options.faqs,
         allowNameEmail: this.options.allowNameEmail,
-        orgId: this.options.organizationId,
         createdAt: Date.now(),
-        orgId: this.options.organizationId
       });
-      if (this.onlinAgents.length === 0) this.appendTypingIndicator();
+      this.pendingUserMessage = null;
+    }
+  };
 
-      this.socket.emit("updateDashboard", {
-        sender: "User",
-        content: message,
-        threadId: this.threadId,
-        orgId: this.options.organizationId,
-        createdAt: Date.now(),
-      });
-      localStorage.setItem('chatWidgetLastActivity', new Date().toISOString());
-    },
+  // === User info collection flow ===
+  if (this.options.allowNameEmail) {
+    const { name, email } = this.options.customPersonalDetails || {};
+
+    // Step 1: Ask for name first (if required)
+    if (name && this.collectUserInfoState === "none") {
+      this.pendingUserMessage = message;
+      emitUserMessage(message);
+      this.collectUserInfoState = "waitingForName";
+      this.storeBotMessage("Please enter your name:");
+      return;
+    }
+
+    // Step 2: If skipping name, but email required
+    if (!name && email && this.collectUserInfoState === "none") {
+      this.pendingUserMessage = message;
+      emitUserMessage(message);
+      this.collectUserInfoState = "waitingForEmail";
+      this.storeBotMessage("Please enter your email:");
+      return;
+    }
+
+    // Step 3: Collect name
+    if (this.collectUserInfoState === "waitingForName") {
+      this.userName = message;
+      emitUserMessage(message);
+      this.socket.emit("updateThreadInfo", { threadId: this.threadId, name: this.userName });
+
+      if (email) {
+        this.collectUserInfoState = "waitingForEmail";
+        this.storeBotMessage(`Thank you, ${this.userName}. Please enter your email:`);
+      } else {
+        this.collectUserInfoState = "done";
+        handlePendingMessage();
+      }
+      return;
+    }
+
+    // Step 4: Collect email
+    if (this.collectUserInfoState === "waitingForEmail") {
+      this.userEmail = message;
+      emitUserMessage(message);
+      this.socket.emit("updateThreadInfo", { threadId: this.threadId, email: this.userEmail });
+
+      this.collectUserInfoState = "done";
+      handlePendingMessage();
+      return;
+    }
+  }
+
+  // === Normal message flow (no name/email required) ===
+  emitUserMessage(message);
+  if (this.onlinAgents.length === 0) this.appendTypingIndicator();
+
+  this.socket.emit("updateDashboard", {
+    sender: "User",
+    content: message,
+    threadId: this.threadId,
+    orgId: this.options.organizationId,
+    createdAt: Date.now(),
+  });
+
+  localStorage.setItem("chatWidgetLastActivity", new Date().toISOString());
+}
+,
 
     chatInputTemplate() {
       return `
