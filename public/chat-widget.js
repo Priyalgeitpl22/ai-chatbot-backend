@@ -4,8 +4,8 @@
   //   localStorage.removeItem('chatWidgetHistory');
   // });
 
-  const BACKEND_URL = "http://localhost:5003";
-  // const BACKEND_URL = "https://api.chat.jooper.ai";
+  // const BACKEND_URL = "http://localhost:5003";
+  const BACKEND_URL = "https://api.chat.jooper.ai";
 
   function getCookie(name) {
     const value = `; ${document.cookie}`;
@@ -776,17 +776,17 @@
         this.injectGlobalStyles();
         this.shadowRoot.getElementById("jooper-close-chat").addEventListener("click", () => {
 
-          const popup = this.getElement("close-chat-popup");
-          if (popup) {
-            console.log(popup)
-            popup.style.display = "flex";
-          }
-          
-          // if (this.threadId) {
-           
-          //   this.socket.emit("leaveThread", this.threadId);
-          //   this.renderIcon();
+          // const popup = this.getElement("close-chat-popup");
+          // if (popup) {
+          //   console.log(popup)
+          //   popup.style.display = "flex";
           // }
+          
+          if (this.threadId) {
+           
+            this.socket.emit("leaveThread", this.threadId);
+            this.renderIcon();
+          }
           
         });
 
