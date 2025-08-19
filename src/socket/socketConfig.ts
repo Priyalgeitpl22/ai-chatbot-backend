@@ -485,17 +485,20 @@ export const socketSetup = (server: any) => {
     })
 
     socket.on("startChat", async (data) => {
-//       let name=""
-//       let email=""
-//       for (const [key, value] of Object.entries(data.sessionStorage)) {
-//   if (key.toLowerCase().includes("name")) name = value as string;
-//   if (key.toLowerCase().includes("email")) email = value as string;
-// }
+      let name=""
+      let email=""
+      const locaStorage = data?.localStorage||{}
+      const sessionStorage = data?.sessionStorage||{}
+      // console.log(locaStorage,sessionStorage)
+      for (const [key, value] of Object.entries(sessionStorage)) {
+  if (key.toLowerCase().includes("name")) name = value as string;
+  if (key.toLowerCase().includes("email")) email = value as string;
+}
 
-// for (const [key, value] of Object.entries(data.locaStorage)) {
-//   if (key.toLowerCase().includes("name")) name = value as string;
-//   if (key.toLowerCase().includes("email")) email = value as string;
-// }
+for (const [key, value] of Object.entries(locaStorage)) {
+  if (key.toLowerCase().includes("name")) name = value as string;
+  if (key.toLowerCase().includes("email")) email = value as string;
+}
       try {
         
         const thread = await prisma.thread.create({
@@ -504,8 +507,8 @@ export const socketSetup = (server: any) => {
             aiOrgId: data.aiOrgId,
             url: data.url,
             ip: data.ip,
-            name: data.name,
-            email: data.email,
+            name: data.name?data.name:name,
+            email: data.email?data.email:email,
           },
         });
         socket.join(thread.id);
