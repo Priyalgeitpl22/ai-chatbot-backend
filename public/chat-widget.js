@@ -46,7 +46,6 @@
         try {
           const res = await fetch(`${BACKEND_URL}/api/message/chat-persist/${this.threadId}`);
           const result = await res.json();
-          console.log("data.data", result.data);
           if (result.code === 200 && result.data.isValid) {
             this.chatHistory = result.data.messages.map(msg => ({
               sender: msg.sender === "Bot" ? "ChatBot" : msg.sender,
@@ -802,7 +801,6 @@
         this.shadowRoot.getElementById("close-chat-confirm").addEventListener("click",()=>{
           const popup = this.getElement("close-chat-popup")
           const selected = this.getElement("jooper-popup-select")
-          console.log(selected)
           
           if(popup && selected){
              if (this.threadId) {
@@ -810,7 +808,7 @@
             this.socket.emit("leaveThread", this.threadId);
             this.renderIcon();
           }
-            console.log(selected.value,"hello Happy")
+           
             popup.style.display="none"
           }
         })
@@ -1049,7 +1047,6 @@ document.cookie = `chatWidgetThreadId=${this.threadId}; path=/`;
 
   this.appendMessage("User", message);
   chatInput.value = "";
-  console.log("hello boss", this.options.allowNameEmail, this.options.customPersonalDetails);
 
   // Helper to emit a user message
   const emitUserMessage = (content) => {
