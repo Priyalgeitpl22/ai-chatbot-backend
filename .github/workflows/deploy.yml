@@ -1,0 +1,43 @@
+name: Deploy to Jooper Server
+
+
+on:
+ push:
+   branches:
+     - main
+
+
+jobs:
+ deploy:
+   runs-on: ubuntu-latest
+
+
+   steps:
+     - name: Checkout Code
+       uses: actions/checkout@v3
+
+
+     - name: Copy files to server with SCP
+       uses: appleboy/scp-action@v0.1.7
+       with:
+         host: ${{ secrets.SERVER_HOST }}
+         username: ${{ secrets.SERVER_USER }}
+         key: ${{ secrets.JOOPER_SSH_KEY }}
+         source: "."
+         target: "/root/apps/ai-chatbot-backend"
+
+
+     - name: Run remote commands on server
+       uses: appleboy/ssh-action@v1.0.0
+       with:
+         host: ${{ secrets.SERVER_HOST }}
+         username: ${{ secrets.SERVER_USER }}
+         key: ${{ secrets.JOOPER_SSH_KEY }}
+         script: |
+           export NVM_DIR="$HOME/.nvm"
+           [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+           cd /root/apps/ai-chatbot-backend
+           npm i
+           npx prisma migrate dev
+           npx tsc
+           pm2 restart ai-chatbot-backend  # or pm2 restart all if needed
