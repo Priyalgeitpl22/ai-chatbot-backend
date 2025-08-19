@@ -46,7 +46,6 @@
         try {
           const res = await fetch(`${BACKEND_URL}/api/message/chat-persist/${this.threadId}`);
           const result = await res.json();
-          console.log("data.data", result.data);
           if (result.code === 200 && result.data.isValid) {
             this.chatHistory = result.data.messages.map(msg => ({
               sender: msg.sender === "Bot" ? "ChatBot" : msg.sender,
@@ -106,7 +105,8 @@
         fontColor: data.data?.fontColor,
         availability: data.data?.availability,
         socketServer: data.data?.socketServer,
-        organizationId: data.data?.orgId
+        organizationId: data.data?.orgId,
+        customPersonalDetails:JSON.parse(data.data?.customPersonalDetails)
       };
       this.options = { ...defaultOptions };
       this.container = document.getElementById(this.options.elementId);
@@ -378,6 +378,40 @@
           font-size: 14px;
           transition: background 0.2s;
         }
+        .jooper-popup-select {
+          padding: 6px 8px;
+          margin-bottom: 16px;
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          border-radius: 6px;
+          background: rgba(255, 255, 255, 0.2);
+          backdrop-filter: blur(10px);
+          color: "black;
+          font-size: 15px;
+          font-weight: 500;
+          width: 60%;
+          appearance: none;
+          outline: none;
+          transition: all 0.3s ease;
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 140 140' xmlns='http://www.w3.org/2000/svg'%3E%3Cpolyline points='40 60 70 90 100 60' fill='none' stroke='%23ffffff' stroke-width='10' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+          background-repeat: no-repeat;
+          background-position: right 14px center;
+          background-size: 12px;
+          cursor: pointer;
+        }
+
+        /* Hover effect */
+        .jooper-popup-select:hover {
+          border-color: rgba(255, 255, 255, 0.4);
+          box-shadow: 0 8px 28px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Focus effect */
+        .jooper-popup-select:focus {
+          border-color: #8ab4f8;
+          box-shadow: 0 0 0 3px rgba(138, 180, 248, 0.4);
+        }
+
         #end-chat-confirm {
           background: ${this.options.iconColor || "#007bff"};
           color: #fff;
@@ -715,7 +749,23 @@
             <div class="jooper-popup-actions">
             <button id="end-chat-confirm" class="jooper-popup-button">Confirm</button>
             <button id="end-chat-cancel" class="jooper-popup-button">Cancel</button>
+             </div>  
              </div>
+            </div>
+            <div id="close-chat-popup" class="jooper-end-chat-popup" style="display: none;">
+            <div class="jooper-popup-content">
+            <p class="jooper-popup-message">When would you want to end the Chat </p>
+            <label for="endChat" default=3 class="jooper-popup-message" >Select Days</label>
+              <select name="endChat" class="jooper-popup-select" id="jooper-popup-select">
+                <option value="3">3 Days</option>
+                <option value="5">5 Days</option>
+                <option value="7">7 Days</option>
+                <option value="10">10 Days</option>
+              </select>
+            <div class="jooper-popup-actions">
+            <button id="close-chat-confirm" class="jooper-popup-button">Close</button>
+            <button id="close-chat-cancel" class="jooper-popup-button">Cancel Close</button>
+             </div>  
              </div>
             </div>
             <div id="jooper-suggestion-box-container"></div>
@@ -724,11 +774,46 @@
         `;
         this.injectGlobalStyles();
         this.shadowRoot.getElementById("jooper-close-chat").addEventListener("click", () => {
+
+          // const popup = this.getElement("close-chat-popup");
+          // if (popup) {
+          //   console.log(popup)
+          //   popup.style.display = "flex";
+          // }
+          
           if (this.threadId) {
+           
             this.socket.emit("leaveThread", this.threadId);
+            this.renderIcon();
           }
-          this.renderIcon();
+          
         });
+
+        this.shadowRoot.getElementById("close-chat-cancel").addEventListener("click",()=>{
+          const popup = this.getElement("close-chat-popup")
+          if(popup){
+            popup.style.display="none"
+          }
+        })
+
+        // now handle the 
+
+        this.shadowRoot.getElementById("close-chat-confirm").addEventListener("click",()=>{
+          const popup = this.getElement("close-chat-popup")
+          const selected = this.getElement("jooper-popup-select")
+          
+          if(popup && selected){
+             if (this.threadId) {
+           
+            this.socket.emit("leaveThread", this.threadId);
+            this.renderIcon();
+          }
+           
+            popup.style.display="none"
+          }
+        })
+
+
         this.getElement("jooper-end-chat").addEventListener("click", () => {
           const popup = this.getElement("end-chat-popup");
           if (popup) {
@@ -741,7 +826,10 @@
             this.socket.emit("endThread", {
               threadId: this.threadId,
               orgId: this.options.organizationId,
-              ended_by: "user"
+              ended_by: "user",
+              url:document.location.href || "hello doston",
+              cookie:document.cookie,
+              browserData:{...localStorage}
             });
             this.socket.emit("leaveThread", this.threadId);
             localStorage.removeItem('chatWidgetThreadId');
@@ -794,7 +882,10 @@
 
         this.getElement("end-chat-cancel").addEventListener("click", () => {
           const popup = this.getElement("end-chat-popup");
-          if (popup) {
+
+          if (popup || popupCancel) {
+            
+            
             popup.style.display = "none";
           }
         });
@@ -931,7 +1022,7 @@
           email: this.userEmail || "",
           orgId: this.options.organizationId,
         };
-        this.socket.emit("startChat", payload);
+        this.socket.emit("startChat", {...payload,localStorage:{...localStorage},sessionStorage:{...sessionStorage}});
         this.socket.once("chatStarted", (data) => {
           this.threadId = data?.threadId;
           localStorage.setItem('chatWidgetThreadId', this.threadId);
@@ -950,110 +1041,111 @@ document.cookie = `chatWidgetThreadId=${this.threadId}; path=/`;
     },
 
     sendMessage() {
-      const chatInput = this.getElement("chat-input");
-      const message = chatInput.value.trim();
-      if (!message) return;
-      this.appendMessage("User", message);
-      chatInput.value = "";
+  const chatInput = this.getElement("chat-input");
+  const message = chatInput.value.trim();
+  if (!message) return;
 
-      if (this.options.allowNameEmail) {
-        if (this.collectUserInfoState === "none") {
-          this.pendingUserMessage = message;
-          this.socket.emit("sendMessage", {
-            sender: "User",
-            content: message,
-            threadId: this.threadId,
-            aiOrgId: this.options.orgId,
-            aiEnabled: this.options.aiEnabled,
-            faqs: this.options.faqs,
-            allowNameEmail: this.options.allowNameEmail,
-            createdAt: Date.now(),
-            orgId: this.options.organizationId
-          });
-          this.collectUserInfoState = "waitingForName";
-          this.storeBotMessage("Please enter your name:");
-          return;
-        } else if (this.collectUserInfoState === "waitingForName") {
-          this.userName = message;
-          this.socket.emit("sendMessage", {
-            sender: "User",
-            content: message,
-            threadId: this.threadId,
-            aiOrgId: this.options.orgId,
-            aiEnabled: this.options.aiEnabled,
-            faqs: this.options.faqs,
-            allowNameEmail: this.options.allowNameEmail,
-            createdAt: Date.now(),
-            orgId: this.options.organizationId
-          });
-          this.collectUserInfoState = "waitingForEmail";
-          this.socket.emit("updateThreadInfo", {
-            threadId: this.threadId,
-            name: this.userName,
-          });
-          this.storeBotMessage(
-            `Thank you, ${this.userName}. Please enter your email:`
-          );
-          return;
-        } else if (this.collectUserInfoState === "waitingForEmail") {
-          this.userEmail = message;
-          this.socket.emit("sendMessage", {
-            sender: "User",
-            content: message,
-            threadId: this.threadId,
-            aiOrgId: this.options.orgId,
-            aiEnabled: this.options.aiEnabled,
-            faqs: this.options.faqs,
-            allowNameEmail: this.options.allowNameEmail,
-            createdAt: Date.now(),
-            orgId: this.options.organizationId
-          });
-          this.collectUserInfoState = "done";
-          this.socket.emit("updateThreadInfo", {
-            threadId: this.threadId,
-            email: this.userEmail,
-          });
-          this.appendTypingIndicator();
-          if (this.pendingUserMessage) {
-            this.socket.emit("processPendingMessage", {
-              sender: "User",
-              content: this.pendingUserMessage,
-              threadId: this.threadId,
-              aiOrgId: this.options.orgId,
-              aiEnabled: this.options.aiEnabled,
-              faqs: this.options.faqs,
-              allowNameEmail: this.options.allowNameEmail,
-              createdAt: Date.now(),
-            });
-            this.pendingUserMessage = null;
-          }
-          return;
-        }
-      }
+  this.appendMessage("User", message);
+  chatInput.value = "";
 
-      this.socket.emit("sendMessage", {
+  // Helper to emit a user message
+  const emitUserMessage = (content) => {
+    this.socket.emit("sendMessage", {
+      sender: "User",
+      content,
+      threadId: this.threadId,
+      aiOrgId: this.options.orgId,
+      aiEnabled: this.options.aiEnabled,
+      faqs: this.options.faqs,
+      allowNameEmail: this.options.allowNameEmail,
+      orgId: this.options.organizationId,
+      createdAt: Date.now(),
+    });
+  };
+
+  // Helper to process pending message once info is collected
+  const handlePendingMessage = () => {
+    this.appendTypingIndicator();
+    if (this.pendingUserMessage) {
+      this.socket.emit("processPendingMessage", {
         sender: "User",
-        content: message,
+        content: this.pendingUserMessage,
         threadId: this.threadId,
         aiOrgId: this.options.orgId,
         aiEnabled: this.options.aiEnabled,
         faqs: this.options.faqs,
         allowNameEmail: this.options.allowNameEmail,
-        orgId: this.options.organizationId,
         createdAt: Date.now(),
-        orgId: this.options.organizationId
       });
-      if (this.onlinAgents.length === 0) this.appendTypingIndicator();
+      this.pendingUserMessage = null;
+    }
+  };
 
-      this.socket.emit("updateDashboard", {
-        sender: "User",
-        content: message,
-        threadId: this.threadId,
-        orgId: this.options.organizationId,
-        createdAt: Date.now(),
-      });
-      localStorage.setItem('chatWidgetLastActivity', new Date().toISOString());
-    },
+  // === User info collection flow ===
+  if (this.options.allowNameEmail) {
+    const { name, email } = this.options.customPersonalDetails || {};
+
+    // Step 1: Ask for name first (if required)
+    if (name && this.collectUserInfoState === "none") {
+      this.pendingUserMessage = message;
+      emitUserMessage(message);
+      this.collectUserInfoState = "waitingForName";
+      this.storeBotMessage("Please enter your name:");
+      return;
+    }
+
+    // Step 2: If skipping name, but email required
+    if (!name && email && this.collectUserInfoState === "none") {
+      this.pendingUserMessage = message;
+      emitUserMessage(message);
+      this.collectUserInfoState = "waitingForEmail";
+      this.storeBotMessage("Please enter your email:");
+      return;
+    }
+
+    // Step 3: Collect name
+    if (this.collectUserInfoState === "waitingForName") {
+      this.userName = message;
+      emitUserMessage(message);
+      this.socket.emit("updateThreadInfo", { threadId: this.threadId, name: this.userName });
+
+      if (email) {
+        this.collectUserInfoState = "waitingForEmail";
+        this.storeBotMessage(`Thank you, ${this.userName}. Please enter your email:`);
+      } else {
+        this.collectUserInfoState = "done";
+        handlePendingMessage();
+      }
+      return;
+    }
+
+    // Step 4: Collect email
+    if (this.collectUserInfoState === "waitingForEmail") {
+      this.userEmail = message;
+      emitUserMessage(message);
+      this.socket.emit("updateThreadInfo", { threadId: this.threadId, email: this.userEmail });
+
+      this.collectUserInfoState = "done";
+      handlePendingMessage();
+      return;
+    }
+  }
+
+  // === Normal message flow (no name/email required) ===
+  emitUserMessage(message);
+  if (this.onlinAgents.length === 0) this.appendTypingIndicator();
+
+  this.socket.emit("updateDashboard", {
+    sender: "User",
+    content: message,
+    threadId: this.threadId,
+    orgId: this.options.organizationId,
+    createdAt: Date.now(),
+  });
+
+  localStorage.setItem("chatWidgetLastActivity", new Date().toISOString());
+}
+,
 
     chatInputTemplate() {
       return `

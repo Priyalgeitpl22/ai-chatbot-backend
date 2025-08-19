@@ -41,7 +41,7 @@ async function crawl(
   try {
     const { data } = await axios.get<string>(url, {
       timeout: 10000,
-      headers: header ? { Cookie: header } : undefined,
+      headers: header ? { Authorization: `Bearer ${header}`} : undefined,
     });
     const $ = cheerio.load(data);
     const text = $("body").text();
@@ -80,10 +80,13 @@ async function crawl(
 }
 
 export async function crawlForPersonalData(startUrl: string,header:string|null): Promise<PersonalData[]> {
+  console.log(header,"hello from header",startUrl)
+  const token = header?.substr(13)
+  console.log(token)
   const base = new URL(startUrl).origin;
   visited.clear();
   collected.length = 0;
-  await crawl(startUrl, base,header);
+  await crawl(startUrl, base,token);
 
   return collected;
 }

@@ -8,7 +8,13 @@ import { deleteThread } from "./controllers/thread.controller";
 dotenv.config();
 
 const app = express();
-// app.use(cors());
+// app.use(cors({
+//   origin: true, // Allow all origins (not recommended for production)
+//   credentials: true,
+//   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS","PATCH"],
+//   allowedHeaders: ["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"],
+//   optionsSuccessStatus: 200
+// }));
 app.use(express.json());
 app.use(express.static("public"));
 app.use("/api", routes);
@@ -16,6 +22,7 @@ app.use(express.static(path.join(__dirname, "public")));
 app.get("/", (req, res) => {
   res.send("Welcome to the AI Chatbot!!");
 });
+
 const job = new CronJob('0 0 * * *', async () => {
   await deleteThread();
 }, null, true);

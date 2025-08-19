@@ -145,26 +145,29 @@ model Message {
 }
 
 model ChatConfig {
-  id                    String   @id @default(uuid())
-  orgId                 String?
-  aiOrgId               Int?
-  allowFileUpload       Boolean?
-  addInitialPopupText   String?
-  addChatBotName        String?
-  ChatBotLogoImage      String?
-  allowNameEmail        Boolean?
-  allowEmojis           Boolean?
-  allowCustomGreeting   Boolean?
-  customGreetingMessage String?
-  allowFontFamily       Boolean?
-  customFontFamily      String?
-  position              String?
-  iconColor             String?
-  chatWindowColor       String?
-  fontColor             String?
-  availability          Boolean?
-  socketServer          String?
-  emailConfig           Json?
+  id                      String   @id @default(uuid())
+  orgId                   String?
+  aiOrgId                 Int?
+  allowFileUpload         Boolean?
+  addInitialPopupText     String?
+  addChatBotName          String?
+  ChatBotLogoImage        String?
+  allowNameEmail          Boolean?
+  allowEmojis             Boolean?
+  allowCustomGreeting     Boolean?
+  customGreetingMessage   String?
+  allowFontFamily         Boolean?
+  customFontFamily        String?
+  position                String?
+  iconColor               String?
+  chatWindowColor         String?
+  fontColor               String?
+  availability            Boolean?
+  socketServer            String?
+  emailConfig             Json?
+  allowCustomRecycleClear Boolean?
+  CustomRecycleClear      Int?
+  customPersonalDetails   String?
 }
 
 model Task {
