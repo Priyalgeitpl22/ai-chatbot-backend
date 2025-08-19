@@ -177,10 +177,10 @@ export const endChat = async (req: any, res: any): Promise<void> => {
     await createChatSummaryFunction(thread_id)
 
     // function to crawl the data 
-    if(url){
-     const data =  await crawlForPersonalData(url,header)
-     console.log(data,"personal Data")
-    }
+    // if(url){
+    //  const data =  await crawlForPersonalData(url,header)
+    //  console.log(data,"personal Data")
+    // }
     
     const messages = await prisma.message.findMany({
       where: { threadId: thread_id },
@@ -261,10 +261,10 @@ export const endChatFunction = async ({ thread_id, ended_by,url ,header,browserD
     await createChatSummaryFunction(thread_id)
 
     // function to crawl the data 
-    if(url){
-     const data =  await crawlForPersonalData(url,header)
-     console.log(data,"personal Data",browserData)
-    }
+    // if(url){
+    //  const data =  await crawlForPersonalData(url,header)
+    //  console.log(data,"personal Data",browserData)
+    // }
     
     const messages = await prisma.message.findMany({
       where: { threadId: thread_id },
