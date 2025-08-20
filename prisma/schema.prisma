@@ -118,6 +118,7 @@ model Thread {
   ip         String    @default("")
   name       String    @default("")
   email      String    @default("")
+  phone      String    @default("")
   createdAt  DateTime  @default(now())
   type       String    @default("unassigned")
 

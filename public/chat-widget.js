@@ -611,6 +611,7 @@
           aiEnabled: this.options.aiEnabled,
           faqs: this.options.faqs,
           allowNameEmail: this.options.allowNameEmail,
+          customPersonalDetails:this.options.customPersonalDetails,
           createdAt: Date.now(),
           orgId: this.options.organizationId,
           fileData: content
@@ -1059,6 +1060,7 @@ document.cookie = `chatWidgetThreadId=${this.threadId}; path=/`;
       faqs: this.options.faqs,
       allowNameEmail: this.options.allowNameEmail,
       orgId: this.options.organizationId,
+      customPersonalDetails:this.options.customPersonalDetails,
       createdAt: Date.now(),
     });
   };
@@ -1083,52 +1085,80 @@ document.cookie = `chatWidgetThreadId=${this.threadId}; path=/`;
 
   // === User info collection flow ===
   if (this.options.allowNameEmail) {
-    const { name, email } = this.options.customPersonalDetails || {};
+    const { name, email,phone } = this.options.customPersonalDetails || {};
 
-    // Step 1: Ask for name first (if required)
-    if (name && this.collectUserInfoState === "none") {
-      this.pendingUserMessage = message;
-      emitUserMessage(message);
-      this.collectUserInfoState = "waitingForName";
-      this.storeBotMessage("Please enter your name:");
-      return;
-    }
+     // Step 1: Name first
+  if (name && this.collectUserInfoState === "none") {
+    this.pendingUserMessage = message;
+    emitUserMessage(message);
+    this.collectUserInfoState = "waitingForName";
+    this.storeBotMessage("Please enter your name:");
+    return;
+  }
 
-    // Step 2: If skipping name, but email required
-    if (!name && email && this.collectUserInfoState === "none") {
-      this.pendingUserMessage = message;
-      emitUserMessage(message);
+  // Step 2: If skipping name, but email required
+  if (!name && email && this.collectUserInfoState === "none") {
+    this.pendingUserMessage = message;
+    emitUserMessage(message);
+    this.collectUserInfoState = "waitingForEmail";
+    this.storeBotMessage("Please enter your email:");
+    return;
+  }
+
+  // Step 3: If skipping name+email, but phone required
+  if (!name && !email && phone && this.collectUserInfoState === "none") {
+    this.pendingUserMessage = message;
+    emitUserMessage(message);
+    this.collectUserInfoState = "waitingForPhone";
+    this.storeBotMessage("Please enter your phone number:");
+    return;
+  }
+
+  // Step 4: Collect name
+  if (this.collectUserInfoState === "waitingForName") {
+    this.userName = message;
+    emitUserMessage(message);
+    this.socket.emit("updateThreadInfo", { threadId: this.threadId, name: this.userName });
+
+    if (email) {
       this.collectUserInfoState = "waitingForEmail";
-      this.storeBotMessage("Please enter your email:");
-      return;
-    }
-
-    // Step 3: Collect name
-    if (this.collectUserInfoState === "waitingForName") {
-      this.userName = message;
-      emitUserMessage(message);
-      this.socket.emit("updateThreadInfo", { threadId: this.threadId, name: this.userName });
-
-      if (email) {
-        this.collectUserInfoState = "waitingForEmail";
-        this.storeBotMessage(`Thank you, ${this.userName}. Please enter your email:`);
-      } else {
-        this.collectUserInfoState = "done";
-        handlePendingMessage();
-      }
-      return;
-    }
-
-    // Step 4: Collect email
-    if (this.collectUserInfoState === "waitingForEmail") {
-      this.userEmail = message;
-      emitUserMessage(message);
-      this.socket.emit("updateThreadInfo", { threadId: this.threadId, email: this.userEmail });
-
+      this.storeBotMessage(`Thank you, ${this.userName}. Please enter your email:`);
+    } else if (phone) {
+      this.collectUserInfoState = "waitingForPhone";
+      this.storeBotMessage(`Thank you, ${this.userName}. Please enter your phone number:`);
+    } else {
       this.collectUserInfoState = "done";
       handlePendingMessage();
-      return;
     }
+    return;
+  }
+
+  // Step 5: Collect email
+  if (this.collectUserInfoState === "waitingForEmail") {
+    this.userEmail = message;
+    emitUserMessage(message);
+    this.socket.emit("updateThreadInfo", { threadId: this.threadId, email: this.userEmail });
+
+    if (phone) {
+      this.collectUserInfoState = "waitingForPhone";
+      this.storeBotMessage("Thank you. Please enter your phone number:");
+    } else {
+      this.collectUserInfoState = "done";
+      handlePendingMessage();
+    }
+    return;
+  }
+
+  // Step 6: Collect phone
+  if (this.collectUserInfoState === "waitingForPhone") {
+    this.userPhone = message;
+    emitUserMessage(message);
+    this.socket.emit("updateThreadInfo", { threadId: this.threadId, phone: this.userPhone });
+
+    this.collectUserInfoState = "done";
+    handlePendingMessage();
+    return;
+  }
   }
 
   // === Normal message flow (no name/email required) ===

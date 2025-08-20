@@ -348,8 +348,10 @@ export const socketSetup = (server: any) => {
     if (
       data.sender === "User" &&
       data.allowNameEmail &&
-      fullThread &&
-      ((fullThread.name === "" || fullThread.email === "") || fullThread.email === data?.content)
+      fullThread &&(data.customPersonalDetails.name || data.customPersonalDetails.email || data.customPersonalDetails.phone) &&
+      (((fullThread.name === "" && data.customPersonalDetails.name===true) || (fullThread.email === "" && data.customPersonalDetails.email ===true)||(fullThread.phone === "" && data.customPersonalDetails.phone ===true))
+      ||fullThread.email===data?.content || fullThread.phone===data?.content)
+      // ((fullThread.name === "" || fullThread.email === "") || fullThread.email === data?.content)
     ) {
       return;
     }
@@ -524,6 +526,7 @@ for (const [key, value] of Object.entries(locaStorage)) {
         let updateData: any = {};
         if (data.name) updateData.name = data.name;
         if (data.email) updateData.email = data.email;
+        if(data.phone) updateData.phone = data.phone;
 
         const updatedThread = await prisma.thread.update({
           where: { id: data.threadId },
