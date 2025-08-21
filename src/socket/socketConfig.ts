@@ -6,7 +6,6 @@ import { sendEmailChat } from '../utils/email.utils'
 import { getPresignedUrl } from "../aws/imageUtils";
 import {moveToTrash} from "../controllers/thread.controller";
 import { endChatFunction } from "../controllers/chatConfig.controller";
-import { threadId } from "worker_threads";
 
 
 const prisma = new PrismaClient();
@@ -350,7 +349,7 @@ export const socketSetup = (server: any) => {
       data.allowNameEmail &&
       fullThread &&(data.customPersonalDetails.name || data.customPersonalDetails.email || data.customPersonalDetails.phone) &&
       (((fullThread.name === "" && data.customPersonalDetails.name===true) || (fullThread.email === "" && data.customPersonalDetails.email ===true)||(fullThread.phone === "" && data.customPersonalDetails.phone ===true))
-      ||fullThread.email===data?.content || fullThread.phone===data?.content)
+      ||fullThread.email===data?.content || fullThread.phone===data?.content || fullThread.name === data?.content)
       // ((fullThread.name === "" || fullThread.email === "") || fullThread.email === data?.content)
     ) {
       return;
