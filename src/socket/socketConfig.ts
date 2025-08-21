@@ -405,7 +405,6 @@ export const socketSetup = (server: any) => {
           where: { id: data.threadId },
         });
         const tempthread = {...thread,orgId:data.orgId}
-        
            
             const isNotification  = await prisma.notification.findFirst({where:{threadId:data.threadId}})
         // if isNotification the update the notification 
@@ -510,6 +509,8 @@ for (const [key, value] of Object.entries(locaStorage)) {
             ip: data.ip,
             name: data.name?data.name:name,
             email: data.email?data.email:email,
+            phone: data.phone || '',
+            socialProfiles: data.social_profiles || {},
           },
         });
         socket.join(thread.id);
@@ -522,10 +523,11 @@ for (const [key, value] of Object.entries(locaStorage)) {
 
     socket.on("updateThreadInfo", async (data) => {
       try {
-        let updateData: any = {};
+        let updateData:any = {};
         if (data.name) updateData.name = data.name;
         if (data.email) updateData.email = data.email;
-        if(data.phone) updateData.phone = data.phone;
+        if (data.phone) updateData.phone = data.phone;
+        if (data.social_profiles) updateData.socialProfiles = data.social_profiles;
 
         const updatedThread = await prisma.thread.update({
           where: { id: data.threadId },

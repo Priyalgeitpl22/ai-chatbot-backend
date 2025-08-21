@@ -19,6 +19,7 @@
     userName:localStorage.getItem("name")?localStorage.getItem("name"):"",
     userEmail:localStorage.getItem("email")?localStorage.getItem("email"):"",
     userPhone:localStorage.getItem("phone")?localStorage.getItem("phone"):"",
+    userSocialProfiles: {},
     collectUserInfoState:localStorage.getItem("collectUserInfoState")?localStorage.getItem("collectUserInfoState"):"none",
     pendingUserMessage: null,
     threadId: null,
@@ -75,13 +76,13 @@
           localStorage.setItem('chatWidgetLastActivity', new Date().toISOString());
         }
       } else {
-         // No thread ID — maybe first-time visitor
-          const savedHistory = localStorage.getItem('chatWidgetHistory');
-          this.chatHistory = savedHistory ? JSON.parse(savedHistory) : [{
-            sender: "ChatBot",
-            message: "Hello! How can I help you?",
-            time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-          }];
+        // No thread ID — maybe first-time visitor
+        const savedHistory = localStorage.getItem('chatWidgetHistory');
+        this.chatHistory = savedHistory ? JSON.parse(savedHistory) : [{
+          sender: "ChatBot",
+          message: "Hello! How can I help you?",
+          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+        }];
       }
 
       const defaultOptions = {
@@ -107,7 +108,7 @@
         availability: data.data?.availability,
         socketServer: data.data?.socketServer,
         organizationId: data.data?.orgId,
-        customPersonalDetails:JSON.parse(data.data?.customPersonalDetails)
+        customPersonalDetails: JSON.parse(data.data?.customPersonalDetails)
       };
       this.options = { ...defaultOptions };
       this.container = document.getElementById(this.options.elementId);
@@ -123,13 +124,62 @@
       this.socket = io(this.options.socketServer);
       this.onlinAgents = [];
       this.globalStylesInjected = false;
+      // If allowNameEmail and customPersonalDetails, attempt auto-capture
+      if (this.options.allowNameEmail && this.options.customPersonalDetails) {
+        await this.autoCaptureUserInfo();
+        if (this.threadId) {
+          this.sendUserInfo(); 
+        }
+      }
       this.renderIcon();
       this.injectGlobalStyles();
-    this.threadId = localStorage.getItem('chatWidgetThreadId');
+      this.threadId = localStorage.getItem('chatWidgetThreadId');
       const savedHistory = localStorage.getItem('chatWidgetHistory');
       this.chatHistory = savedHistory ? JSON.parse(savedHistory) : [];
     },
+    async autoCaptureUserInfo() {
+      this.userSocialProfiles = this.getMetaSocialLinks();
+    },
 
+    getMetaSocialLinks() {
+      const socialProfiles = {};
+      const metaTags = document.getElementsByTagName('meta');
+      const socialPlatforms = ['linkedin', 'twitter', 'facebook', 'instagram'];
+      console.log('Found meta tags:', Array.from(metaTags).map(tag => ({
+          property: tag.getAttribute('property') || tag.getAttribute('name'),
+          content: tag.getAttribute('content')
+      })));
+      for (const meta of metaTags) {
+          const property = meta.getAttribute('property') || meta.getAttribute('name');
+          const content = meta.getAttribute('content');
+          if (property && content) {
+              for (const platform of socialPlatforms) {
+                  if (property.toLowerCase().includes(platform) || property.toLowerCase().includes('profile')) {
+                      socialProfiles[platform] = content;
+                  }
+              }
+          }
+      }
+      return socialProfiles;
+  },
+    sendUserInfo() {
+      if (this.threadId) {
+        if (Object.keys(this.userSocialProfiles).length > 0) {
+          this.socket.emit('updateThreadInfo', {
+            threadId: this.threadId,
+            social_profiles: this.userSocialProfiles
+          });
+          console.log('Sent user info:', {
+            threadId: this.threadId,
+            social_profiles: this.userSocialProfiles
+          });
+        } else {
+          console.log('No user info to send.');
+        }
+      } else {
+        console.log('No threadId available for sending user info.');
+      }
+    },
     getPositionStyles() {
       return this.options.position === "bottom-left"
         ? "left: 10px; bottom: 10px;"
@@ -612,7 +662,7 @@
           aiEnabled: this.options.aiEnabled,
           faqs: this.options.faqs,
           allowNameEmail: this.options.allowNameEmail,
-          customPersonalDetails:this.options.customPersonalDetails,
+          customPersonalDetails: this.options.customPersonalDetails,
           createdAt: Date.now(),
           orgId: this.options.organizationId,
           fileData: content
@@ -782,36 +832,36 @@
           //   console.log(popup)
           //   popup.style.display = "flex";
           // }
-          
+
           if (this.threadId) {
-           
+
             this.socket.emit("leaveThread", this.threadId);
             this.renderIcon();
           }
-          
+
         });
 
-        this.shadowRoot.getElementById("close-chat-cancel").addEventListener("click",()=>{
+        this.shadowRoot.getElementById("close-chat-cancel").addEventListener("click", () => {
           const popup = this.getElement("close-chat-popup")
-          if(popup){
-            popup.style.display="none"
+          if (popup) {
+            popup.style.display = "none"
           }
         })
 
         // now handle the 
 
-        this.shadowRoot.getElementById("close-chat-confirm").addEventListener("click",()=>{
+        this.shadowRoot.getElementById("close-chat-confirm").addEventListener("click", () => {
           const popup = this.getElement("close-chat-popup")
           const selected = this.getElement("jooper-popup-select")
-          
-          if(popup && selected){
-             if (this.threadId) {
-           
-            this.socket.emit("leaveThread", this.threadId);
-            this.renderIcon();
-          }
-           
-            popup.style.display="none"
+
+          if (popup && selected) {
+            if (this.threadId) {
+
+              this.socket.emit("leaveThread", this.threadId);
+              this.renderIcon();
+            }
+
+            popup.style.display = "none"
           }
         })
 
@@ -829,9 +879,9 @@
               threadId: this.threadId,
               orgId: this.options.organizationId,
               ended_by: "user",
-              url:document.location.href || "hello doston",
-              cookie:document.cookie,
-              browserData:{...localStorage}
+              url: document.location.href || "hello doston",
+              cookie: document.cookie,
+              browserData: { ...localStorage }
             });
             this.socket.emit("leaveThread", this.threadId);
             localStorage.removeItem('chatWidgetThreadId');
@@ -849,52 +899,15 @@
             this.threadId = null;
             this.renderIcon();
           }
-            // fetch(`${BACKEND_URL}/api/chat/config/end`, {
-            //   method: "POST",
-            //   headers: {
-            //     "Content-Type": "application/json"
-            //   },
-            //   body: JSON.stringify({
-            //     thread_id: this.threadId,
-            //     ended_by: "user",
-            //     header:document.cookie
-            //   })
-            // })
-            //   .then(response => response.json())
-            //   .then(data => {
-            //     console.log(data)
-            //     if (data.code === 200) {
-            //       this.socket.emit("leaveThread", this.threadId)
-            //       localStorage.removeItem('chatWidgetThreadId');
-            //       localStorage.removeItem('chatWidgetHistory');
-            //       document.cookie = "chatWidgetThreadId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-            //       this.chatHistory = [];
-            //       this.threadId = null;
-            //       this.renderIcon();
-
-            //     } else {
-            //       const popup = this.getElement("end-chat-popup");
-            //       if (popup) {
-            //         popup.style.display = "none";
-            //       }
-            //     }
-            //   })
-            //   .catch(error => {
-            //     const popup = this.getElement("end-chat-popup");
-            //     if (popup) {
-            //       popup.style.display = "none";
-            //     }
-            //   });
-
-          }
+        }
         );
 
         this.getElement("end-chat-cancel").addEventListener("click", () => {
           const popup = this.getElement("end-chat-popup");
 
           if (popup || popupCancel) {
-            
-            
+
+
             popup.style.display = "none";
           }
         });
@@ -1000,7 +1013,7 @@
       return new Date().toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
-        hour12: false   
+        hour12: false
       });
     },
 
@@ -1031,11 +1044,12 @@
           email: this.userEmail || "",
           orgId: this.options.organizationId,
         };
-        this.socket.emit("startChat", {...payload,localStorage:{...localStorage},sessionStorage:{...sessionStorage}});
+        this.socket.emit("startChat", { ...payload, localStorage: { ...localStorage }, sessionStorage: { ...sessionStorage } });
         this.socket.once("chatStarted", (data) => {
           this.threadId = data?.threadId;
           localStorage.setItem('chatWidgetThreadId', this.threadId);
           localStorage.setItem('chatWidgetLastActivity', new Date().toISOString());
+          this.sendUserInfo();
           if (!this.chatHistory || this.chatHistory.length === 0) {
             const greetingMessage =
               this.options.allowCustomGreeting && this.options.customGreetingMessage
@@ -1044,83 +1058,83 @@
             this.storeBotMessage(greetingMessage);
             this.appendSuggestion();
           }
-document.cookie = `chatWidgetThreadId=${this.threadId}; path=/`;
+          document.cookie = `chatWidgetThreadId=${this.threadId}; path=/`;
         });
       });
     },
 
     sendMessage() {
-  const chatInput = this.getElement("chat-input");
-  const message = chatInput.value.trim();
-  if (!message) return;
+      const chatInput = this.getElement("chat-input");
+      const message = chatInput.value.trim();
+      if (!message) return;
 
-  this.appendMessage("User", message);
-  chatInput.value = "";
+      this.appendMessage("User", message);
+      chatInput.value = "";
 
-  // Helper to emit a user message
-  const emitUserMessage = (content) => {
-    this.socket.emit("sendMessage", {
-      sender: "User",
-      content,
-      threadId: this.threadId,
-      aiOrgId: this.options.orgId,
-      aiEnabled: this.options.aiEnabled,
-      faqs: this.options.faqs,
-      allowNameEmail: this.options.allowNameEmail,
-      orgId: this.options.organizationId,
-      customPersonalDetails:this.options.customPersonalDetails,
-      createdAt: Date.now(),
-    });
-  };
+      // Helper to emit a user message
+      const emitUserMessage = (content) => {
+        this.socket.emit("sendMessage", {
+          sender: "User",
+          content,
+          threadId: this.threadId,
+          aiOrgId: this.options.orgId,
+          aiEnabled: this.options.aiEnabled,
+          faqs: this.options.faqs,
+          allowNameEmail: this.options.allowNameEmail,
+          orgId: this.options.organizationId,
+          customPersonalDetails: this.options.customPersonalDetails,
+          createdAt: Date.now(),
+        });
+      };
 
-  // Helper to process pending message once info is collected
-  const handlePendingMessage = () => {
-    this.appendTypingIndicator();
-    if (this.pendingUserMessage) {
-      this.socket.emit("processPendingMessage", {
-        sender: "User",
-        content: this.pendingUserMessage,
-        threadId: this.threadId,
-        aiOrgId: this.options.orgId,
-        aiEnabled: this.options.aiEnabled,
-        faqs: this.options.faqs,
-        allowNameEmail: this.options.allowNameEmail,
-        createdAt: Date.now(),
-      });
-      this.pendingUserMessage = null;
-    }
-  };
+      // Helper to process pending message once info is collected
+      const handlePendingMessage = () => {
+        this.appendTypingIndicator();
+        if (this.pendingUserMessage) {
+          this.socket.emit("processPendingMessage", {
+            sender: "User",
+            content: this.pendingUserMessage,
+            threadId: this.threadId,
+            aiOrgId: this.options.orgId,
+            aiEnabled: this.options.aiEnabled,
+            faqs: this.options.faqs,
+            allowNameEmail: this.options.allowNameEmail,
+            createdAt: Date.now(),
+          });
+          this.pendingUserMessage = null;
+        }
+      };
 
-  // === User info collection flow ===
-  if (this.options.allowNameEmail) {
-    const { name, email,phone } = this.options.customPersonalDetails || {};
+      // === User info collection flow ===
+      if (this.options.allowNameEmail) {
+        const { name, email, phone } = this.options.customPersonalDetails || {};
 
-     // Step 1: Name first
-  if (name && this.collectUserInfoState === "none") {
-    this.pendingUserMessage = message;
-    emitUserMessage(message);
-    this.collectUserInfoState = "waitingForName";
-    this.storeBotMessage("Please enter your name:");
-    return;
-  }
+        // Step 1: Name first
+        if (name && this.collectUserInfoState === "none") {
+          this.pendingUserMessage = message;
+          emitUserMessage(message);
+          this.collectUserInfoState = "waitingForName";
+          this.storeBotMessage("Please enter your name:");
+          return;
+        }
 
-  // Step 2: If skipping name, but email required
-  if (!name && email && this.collectUserInfoState === "none") {
-    this.pendingUserMessage = message;
-    emitUserMessage(message);
-    this.collectUserInfoState = "waitingForEmail";
-    this.storeBotMessage("Please enter your email:");
-    return;
-  }
+        // Step 2: If skipping name, but email required
+        if (!name && email && this.collectUserInfoState === "none") {
+          this.pendingUserMessage = message;
+          emitUserMessage(message);
+          this.collectUserInfoState = "waitingForEmail";
+          this.storeBotMessage("Please enter your email:");
+          return;
+        }
 
-  // Step 3: If skipping name+email, but phone required
-  if (!name && !email && phone && this.collectUserInfoState === "none") {
-    this.pendingUserMessage = message;
-    emitUserMessage(message);
-    this.collectUserInfoState = "waitingForPhone";
-    this.storeBotMessage("Please enter your phone number:");
-    return;
-  }
+        // Step 3: If skipping name+email, but phone required
+        if (!name && !email && phone && this.collectUserInfoState === "none") {
+          this.pendingUserMessage = message;
+          emitUserMessage(message);
+          this.collectUserInfoState = "waitingForPhone";
+          this.storeBotMessage("Please enter your phone number:");
+          return;
+        }
 
   // Step 4: Collect name
   if (this.collectUserInfoState === "waitingForName") {
@@ -1141,6 +1155,7 @@ document.cookie = `chatWidgetThreadId=${this.threadId}; path=/`;
       this.collectUserInfoState = "done";
       localStorage.setItem("collectUserInfoState",this.collectUserInfoState)
       handlePendingMessage();
+      this.sendUserInfo();
     }
     return;
   }
@@ -1152,46 +1167,48 @@ document.cookie = `chatWidgetThreadId=${this.threadId}; path=/`;
     emitUserMessage(message);
     this.socket.emit("updateThreadInfo", { threadId: this.threadId, email: this.userEmail });
 
-    if (phone) {
-      this.collectUserInfoState = "waitingForPhone";
+          if (phone) {
+            this.collectUserInfoState = "waitingForPhone";
       localStorage.setItem("collectUserInfoState",this.collectUserInfoState)
-      this.storeBotMessage("Thank you. Please enter your phone number:");
-    } else {
-      this.collectUserInfoState = "done";
+            this.storeBotMessage("Thank you. Please enter your phone number:");
+          } else {
+            this.collectUserInfoState = "done";
       localStorage.setItem("collectUserInfoState",this.collectUserInfoState)
-      handlePendingMessage();
-    }
-    return;
-  }
+            handlePendingMessage();
+            this.sendUserInfo();
+          }
+          return;
+        }
 
-  // Step 6: Collect phone
-  if (this.collectUserInfoState === "waitingForPhone") {
-    this.userPhone = message;
+        // Step 6: Collect phone
+        if (this.collectUserInfoState === "waitingForPhone") {
+          this.userPhone = message;
     localStorage.setItem("phone",message)
-    emitUserMessage(message);
-    this.socket.emit("updateThreadInfo", { threadId: this.threadId, phone: this.userPhone });
-    this.collectUserInfoState = "done";
+          emitUserMessage(message);
+          this.socket.emit("updateThreadInfo", { threadId: this.threadId, phone: this.userPhone });
+          this.collectUserInfoState = "done";
     localStorage.setItem("collectUserInfoState",this.collectUserInfoState)
-    handlePendingMessage();
-    return;
-  }
-  }
+          handlePendingMessage();
+          this.sendUserInfo();
+          return;
+        }
+      }
 
-  // === Normal message flow (no name/email required) ===
-  emitUserMessage(message);
-  if (this.onlinAgents.length === 0) this.appendTypingIndicator();
+      // === Normal message flow (no name/email required) ===
+      emitUserMessage(message);
+      if (this.onlinAgents.length === 0) this.appendTypingIndicator();
 
-  this.socket.emit("updateDashboard", {
-    sender: "User",
-    content: message,
-    threadId: this.threadId,
-    orgId: this.options.organizationId,
-    createdAt: Date.now(),
-  });
+      this.socket.emit("updateDashboard", {
+        sender: "User",
+        content: message,
+        threadId: this.threadId,
+        orgId: this.options.organizationId,
+        createdAt: Date.now(),
+      });
 
-  localStorage.setItem("chatWidgetLastActivity", new Date().toISOString());
-}
-,
+      localStorage.setItem("chatWidgetLastActivity", new Date().toISOString());
+    }
+    ,
 
     chatInputTemplate() {
       return `
@@ -1204,13 +1221,13 @@ document.cookie = `chatWidgetThreadId=${this.threadId}; path=/`;
               </style>
               <div class="jooper-chat-actions">
                 ${this.options.allowEmojis
-                  ? '<button id="emoji-picker"><img src="https://cdn-icons-png.flaticon.com/128/4989/4989500.png" alt="Emoji" width="20" height="20" /></button>'
-                  : ""
-                }
+          ? '<button id="emoji-picker"><img src="https://cdn-icons-png.flaticon.com/128/4989/4989500.png" alt="Emoji" width="20" height="20" /></button>'
+          : ""
+        }
                 ${this.options.allowFileUpload
-                  ? '<input type="file" id="file-upload" style="display: none;" /><button id="upload-button"><img src="https://cdn-icons-png.flaticon.com/128/10847/10847957.png" alt="Upload" width="20" height="20"/></button>'
-                  : ""
-                }
+          ? '<input type="file" id="file-upload" style="display: none;" /><button id="upload-button"><img src="https://cdn-icons-png.flaticon.com/128/10847/10847957.png" alt="Upload" width="20" height="20"/></button>'
+          : ""
+        }
                 <button id="send-message"><img src="https://cdn-icons-png.flaticon.com/128/9333/9333991.png" alt="Send" width="20" height="20"/></button>
               </div>
             </div>
