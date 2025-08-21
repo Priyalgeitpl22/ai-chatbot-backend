@@ -108,20 +108,20 @@ model TwoFactorAuth {
 }
 
 model Thread {
-  id         String    @id @default(uuid())
-  user       String
-  messages   Message[]
-  aiOrgId    Int
-  readed     Boolean   @default(false)
-  assignedTo String?
-  url        String    @default("")
-  ip         String    @default("")
-  name       String    @default("")
-  email      String    @default("")
-  phone      String    @default("")
-  createdAt  DateTime  @default(now())
-  type       String    @default("unassigned")
-
+  id             String         @id @default(uuid())
+  user           String
+  messages       Message[]
+  aiOrgId        Int
+  readed         Boolean        @default(false)
+  assignedTo     String?
+  url            String         @default("")
+  ip             String         @default("")
+  name           String         @default("")
+  email          String         @default("")
+  phone          String         @default("")
+  createdAt      DateTime       @default(now())
+  type           String         @default("unassigned")
+  socialProfiles Json?
   status         String         @default("active") // "active", "ended", "ticket_created"
   endedBy        EndedByType?
   endedAt        DateTime?
