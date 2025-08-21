@@ -16,9 +16,10 @@
 
   const ChatWidget = {
     globalStylesInjected: false,
-    userName: "",
-    userEmail: "",
-    collectUserInfoState: "none",
+    userName:localStorage.getItem("name")?localStorage.getItem("name"):"",
+    userEmail:localStorage.getItem("email")?localStorage.getItem("email"):"",
+    userPhone:localStorage.getItem("phone")?localStorage.getItem("phone"):"",
+    collectUserInfoState:localStorage.getItem("collectUserInfoState")?localStorage.getItem("collectUserInfoState"):"none",
     pendingUserMessage: null,
     threadId: null,
     chatHistory: [],
@@ -836,8 +837,15 @@
             localStorage.removeItem('chatWidgetThreadId');
             localStorage.removeItem('chatWidgetHistory');
             localStorage.removeItem('chatWidgetLastActivity');
+            localStorage.removeItem('name')
+            localStorage.removeItem('email')
+            localStorage.removeItem('phone')
+            localStorage.removeItem('collectUserInfoState')
             document.cookie = "chatWidgetThreadId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
             this.chatHistory = [];
+            this.userEmail=""
+            this.userName=""
+            this.collectUserInfoState="none"
             this.threadId = null;
             this.renderIcon();
           }
@@ -1117,17 +1125,21 @@ document.cookie = `chatWidgetThreadId=${this.threadId}; path=/`;
   // Step 4: Collect name
   if (this.collectUserInfoState === "waitingForName") {
     this.userName = message;
+    window.localStorage.setItem("name",message)
     emitUserMessage(message);
     this.socket.emit("updateThreadInfo", { threadId: this.threadId, name: this.userName });
 
     if (email) {
       this.collectUserInfoState = "waitingForEmail";
+      localStorage.setItem("collectUserInfoState",this.collectUserInfoState)
       this.storeBotMessage(`Thank you, ${this.userName}. Please enter your email:`);
     } else if (phone) {
       this.collectUserInfoState = "waitingForPhone";
+      localStorage.setItem("collectUserInfoState",this.collectUserInfoState)
       this.storeBotMessage(`Thank you, ${this.userName}. Please enter your phone number:`);
     } else {
       this.collectUserInfoState = "done";
+      localStorage.setItem("collectUserInfoState",this.collectUserInfoState)
       handlePendingMessage();
     }
     return;
@@ -1136,14 +1148,17 @@ document.cookie = `chatWidgetThreadId=${this.threadId}; path=/`;
   // Step 5: Collect email
   if (this.collectUserInfoState === "waitingForEmail") {
     this.userEmail = message;
+    localStorage.setItem("email",message)
     emitUserMessage(message);
     this.socket.emit("updateThreadInfo", { threadId: this.threadId, email: this.userEmail });
 
     if (phone) {
       this.collectUserInfoState = "waitingForPhone";
+      localStorage.setItem("collectUserInfoState",this.collectUserInfoState)
       this.storeBotMessage("Thank you. Please enter your phone number:");
     } else {
       this.collectUserInfoState = "done";
+      localStorage.setItem("collectUserInfoState",this.collectUserInfoState)
       handlePendingMessage();
     }
     return;
@@ -1152,10 +1167,11 @@ document.cookie = `chatWidgetThreadId=${this.threadId}; path=/`;
   // Step 6: Collect phone
   if (this.collectUserInfoState === "waitingForPhone") {
     this.userPhone = message;
+    localStorage.setItem("phone",message)
     emitUserMessage(message);
     this.socket.emit("updateThreadInfo", { threadId: this.threadId, phone: this.userPhone });
-
     this.collectUserInfoState = "done";
+    localStorage.setItem("collectUserInfoState",this.collectUserInfoState)
     handlePendingMessage();
     return;
   }
