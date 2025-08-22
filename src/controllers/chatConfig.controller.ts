@@ -223,7 +223,7 @@ export const endChat = async (req: any, res: any): Promise<void> => {
   }
 };
 
-export const endChatFunction = async ({ thread_id, ended_by,url ,header,browserData}:{thread_id:string,ended_by:any,url:string|null,header:string|null,browserData:string[]|null})=> {
+export const endChatFunction = async ({ thread_id, ended_by,pageUrl ,pageTitle,header,browserData}:{thread_id:string,ended_by:any,pageUrl:string|null,pageTitle:string|null,header:string|null,browserData:string[]|null})=> {
   try {
      
 

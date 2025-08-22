@@ -259,9 +259,9 @@ export const socketSetup = (server: any) => {
       socket.join(threadId);
     });
 
-    socket.on("endThread",async({threadId,orgId,ended_by,url,cookie,browserData})=>{
+    socket.on("endThread",async({threadId,orgId,ended_by,url,title,cookie,browserData})=>{
       console.log({threadId,orgId,ended_by})
-      await endChatFunction({thread_id:threadId,ended_by:ended_by,url:url,header:cookie,browserData})
+      await endChatFunction({thread_id:threadId,ended_by:ended_by,pageUrl:url,pageTitle:title,header:cookie,browserData})
       io.emit("threadEnded",{threadId,orgId,ended_by})
     })
 
@@ -505,12 +505,12 @@ for (const [key, value] of Object.entries(locaStorage)) {
           data: {
             user: data.sender,
             aiOrgId: data.aiOrgId,
-            url: data.url,
+            pageUrl: data.url,
+            pageTitle:data.title,
             ip: data.ip,
             name: data.name?data.name:name,
             email: data.email?data.email:email,
             phone: data.phone || '',
-            socialProfiles: data.social_profiles || {},
           },
         });
         socket.join(thread.id);
@@ -527,7 +527,6 @@ for (const [key, value] of Object.entries(locaStorage)) {
         if (data.name) updateData.name = data.name;
         if (data.email) updateData.email = data.email;
         if (data.phone) updateData.phone = data.phone;
-        if (data.social_profiles) updateData.socialProfiles = data.social_profiles;
 
         const updatedThread = await prisma.thread.update({
           where: { id: data.threadId },
