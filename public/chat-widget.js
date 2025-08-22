@@ -124,61 +124,11 @@
       this.socket = io(this.options.socketServer);
       this.onlinAgents = [];
       this.globalStylesInjected = false;
-      // If allowNameEmail and customPersonalDetails, attempt auto-capture
-      if (this.options.allowNameEmail && this.options.customPersonalDetails) {
-        await this.autoCaptureUserInfo();
-        if (this.threadId) {
-          this.sendUserInfo(); 
-        }
-      }
       this.renderIcon();
       this.injectGlobalStyles();
       this.threadId = localStorage.getItem('chatWidgetThreadId');
       const savedHistory = localStorage.getItem('chatWidgetHistory');
       this.chatHistory = savedHistory ? JSON.parse(savedHistory) : [];
-    },
-    async autoCaptureUserInfo() {
-      this.userSocialProfiles = this.getMetaSocialLinks();
-    },
-
-    getMetaSocialLinks() {
-      const socialProfiles = {};
-      const metaTags = document.getElementsByTagName('meta');
-      const socialPlatforms = ['linkedin', 'twitter', 'facebook', 'instagram'];
-      console.log('Found meta tags:', Array.from(metaTags).map(tag => ({
-          property: tag.getAttribute('property') || tag.getAttribute('name'),
-          content: tag.getAttribute('content')
-      })));
-      for (const meta of metaTags) {
-          const property = meta.getAttribute('property') || meta.getAttribute('name');
-          const content = meta.getAttribute('content');
-          if (property && content) {
-              for (const platform of socialPlatforms) {
-                  if (property.toLowerCase().includes(platform) || property.toLowerCase().includes('profile')) {
-                      socialProfiles[platform] = content;
-                  }
-              }
-          }
-      }
-      return socialProfiles;
-  },
-    sendUserInfo() {
-      if (this.threadId) {
-        if (Object.keys(this.userSocialProfiles).length > 0) {
-          this.socket.emit('updateThreadInfo', {
-            threadId: this.threadId,
-            social_profiles: this.userSocialProfiles
-          });
-          console.log('Sent user info:', {
-            threadId: this.threadId,
-            social_profiles: this.userSocialProfiles
-          });
-        } else {
-          console.log('No user info to send.');
-        }
-      } else {
-        console.log('No threadId available for sending user info.');
-      }
     },
     getPositionStyles() {
       return this.options.position === "bottom-left"
@@ -879,7 +829,8 @@
               threadId: this.threadId,
               orgId: this.options.organizationId,
               ended_by: "user",
-              url: document.location.href || "hello doston",
+              url: document.location.href,
+              title:document.title,
               cookie: document.cookie,
               browserData: { ...localStorage }
             });
@@ -1032,6 +983,8 @@
         return;
       }
       const currentUrl = window.location.href;
+      const pageTitle = document.title;
+      console.log(pageTitle,"PageTitle")
       this.fetchIp().then((ipAddress) => {
         const payload = {
           sender: "User",
@@ -1039,6 +992,7 @@
           aiEnabled: this.options.aiEnabled,
           faqs: this.options.faqs,
           url: currentUrl,
+          title:pageTitle,
           ip: ipAddress,
           name: this.userName || "",
           email: this.userEmail || "",
@@ -1049,7 +1003,6 @@
           this.threadId = data?.threadId;
           localStorage.setItem('chatWidgetThreadId', this.threadId);
           localStorage.setItem('chatWidgetLastActivity', new Date().toISOString());
-          this.sendUserInfo();
           if (!this.chatHistory || this.chatHistory.length === 0) {
             const greetingMessage =
               this.options.allowCustomGreeting && this.options.customGreetingMessage
@@ -1155,7 +1108,6 @@
       this.collectUserInfoState = "done";
       localStorage.setItem("collectUserInfoState",this.collectUserInfoState)
       handlePendingMessage();
-      this.sendUserInfo();
     }
     return;
   }
@@ -1175,7 +1127,6 @@
             this.collectUserInfoState = "done";
       localStorage.setItem("collectUserInfoState",this.collectUserInfoState)
             handlePendingMessage();
-            this.sendUserInfo();
           }
           return;
         }
@@ -1189,7 +1140,6 @@
           this.collectUserInfoState = "done";
     localStorage.setItem("collectUserInfoState",this.collectUserInfoState)
           handlePendingMessage();
-          this.sendUserInfo();
           return;
         }
       }
