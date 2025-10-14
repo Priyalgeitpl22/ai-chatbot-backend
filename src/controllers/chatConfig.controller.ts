@@ -27,7 +27,7 @@ export const getChatConfig = async (req: Request, res: Response): Promise<any> =
       config.ChatBotLogoImage = await getPresignedUrl(config.ChatBotLogoImage);
     }
 
-    res.status(200).json({ code: 200, data: { ...config, aiEnabled: orgData?.aiEnabled, faqs: orgData?.faqs }, message: "Success" });
+    res.status(200).json({ code: 200, data: { ...config, aiEnabled: orgData?.aiEnabled, faqs: orgData?.faqs, openAiKey: orgData?.openAiKey }, message: "Success" });
   } catch (err) {
     console.error("Error fetching chat config:", err);
     res.status(500).json({ code: 500, message: "Internal Server Error" });
