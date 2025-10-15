@@ -132,7 +132,8 @@ if (data.sender === 'User') {
         data.orgId,
         data.aiOrgId,
         data.threadId,
-        data?.faqs
+        data?.faqs,
+        data?.openAiKey
       ) as any;
       if (response) {
         if (response?.answer.includes("I'm unable to")) {
