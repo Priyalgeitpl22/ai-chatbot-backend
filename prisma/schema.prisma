@@ -120,6 +120,7 @@ model Thread {
   email          String         @default("")
   phone          String         @default("")
   createdAt      DateTime       @default(now())
+  isTicketCreated Boolean        @default(false)
   type           String         @default("unassigned")
   pageTitle      String         @default("")
   status         String         @default("active") // "active", "ended", "ticket_created"

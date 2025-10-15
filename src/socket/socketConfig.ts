@@ -1,10 +1,10 @@
 import { Server } from "socket.io";
 import { PrismaClient } from "@prisma/client";
 import { getAIResponse } from "../middlewares/botMiddleware";
-import { createTask ,ReadedTask} from "../controllers/task.controller";
+import { createTask, ReadedTask } from "../controllers/task.controller";
 import { sendEmailChat } from '../utils/email.utils'
 import { getPresignedUrl } from "../aws/imageUtils";
-import {moveToTrash} from "../controllers/thread.controller";
+import { moveToTrash } from "../controllers/thread.controller";
 import { endChatFunction } from "../controllers/chatConfig.controller";
 
 
@@ -49,30 +49,30 @@ const processAIResponse = async (data: any, io: Server) => {
     return;
   }
 
-const previousMessages = await prisma.message.findMany({
-  where: { threadId: data.threadId },
-});
-const isFirstUserMessage =
-  previousMessages.filter((m:any) => m.sender === "User").length === 1;
-
-const thread = await prisma.thread.findUnique({
-  where: { id: data.threadId },
-});
-
-const agentMessageAlreadySent = previousMessages.some(
-  (m:any) => m.sender === "Bot" && m.content === "An agent is available and will assist you soon. Thank you for your patience."
-);
-if (data.sender === 'User') {
-  const prevMsgs = await prisma.message.findMany({
+  const previousMessages = await prisma.message.findMany({
     where: { threadId: data.threadId },
-    orderBy: { createdAt: 'desc' },
-    take: 2
   });
-  const lastBotMessage = prevMsgs.find((m:any) => m.sender === 'Bot');
-  const isTaskPrompt = lastBotMessage && lastBotMessage.content.includes("create a ticket");
-  const userReply = data.content.toLowerCase().trim();
+  const isFirstUserMessage =
+    previousMessages.filter((m: any) => m.sender === "User").length === 1;
 
-  if(userReply.includes('create ticket')){
+  const thread = await prisma.thread.findUnique({
+    where: { id: data.threadId },
+  });
+
+  const agentMessageAlreadySent = previousMessages.some(
+    (m: any) => m.sender === "Bot" && m.content === "An agent is available and will assist you soon. Thank you for your patience."
+  );
+  if (data.sender === 'User') {
+    const prevMsgs = await prisma.message.findMany({
+      where: { threadId: data.threadId },
+      orderBy: { createdAt: 'desc' },
+      take: 2
+    });
+    const lastBotMessage = prevMsgs.find((m: any) => m.sender === 'Bot');
+    const isTaskPrompt = lastBotMessage && lastBotMessage.content.includes("create a ticket");
+    const userReply = data.content.toLowerCase().trim();
+
+    if (userReply.includes('create ticket')) {
       io.emit("receiveMessage", {
         id: Date.now().toString(),
         sender: "Bot",
@@ -80,108 +80,108 @@ if (data.sender === 'User') {
         content: "",
         threadId: data.threadId,
         createdAt: new Date().toISOString(),
-        task_creation: true, 
-      });
-      return;
-  }
-
-  if (isTaskPrompt) {
-    if (userReply.includes('yes') || userReply.includes('ok') || userReply.includes('sure') || userReply.includes('yes please') || userReply.includes('create') || userReply.includes('create ticket')) {
-      // User wants to create a task (show contact form)
-      io.emit("receiveMessage", {
-        id: Date.now().toString(),
-        sender: "Bot",
-        status: 200,
-        content: "",
-        threadId: data.threadId,
-        createdAt: new Date().toISOString(),
-        task_creation: true, 
-      });
-    } else if (userReply.includes('no') ||userReply.includes('not now') ||userReply.includes('later')) {
-      // User declined
-      io.emit("receiveMessage", {
-        id: Date.now().toString(),
-        sender: "Bot",
-        status: 200,
-        content: "No problem! If you need further assistance, feel free to ask.",
-        threadId: data.threadId,
-        createdAt: new Date().toISOString(),
-        task_creation: false,
-      });
-      return;
-    } else {
-      // Unclear response, ask again
-      io.emit("receiveMessage", {
-        id: Date.now().toString(),
-        sender: "Bot",
-        status: 200,
-        content: "I didn't quite catch that. Would you like me to create a ticket for your query so someone can get back to you later? Please reply with 'yes' or 'no'.",
-        threadId: data.threadId,
-        createdAt: new Date().toISOString(),
-        task_creation: false,
+        task_creation: true,
       });
       return;
     }
-  } else if (data.sender === 'User' && data.content.toLowerCase().includes('talk to agent')) {
-    answer = "Okay, let me connect you with an agent. Thank you for your patience.";
-    io.emit("notification", { message: `${data.content}`, thread });
-  } else {
-    if (data.aiEnabled) {
-      const response = await getAIResponse(
-        data.content,
-        data.orgId,
-        data.aiOrgId,
-        data.threadId,
-        data?.faqs,
-        data?.openAiKey
-      ) as any;
-      if (response) {
-        if (response?.answer.includes("I'm unable to")) {
-          if (online.length > 0) {
-            answer = "I'm not able to assist with this, Let me connect you with an agent. Thank you for waiting!";
-            io.emit("notification", { message: `${data.content}`, thread });
+
+    if (isTaskPrompt) {
+      if (userReply.includes('yes') || userReply.includes('ok') || userReply.includes('sure') || userReply.includes('yes please') || userReply.includes('create') || userReply.includes('create ticket')) {
+        // User wants to create a task (show contact form)
+        io.emit("receiveMessage", {
+          id: Date.now().toString(),
+          sender: "Bot",
+          status: 200,
+          content: "",
+          threadId: data.threadId,
+          createdAt: new Date().toISOString(),
+          task_creation: true,
+        });
+      } else if (userReply.includes('no') || userReply.includes('not now') || userReply.includes('later')) {
+        // User declined
+        io.emit("receiveMessage", {
+          id: Date.now().toString(),
+          sender: "Bot",
+          status: 200,
+          content: "No problem! If you need further assistance, feel free to ask.",
+          threadId: data.threadId,
+          createdAt: new Date().toISOString(),
+          task_creation: false,
+        });
+        return;
+      } else {
+        // Unclear response, ask again
+        io.emit("receiveMessage", {
+          id: Date.now().toString(),
+          sender: "Bot",
+          status: 200,
+          content: "I didn't quite catch that. Would you like me to create a ticket for your query so someone can get back to you later? Please reply with 'yes' or 'no'.",
+          threadId: data.threadId,
+          createdAt: new Date().toISOString(),
+          task_creation: false,
+        });
+        return;
+      }
+    } else if (data.sender === 'User' && data.content.toLowerCase().includes('talk to agent')) {
+      answer = "Okay, let me connect you with an agent. Thank you for your patience.";
+      io.emit("notification", { message: `${data.content}`, thread });
+    } else {
+      if (data.aiEnabled) {
+        const response = await getAIResponse(
+          data.content,
+          data.orgId,
+          data.aiOrgId,
+          data.threadId,
+          data?.faqs,
+          data?.openAiKey
+        ) as any;
+        if (response) {
+          if (response?.answer.includes("I'm unable to")) {
+            if (online.length > 0) {
+              answer = "I'm not able to assist with this, Let me connect you with an agent. Thank you for waiting!";
+              io.emit("notification", { message: `${data.content}`, thread });
+            } else {
+              answer = "I'm unable to assist with this and no agents are available at the moment. Would you like me to create a ticket for your query so someone can get back to you later?";
+            }
+            question = response.question;
+            taskCreation = response.task_creation;
           } else {
-            answer = "I'm unable to assist with this and no agents are available at the moment. Would you like me to create a ticket for your query so someone can get back to you later?";
+            answer = response.answer;
           }
-          question = response.question;
-          taskCreation = response.task_creation;
         } else {
-          answer = response.answer;
+          answer = "I'm sorry, but I couldn't process your request.";
+        }
+      } else if (online.length > 0) {
+        if (
+          !agentMessageAlreadySent &&
+          (
+            (!data?.allowNameEmail && isFirstUserMessage) ||
+            (data?.allowNameEmail && thread && thread.name !== "" && thread.email !== "")
+          )
+        ) {
+          answer = "An agent is available and will assist you soon. Thank you for your patience.";
         }
       } else {
-        answer = "I'm sorry, but I couldn't process your request.";
+        answer = "I apologize, but no agents are available at the moment and AI assistance is not enabled. Would you like me to create a ticket for your query so someone can get back to you later?";
       }
-    } else if (online.length > 0) {
-      if (
-        !agentMessageAlreadySent &&
-        (
-          (!data?.allowNameEmail && isFirstUserMessage) ||
-          (data?.allowNameEmail && thread && thread.name !== "" && thread.email !== "") 
-        )
-      ) {
-        answer = "An agent is available and will assist you soon. Thank you for your patience.";
-      }
-    } else {
-      answer = "I apologize, but no agents are available at the moment and AI assistance is not enabled. Would you like me to create a ticket for your query so someone can get back to you later?";
     }
   }
-}
   // Always emit a response to clear typing indicator
   const formattedAnswer = Array.isArray(answer) ? answer.map(item => `- ${item}`).join("\n") : answer || "";
   if (formattedAnswer && formattedAnswer.trim() !== "") {
     await prisma.message.create({
       data: { content: formattedAnswer, sender: "Bot", threadId: data.threadId },
     });
-  io.emit("receiveMessage", {
-    id: Date.now().toString(),
-    sender: "Bot",
-    status: 200,
-    content: formattedAnswer,
-    task_creation: taskCreation,
-    threadId: data.threadId,
-    question,
-    createdAt: new Date().toISOString(),
-  });
+    io.emit("receiveMessage", {
+      id: Date.now().toString(),
+      sender: "Bot",
+      status: 200,
+      content: formattedAnswer,
+      task_creation: taskCreation,
+      threadId: data.threadId,
+      question,
+      createdAt: new Date().toISOString(),
+    });
   }
 };
 
@@ -197,9 +197,9 @@ export const socketSetup = (server: any) => {
   });
 
   io.on("connection", (socket) => {
-    socket.on("registerOrg",({ orgId, userId, role })=>{
+    socket.on("registerOrg", ({ orgId, userId, role }) => {
       socket.join(`org-${orgId}`)
-      socketOrgMap.set(socket.id,{orgId,userId,role})
+      socketOrgMap.set(socket.id, { orgId, userId, role })
     })
 
     socket.on("agentOnline", async (agentData) => {
@@ -210,37 +210,37 @@ export const socketSetup = (server: any) => {
         where: { id: agentData.id },
         data: { online: agentData.online },
       });
-       io.to(`org-${agentData.orgId}`).emit("onlineStatus", {
-    userId: agentData.id,
-    online: agentData.online,
-  });
+      io.to(`org-${agentData.orgId}`).emit("onlineStatus", {
+        userId: agentData.id,
+        online: agentData.online,
+      });
       io.to(`org-${agentData.orgId}`).emit("agentStatusUpdate", getOnlineAgents())
     });
 
-    socket.on("assignThread",async({threadId,agentId,orgId})=>{
-      const agent = await prisma.user.findFirst({where:{id:agentId}})
-      const isAssigned =await  prisma.thread.findUnique({where:{id:threadId}})
-          if(!isAssigned?.assignedTo){
-            io.emit("receiveMessage", {
-        id: Date.now().toString(),
-        sender: "Bot",
-        status: 200,
-        content: `An agent ${agent?.fullName} has been assigned to you, for further assistance `,
-        threadId:threadId,
-        createdAt: new Date().toISOString(),
-        task_creation: false, 
-      });
-          await prisma.thread.update({ where: { id: threadId }, data: { assignedTo: agentId, type: "assigned" } })
-          }
+    socket.on("assignThread", async ({ threadId, agentId, orgId }) => {
+      const agent = await prisma.user.findFirst({ where: { id: agentId } })
+      const isAssigned = await prisma.thread.findUnique({ where: { id: threadId } })
+      if (!isAssigned?.assignedTo) {
+        io.emit("receiveMessage", {
+          id: Date.now().toString(),
+          sender: "Bot",
+          status: 200,
+          content: `An agent ${agent?.fullName} has been assigned to you, for further assistance `,
+          threadId: threadId,
+          createdAt: new Date().toISOString(),
+          task_creation: false,
+        });
+        await prisma.thread.update({ where: { id: threadId }, data: { assignedTo: agentId, type: "assigned" } })
+      }
 
-      io.to(`org-${orgId}`).emit("threadAssigned",{threadId,agentId})
+      io.to(`org-${orgId}`).emit("threadAssigned", { threadId, agentId })
     })
 
     // socket to move thread to trash 
-     socket.on("threadTrash",async({ThreadId,trash,orgId})=>{
-      await moveToTrash(ThreadId,trash)
-        io.to(`org-${orgId}`).emit("trashThread",{ThreadId,trash})
-     })
+    socket.on("threadTrash", async ({ ThreadId, trash, orgId }) => {
+      await moveToTrash(ThreadId, trash)
+      io.to(`org-${orgId}`).emit("trashThread", { ThreadId, trash })
+    })
 
     socket.on("joinThread", (threadId) => {
       socket.join(threadId);
@@ -252,9 +252,9 @@ export const socketSetup = (server: any) => {
       socket.join(threadId);
     });
 
-    socket.on("endThread",async({threadId,orgId,ended_by,url,title,cookie,browserData})=>{
-      await endChatFunction({thread_id:threadId,ended_by:ended_by,pageUrl:url,pageTitle:title,header:cookie,browserData})
-      io.emit("threadEnded",{threadId,orgId,ended_by})
+    socket.on("endThread", async ({ threadId, orgId, ended_by, url, title, cookie, browserData }) => {
+      await endChatFunction({ thread_id: threadId, ended_by: ended_by, pageUrl: url, pageTitle: title, header: cookie, browserData })
+      io.emit("threadEnded", { threadId, orgId, ended_by })
     })
 
     socket.on("typing", ({ threadId, agentName }) =>
@@ -266,61 +266,38 @@ export const socketSetup = (server: any) => {
     );
 
     socket.on("sendMessage", async (data) => {
-  try {
-    if (!data.threadId) {
-      return socket.emit("error", { message: "Thread ID is required" });
-    }
+      try {
+        if (!data.threadId) {
+          return socket.emit("error", { message: "Thread ID is required" });
+        }
 
-    // Check thread status
-    const thread = await prisma.thread.findUnique({
-      where: { id: data.threadId },
-    });
-
-    if (!thread) {
-      return socket.emit("error", { message: "Thread not found" });
-    }
-
-    if (thread.status === 'ended') {
-      return socket.emit("error", { message: "This chat has been ended. No further messages allowed." });
-    }
-
-    console.log("thread.isTicketCreated", thread?.isTicketCreated);
-    console.log("data.sender", data.sender);
-
-    if(thread.isTicketCreated && data.sender === "Bot" && thread.email){
-
-        const subject = "New Message from Support Team";
-        const text = data.content;
-
-        const organization = await prisma.chatConfig.findFirst({
-          where: { aiOrgId: thread.aiOrgId },
-          select: { emailConfig: true },
+        // Check thread status
+        const thread = await prisma.thread.findUnique({
+          where: { id: data.threadId },
         });
 
-        console.log("organization?.emailConfig", organization?.emailConfig);
-        console.log("Sending email to", thread.email);
-          await sendEmailChat(
-            thread.email,
-            text,
-            subject,
-            organization?.emailConfig ?? ''
-          );
-    }
+        if (!thread) {
+          return socket.emit("error", { message: "Thread not found" });
+        }
 
-    // Proceed to store message
-    const senderKey = data.sender === "User" ? "User" : "Bot";
+        if (thread.status === 'ended') {
+          return socket.emit("error", { message: "This chat has been ended. No further messages allowed." });
+        }
+
+        // Proceed to store message
+        const senderKey = data.sender === "User" ? "User" : "Bot";
         const hasContent = data.content && data.content.trim() !== "";
         const hasFile = data.fileData && (data.fileData.file_url || data.fileData.file_presigned_url);
         if (!hasContent && !hasFile) {
-          return; 
+          return;
         }
-        if(data.file){
+        if (data.file) {
           await prisma.message.create({
-            data:{
-              content:`File Uploaded: ${data.content}`,
-              fileName:data.fileData.file_name,
-              fileType:data.fileData.file_type,
-              fileUrl:data.fileData.file_url,
+            data: {
+              content: `File Uploaded: ${data.content}`,
+              fileName: data.fileData.file_name,
+              fileType: data.fileData.file_type,
+              fileUrl: data.fileData.file_url,
               sender: senderKey,
               threadId: data.threadId,
               createdAt: new Date(data.createdAt),
@@ -330,55 +307,55 @@ export const socketSetup = (server: any) => {
           const presignedUrl = await getPresignedUrl(data.fileData.file_url);
           io.emit("receiveMessage", {
             id: Date.now().toString(),
-            sender: senderKey, 
+            sender: senderKey,
             threadId: data.threadId,
             fileUrl: presignedUrl,
             fileType: data.fileData.file_type,
             fileName: data.fileData.file_name,
             createdAt: new Date().toISOString(),
           });
-        }else{
-      await prisma.message.create({
-      data: {
-        content: data.content,
-        sender: senderKey,
-        threadId: data.threadId,
-        createdAt: new Date(data.createdAt),
-      },
-    });
+        } else {
+          await prisma.message.create({
+            data: {
+              content: data.content,
+              sender: senderKey,
+              threadId: data.threadId,
+              createdAt: new Date(data.createdAt),
+            },
+          });
         }
-    // Update lastActivityAt on message send
-    await prisma.thread.update({
-      where: { id: data.threadId },
-      data: { lastActivityAt: new Date() },
+        // Update lastActivityAt on message send
+        await prisma.thread.update({
+          where: { id: data.threadId },
+          data: { lastActivityAt: new Date() },
+        });
+        // Skip name/email collection logic
+        const fullThread = await prisma.thread.findUnique({
+          where: { id: data.threadId },
+        });
+
+        io.to(`org-${data.orgId}`).emit("newMessage", { data })
+        if (
+          data.sender === "User" &&
+          data.allowNameEmail &&
+          fullThread && (data.customPersonalDetails.name || data.customPersonalDetails.email || data.customPersonalDetails.phone) &&
+          (((fullThread.name === "" && data.customPersonalDetails.name === true) || (fullThread.email === "" && data.customPersonalDetails.email === true) || (fullThread.phone === "" && data.customPersonalDetails.phone === true))
+            || fullThread.email === data?.content || fullThread.phone === data?.content || fullThread.name === data?.content)
+          // ((fullThread.name === "" || fullThread.email === "") || fullThread.email === data?.content)
+        ) {
+          return;
+        }
+        // if the agent is assigned return
+        if (fullThread?.assignedTo) {
+          return
+        }
+
+        await processAIResponse(data, io);
+
+      } catch (error) {
+        console.error("Error handling sendMessage:", error);
+      }
     });
-    // Skip name/email collection logic
-    const fullThread = await prisma.thread.findUnique({
-      where: { id: data.threadId },
-    });
-
-        io.to(`org-${data.orgId}`).emit("newMessage",{data})
-    if (
-      data.sender === "User" &&
-      data.allowNameEmail &&
-      fullThread &&(data.customPersonalDetails.name || data.customPersonalDetails.email || data.customPersonalDetails.phone) &&
-      (((fullThread.name === "" && data.customPersonalDetails.name===true) || (fullThread.email === "" && data.customPersonalDetails.email ===true)||(fullThread.phone === "" && data.customPersonalDetails.phone ===true))
-      ||fullThread.email===data?.content || fullThread.phone===data?.content || fullThread.name === data?.content)
-      // ((fullThread.name === "" || fullThread.email === "") || fullThread.email === data?.content)
-    ) {
-      return;
-    }
-    // if the agent is assigned return
-    if(fullThread?.assignedTo){
-      return
-    }  
-
-    await processAIResponse(data, io);
-
-  } catch (error) {
-    console.error("Error handling sendMessage:", error);
-  }
-});
 
 
     socket.on("processPendingMessage", async (data) => {
@@ -403,39 +380,40 @@ export const socketSetup = (server: any) => {
         data.orgId,
       );
 
-      await prisma.thread.update({where: { id: data.threadId }, data: { isTicketCreated: true as boolean } })
+      await prisma.thread.update({ where: { id: data.threadId }, data: { isTicketCreated: true, email: data.email } })
       console.log("Thread updated with isTicketCreated true");
-      
+
       io.to(`org-${data.orgId}`).emit("taskCreated", data);
     });
 
-    socket.on("readedTask",async(data)=>{
-     if(data){
-      ReadedTask(data)
-      io.emit("taskReaded",data.data)
-     }
+    socket.on("readedTask", async (data) => {
+      if (data) {
+        ReadedTask(data)
+        io.emit("taskReaded", data.data)
+      }
     })
 
     socket.on("updateDashboard", async (data) => {
+      const thread = await prisma.thread.findUnique({
+        where: { id: data.threadId },
+      });
+
       if (data.sender === "User") {
-        const thread = await prisma.thread.findUnique({
-          where: { id: data.threadId },
-        });
-        const tempthread = {...thread,orgId:data.orgId}
-           
-            const isNotification  = await prisma.notification.findFirst({where:{threadId:data.threadId}})
+        const tempthread = { ...thread, orgId: data.orgId }
+
+        const isNotification = await prisma.notification.findFirst({ where: { threadId: data.threadId } })
         // if isNotification the update the notification 
-        if(isNotification){
-            // update notification
-            const messages =[...isNotification.message,data.content] 
-            await prisma.notification.update({where:{id:isNotification.id},data:{message:messages,latestMessage:data.content}})
-        }else{
-            // create the notification
-            const messages = [data.content]
-            await prisma.notification.create({data:{threadId:data.threadId,latestMessage:data.content,message:messages,orgId:data.orgId}}) 
+        if (isNotification) {
+          // update notification
+          const messages = [...isNotification.message, data.content]
+          await prisma.notification.update({ where: { id: isNotification.id }, data: { message: messages, latestMessage: data.content } })
+        } else {
+          // create the notification
+          const messages = [data.content]
+          await prisma.notification.create({ data: { threadId: data.threadId, latestMessage: data.content, message: messages, orgId: data.orgId } })
         }
-        io.to(`org-${data.orgId}`).emit("notification", { message: `${data.content}`, thread:tempthread });
-        
+        io.to(`org-${data.orgId}`).emit("notification", { message: `${data.content}`, thread: tempthread });
+
       } else {
         try {
           const formattedContent = Array.isArray(data.content)
@@ -449,7 +427,34 @@ export const socketSetup = (server: any) => {
               seen: true
             },
           });
+          
           data.content = formattedContent;
+
+          console.log("thread.isTicketCreated", thread?.isTicketCreated);
+          console.log("data.sender", data.sender);
+          console.log("thread?.email", thread?.email);
+
+          if (thread?.isTicketCreated && data.sender === "Bot" && thread?.email) {
+
+            const subject = "New Message from Support Team";
+            const text = data.content;
+
+            const organization = await prisma.chatConfig.findFirst({
+              where: { aiOrgId: thread?.aiOrgId },
+              select: { emailConfig: true },
+            });
+
+            console.log("organization?.emailConfig", organization?.emailConfig);
+            console.log("Sending email to", thread?.email);
+
+            await sendEmailChat(
+              thread.email,
+              text,
+              subject,
+              organization?.emailConfig ?? ''
+            );
+          }
+
           const room = io.sockets.adapter.rooms.get(data.threadId);
           const userInRoom = room && room.size > 0;
           console.log("userInRoom", userInRoom);
@@ -492,47 +497,47 @@ export const socketSetup = (server: any) => {
       io.to(`org-${data.orgId}}`).emit("updateDashboard", data);
     });
 
-    socket.on("readMessage",async(data)=>{
-      if(data){
-        await prisma.message.updateMany({where:{threadId:data.threadId, seen:false},data:{seen:true}})
+    socket.on("readMessage", async (data) => {
+      if (data) {
+        await prisma.message.updateMany({ where: { threadId: data.threadId, seen: false }, data: { seen: true } })
       }
     })
 
-    socket.on("threadSeen",(data)=>{
-      io.to(`org-${data.orgId}`).emit("seenThread",{data})
+    socket.on("threadSeen", (data) => {
+      io.to(`org-${data.orgId}`).emit("seenThread", { data })
     })
 
     socket.on("startChat", async (data) => {
-      let name=""
-      let email=""
-      const locaStorage = data?.localStorage||{}
-      const sessionStorage = data?.sessionStorage||{}
+      let name = ""
+      let email = ""
+      const locaStorage = data?.localStorage || {}
+      const sessionStorage = data?.sessionStorage || {}
       for (const [key, value] of Object.entries(sessionStorage)) {
-  if (key.toLowerCase().includes("name")) name = value as string;
-  if (key.toLowerCase().includes("email")) email = value as string;
-}
+        if (key.toLowerCase().includes("name")) name = value as string;
+        if (key.toLowerCase().includes("email")) email = value as string;
+      }
 
-for (const [key, value] of Object.entries(locaStorage)) {
-  if (key.toLowerCase().includes("name")) name = value as string;
-  if (key.toLowerCase().includes("email")) email = value as string;
-}
+      for (const [key, value] of Object.entries(locaStorage)) {
+        if (key.toLowerCase().includes("name")) name = value as string;
+        if (key.toLowerCase().includes("email")) email = value as string;
+      }
       try {
-        
+
         const thread = await prisma.thread.create({
           data: {
             user: data.sender,
             aiOrgId: data.aiOrgId,
             pageUrl: data.url,
-            pageTitle:data.title,
+            pageTitle: data.title,
             ip: data.ip,
-            name: data.name?data.name:name,
-            email: data.email?data.email:email,
+            name: data.name ? data.name : name,
+            email: data.email ? data.email : email,
             phone: data.phone || '',
           },
         });
         socket.join(thread.id);
         socket.emit("chatStarted", { threadId: thread.id });
-        io.to(`org-${data.orgId}`).emit("chatStarted",{thread:thread})
+        io.to(`org-${data.orgId}`).emit("chatStarted", { thread: thread })
       } catch (error) {
         console.error("Error starting chat:", error);
       }
@@ -540,7 +545,7 @@ for (const [key, value] of Object.entries(locaStorage)) {
 
     socket.on("updateThreadInfo", async (data) => {
       try {
-        let updateData:any = {};
+        let updateData: any = {};
         if (data.name) updateData.name = data.name;
         if (data.email) updateData.email = data.email;
         if (data.phone) updateData.phone = data.phone;
@@ -566,35 +571,35 @@ for (const [key, value] of Object.entries(locaStorage)) {
       }
     });
 
-    socket.on("recover", () => {});
+    socket.on("recover", () => { });
 
     socket.on("disconnect", async () => {
       const agentId = socket.id;
-       const orgInfo = socketOrgMap.get(socket.id);
-       if (orgInfo) {
-       socketOrgMap.delete(socket.id);
-       }
-      
+      const orgInfo = socketOrgMap.get(socket.id);
+      if (orgInfo) {
+        socketOrgMap.delete(socket.id);
+      }
+
       console.log("A user disconnected");
       const rooms = Array.from(socket.rooms);
       console.log("rooms", rooms);
       rooms.forEach(roomId => {
-        if (roomId !== socket.id) { 
+        if (roomId !== socket.id) {
           socket.leave(roomId);
         }
       });
 
       console.log("rooms cleaned", rooms);
-      
+
       if (onlineAgents.has(agentId)) {
-        
+
         const agentName = onlineAgents.get(agentId);
         removeOnlineAgent(agentId);
         await prisma.user.update({
           where: { id: agentId },
           data: { online: false },
         });
-        const org = await prisma.user.findUnique({where:{id:agentId}})
+        const org = await prisma.user.findUnique({ where: { id: agentId } })
         io.to(`org-${org?.orgId}`).emit("agentStatusUpdate", getOnlineAgents());
       }
     });
