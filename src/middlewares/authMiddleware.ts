@@ -51,46 +51,25 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
       return res.status(404).json({ code: 404, message: "User not found" });
     }
 
-    console.log("user.twoFactorAuth",user.twoFactorAuth);
-    if (user.twoFactorAuth) {
-      console.log("🔐 2FA Status:", {
-        isEnabled: user.twoFactorAuth.isEnabled,
-        isAuthenticatorAppAdded: user.twoFactorAuth.isAuthenticatorAppAdded,
-        hasSecret: !!user.twoFactorAuth.secret,
-        hasTempSecret: !!user.twoFactorAuth.tempSecret,
-        enabledAt: user.twoFactorAuth.enabledAt,
-        authenticatorAppAddedAt: user.twoFactorAuth.authenticatorAppAddedAt
-      });
-    }
-    
     if (user.twoFactorAuth) {
       if (user.twoFactorAuth.secret) {
-        console.log("user.twoFactorAuth.secret",user.twoFactorAuth.secret);
         try {
-          console
           user.twoFactorAuth.secret = decrypt(user.twoFactorAuth.secret);
         } catch (error) {
-          console.log("error decrypting secret",error );
           user.twoFactorAuth.secret = null;
         }
       }
 
-      console.log("user.twoFactorAuth.tempSecret",user.twoFactorAuth.tempSecret);
       if (user.twoFactorAuth.tempSecret) {
         try {
-          console.log("decrypting tempSecret");
           user.twoFactorAuth.tempSecret = decrypt(user.twoFactorAuth.tempSecret);
         } catch (error) {
-          console.log("error decrypting tempSecret",error);
           user.twoFactorAuth.tempSecret = null;
         }
       }
     }
-    
-    console.log("user",user);
-   
+
     (req as any).user = user;
-    console.log("middleware done");
 
     next();
   } catch (error) {

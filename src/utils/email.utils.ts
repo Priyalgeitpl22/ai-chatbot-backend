@@ -20,7 +20,6 @@ export const sendOtpEmail = async (email: string, otp: string) => {
 
   try {
     await transporter.sendMail(mailOptions);
-    console.log('OTP email sent successfully');
   } catch (error) {
     console.error('Error sending OTP email:', error);
   }
@@ -79,7 +78,6 @@ export const sendEmailToVerify = async (transporterOptions: any) => {
 export const sendEmailChat = async(email:string,text:string,subject:string,emailConfig: any,cc?: string | string[],
   bcc?: string | string[]) => {
 
-  console.log("emailConfig",emailConfig);
   const transporter = nodemailer.createTransport({
     host: emailConfig.host,
     port: Number(emailConfig.port),

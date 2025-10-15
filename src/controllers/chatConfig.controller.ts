@@ -179,7 +179,6 @@ export const endChat = async (req: any, res: any): Promise<void> => {
     // function to crawl the data 
     // if(url){
     //  const data =  await crawlForPersonalData(url,header)
-    //  console.log(data,"personal Data")
     // }
     
     const messages = await prisma.message.findMany({
@@ -263,7 +262,6 @@ export const endChatFunction = async ({ thread_id, ended_by,pageUrl ,pageTitle,h
     // function to crawl the data 
     // if(url){
     //  const data =  await crawlForPersonalData(url,header)
-    //  console.log(data,"personal Data",browserData)
     // }
     
     const messages = await prisma.message.findMany({
@@ -328,7 +326,6 @@ export const chatThreadEmailTranscript = async(req:Request,res:Response) : Promi
     });
 
     const emailConfig = chatConfig?.emailConfig || organization?.emailConfig;
-    console.log(emailConfig)
 
     if (email && emailConfig) {
       try {

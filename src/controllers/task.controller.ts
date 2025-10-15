@@ -51,7 +51,6 @@ export const assignTask = async (req: Request, res: Response): Promise<any> => {
   try {
     const { id } = req.params;
     const { assignedTo, assign } = req.body;
-    console.log(id, assign)
     if (assign && !assignedTo) {
       return res.status(400).json({ code: 400, message: "assignedTo value is required." });
     }
@@ -95,8 +94,9 @@ export const ReadedTask  = async(taskId:any)=>{
   try{
     await prisma.task.update({where:{id:taskId.data},data:{readed:true}})
     return
-  }catch(err:any){
-    console.log("error in reading task",err.message as string) 
+  } catch(err:any) {
+    console.error("Error reading task:", err);
+    return err;
   }
 }
 

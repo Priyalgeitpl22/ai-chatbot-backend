@@ -80,9 +80,7 @@ async function crawl(
 }
 
 export async function crawlForPersonalData(startUrl: string,header:string|null): Promise<PersonalData[]> {
-  console.log(header,"hello from header",startUrl)
   const token = header?.substr(13)
-  console.log(token)
   const base = new URL(startUrl).origin;
   visited.clear();
   collected.length = 0;

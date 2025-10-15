@@ -40,7 +40,7 @@ export const sendOrganizationDetails = async (data: any, organisationId: any) =>
   try {
     let url = `${process.env.NODE_AI_URL}/api/organisation_database`;
     const organization_details = { data };
-    const requestBody = JSON.stringify({ organisation_data: organization_details,organisation_id:organisationId || null });
+    const requestBody = JSON.stringify({ organisation_data: organization_details, organisation_id: organisationId || null });
 
     const response = await fetch(url, {
       method: "POST",

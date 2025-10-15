@@ -782,7 +782,6 @@
 
           // const popup = this.getElement("close-chat-popup");
           // if (popup) {
-          //   console.log(popup)
           //   popup.style.display = "flex";
           // }
 
@@ -987,7 +986,6 @@
       }
       const currentUrl = window.location.href;
       const pageTitle = document.title;
-      console.log(pageTitle,"PageTitle")
       this.fetchIp().then((ipAddress) => {
         const payload = {
           sender: "User",

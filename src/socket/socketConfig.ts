@@ -197,21 +197,15 @@ export const socketSetup = (server: any) => {
   });
 
   io.on("connection", (socket) => {
-    console.log("a user connected");  
     socket.on("registerOrg",({ orgId, userId, role })=>{
       socket.join(`org-${orgId}`)
       socketOrgMap.set(socket.id,{orgId,userId,role})
-      console.log(`Socket ${socket.id} joined org-${orgId} as ${role}`);
     })
 
     socket.on("agentOnline", async (agentData) => {
       agentData.online
         ? addOnlineAgent(agentData.id, agentData.name)
         : removeOnlineAgent(agentData.id);
-      console.log(
-        `Agent ${agentData.name} is ${agentData.online ? "online" : "offline"}`,
-        getOnlineAgents()
-      );
       await prisma.user.update({
         where: { id: agentData.id },
         data: { online: agentData.online },
@@ -250,18 +244,15 @@ export const socketSetup = (server: any) => {
 
     socket.on("joinThread", (threadId) => {
       socket.join(threadId);
-      console.log(`User joined thread: ${threadId}`);
     });
     socket.on("leaveThread", (threadId) => {
       socket.leave(threadId);
-      console.log(`User left thread: ${threadId}`);
     });
     socket.on("joinThreadRoom", ({ threadId }) => {
       socket.join(threadId);
     });
 
     socket.on("endThread",async({threadId,orgId,ended_by,url,title,cookie,browserData})=>{
-      console.log({threadId,orgId,ended_by})
       await endChatFunction({thread_id:threadId,ended_by:ended_by,pageUrl:url,pageTitle:title,header:cookie,browserData})
       io.emit("threadEnded",{threadId,orgId,ended_by})
     })
@@ -360,7 +351,6 @@ export const socketSetup = (server: any) => {
       return
     }  
 
-    console.log("Online Agents:", getOnlineAgents());
     await processAIResponse(data, io);
 
   } catch (error) {
@@ -418,7 +408,6 @@ export const socketSetup = (server: any) => {
             const messages = [data.content]
             await prisma.notification.create({data:{threadId:data.threadId,latestMessage:data.content,message:messages,orgId:data.orgId}}) 
         }
-        console.log("Thread-User:-", thread)
         io.to(`org-${data.orgId}`).emit("notification", { message: `${data.content}`, thread:tempthread });
         
       } else {
@@ -437,7 +426,9 @@ export const socketSetup = (server: any) => {
           data.content = formattedContent;
           const room = io.sockets.adapter.rooms.get(data.threadId);
           const userInRoom = room && room.size > 0;
+          console.log("userInRoom", userInRoom);
           if (!userInRoom) {
+            console.log("No user in room, sending email");
             const thread = await prisma.thread.findUnique({
               where: { id: data.threadId },
             });
@@ -490,7 +481,6 @@ export const socketSetup = (server: any) => {
       let email=""
       const locaStorage = data?.localStorage||{}
       const sessionStorage = data?.sessionStorage||{}
-      // console.log(locaStorage,sessionStorage)
       for (const [key, value] of Object.entries(sessionStorage)) {
   if (key.toLowerCase().includes("name")) name = value as string;
   if (key.toLowerCase().includes("email")) email = value as string;
@@ -533,7 +523,6 @@ for (const [key, value] of Object.entries(locaStorage)) {
           where: { id: data.threadId },
           data: updateData,
         });
-        console.log("Thread updated successfully:", updatedThread);
       } catch (error) {
         console.error("Error updating thread info:", error);
       }
@@ -551,20 +540,17 @@ for (const [key, value] of Object.entries(locaStorage)) {
       }
     });
 
-    socket.on("recover", () => console.log("Socket connection recovered"));
+    socket.on("recover", () => {});
 
     socket.on("disconnect", async () => {
-      console.log("A user disconnected");
       const agentId = socket.id;
        const orgInfo = socketOrgMap.get(socket.id);
        if (orgInfo) {
-       console.log(`Removing user ${orgInfo.userId} from org-${orgInfo.orgId}`);
        socketOrgMap.delete(socket.id);
        }
       if (onlineAgents.has(agentId)) {
         
         const agentName = onlineAgents.get(agentId);
-        console.log(`Agent ${agentName} (${agentId}) is offline`);
         removeOnlineAgent(agentId);
         await prisma.user.update({
           where: { id: agentId },

@@ -90,7 +90,6 @@ ${text}`
     });
 
     const content = result.choices[0]?.message?.content ?? "";
-    console.log("\n📢 OpenAI Summary:\n");
     return content;
   } catch (err: any) {
     console.error("❌ OpenAI Error:", err.message);

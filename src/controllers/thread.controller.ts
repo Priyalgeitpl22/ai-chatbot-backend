@@ -273,9 +273,9 @@ export const moveToTrash = async(ThreadId:string,trash:string)=>{
     }else{
       return 
     }
-  }catch(err){
-    console.log(err)
-    return err
+  } catch(err){
+    console.error("Error moving thread to trash:", err);
+    return err;
   }
 }
 

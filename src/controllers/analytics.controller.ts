@@ -53,8 +53,6 @@ const getDashboardStats = async (req: Request, res: Response, user: any): Promis
         type: { not: "trash" }
       }
     });
-    console.log("totalChatsCurrent", totalChatsCurrent);
-
 
 
     const totalChatsPrevious = await prisma.thread.count({
@@ -67,7 +65,6 @@ const getDashboardStats = async (req: Request, res: Response, user: any): Promis
         }
       }
     });
-    console.log("totalChatsPrevious", totalChatsPrevious);
 
 
     // Chats with Agent 
@@ -78,7 +75,6 @@ const getDashboardStats = async (req: Request, res: Response, user: any): Promis
         assignedTo: { not: null }
       }
     });
-    console.log("agentChatsCurrent", agentChatsCurrent);
 
 
     const agentChatsPrevious = await prisma.thread.count({
@@ -92,7 +88,6 @@ const getDashboardStats = async (req: Request, res: Response, user: any): Promis
         }
       }
     });
-    console.log("agentChatsPrevious", agentChatsPrevious);
 
 
     // AI Chats (unassigned threads - handled by AI)
@@ -103,7 +98,6 @@ const getDashboardStats = async (req: Request, res: Response, user: any): Promis
         assignedTo: null
       }
     });
-    console.log("aiChatsCurrent", aiChatsCurrent);
 
 
     const aiChatsPrevious = await prisma.thread.count({
@@ -117,7 +111,6 @@ const getDashboardStats = async (req: Request, res: Response, user: any): Promis
         }
       }
     });
-    console.log("aiChatsPrevious", aiChatsPrevious);
 
 
     // Completed Chats (ended status)
@@ -128,7 +121,6 @@ const getDashboardStats = async (req: Request, res: Response, user: any): Promis
         status: "ended"
       }
     });
-    console.log("completedChatsCurrent", completedChatsCurrent);
 
 
     const completedChatsPrevious = await prisma.thread.count({
@@ -142,7 +134,6 @@ const getDashboardStats = async (req: Request, res: Response, user: any): Promis
         }
       }
     });
-    console.log("completedChatsPrevious", completedChatsPrevious);
 
 
     // Calculate trends
