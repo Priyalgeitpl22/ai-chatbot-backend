@@ -18,16 +18,13 @@ class EmailReplyCronService {
       cronExpression,
       async () => {
         if (this.isRunning) {
-          console.log('Email reply check already in progress, skipping...');
           return;
         }
 
         this.isRunning = true;
-        console.log('Starting email reply check...');
         
         try {
           await emailReplyMonitor.processEmailReplies();
-          console.log('Email reply check completed successfully');
         } catch (error) {
           console.error('Error during email reply check:', error);
         } finally {

@@ -159,7 +159,6 @@ export class EmailReplyMonitor {
 
         // Map SMTP config to IMAP config for Gmail
         const imapConfig = this.mapToImapConfig(emailConfig);
-        console.log("connectToEmail", imapConfig);
         
         this.imap = new Imap({
           host: imapConfig.host,
@@ -178,7 +177,6 @@ export class EmailReplyMonitor {
         });
 
         this.imap.once('ready', () => {
-          console.log('IMAP connection established');
           this.isConnected = true;
           resolve(true);
         });
@@ -189,7 +187,7 @@ export class EmailReplyMonitor {
           
           // Retry connection up to 3 times with exponential backoff
           if (retryCount < 3) {
-            console.log(`Retrying connection in ${Math.pow(2, retryCount) * 1000}ms... (attempt ${retryCount + 1}/3)`);
+            const delay = Math.pow(2, retryCount) * 1000;
             setTimeout(async () => {
               try {
                 const result = await this.connectToEmail(emailConfig, retryCount + 1);
@@ -197,14 +195,13 @@ export class EmailReplyMonitor {
               } catch (retryError) {
                 reject(retryError);
               }
-            }, Math.pow(2, retryCount) * 1000);
+            }, delay);
           } else {
             reject(err);
           }
         });
 
         this.imap.once('end', () => {
-          console.log('IMAP connection ended');
           this.isConnected = false;
         });
 
@@ -217,20 +214,17 @@ export class EmailReplyMonitor {
   }
 
   async checkForReplies(emailConfig: EmailConfig): Promise<EmailReply[]> {
-    console.log("checkForReplies", emailConfig);
     if (!this.isConnected || !this.imap) {
       await this.connectToEmail(emailConfig);
     }
 
     return new Promise((resolve, reject) => {
-      console.log("checkForReplies", this.imap);
       if (!this.imap) {
         reject(new Error('IMAP not connected'));
         return;
       }
 
       this.imap.openBox('INBOX', false, (err, box) => {
-        console.log("checkForReplies", box);
         if (err) {
           console.error('Error opening inbox:', err);
           reject(err);
@@ -246,32 +240,28 @@ export class EmailReplyMonitor {
         ];
 
         this.imap!.search(searchCriteria, (err, results) => {
-          console.log("checkForReplies", results);
           if (err) {
-            console.log("checkForReplies", err);
             console.error('Error searching emails:', err);
             reject(err);
             return;
           }
 
           if (!results || results.length === 0) {
-            console.log("checkForReplies", results);
             resolve([]);
             return;
           }
 
           // Fetch emails
           const fetch = this.imap!.fetch(results, { bodies: '' });
-          console.log("checkForReplies", fetch);
           const emails: EmailReply[] = [];
+          let totalMessages = results.length;
+          let completedMessages = 0;
 
           fetch.on('message', (msg, seqno) => {
-            console.log("checkForReplies", msg);
             let buffer = '';
 
             msg.on('body', (stream) => {
               stream.on('data', (chunk) => {
-                console.log("checkForReplies", chunk);
                 buffer += chunk.toString('utf8');
               });
             });
@@ -280,11 +270,21 @@ export class EmailReplyMonitor {
               try {
                 const parsed = await simpleParser(buffer);
                 const emailReply = await this.parseEmailReply(parsed);
+
                 if (emailReply) {
                   emails.push(emailReply);
+                  console.log(`Found email reply from ${emailReply.sender} for thread ${emailReply.threadId}`);
                 }
               } catch (parseErr) {
-                console.error('Error parsing email:', parseErr);
+                console.error(`Error parsing email ${seqno}:`, parseErr);
+              } finally {
+                completedMessages++;
+                
+                // Check if all messages have been processed
+                if (completedMessages === totalMessages) {
+                  console.log(`Processed ${completedMessages} emails, found ${emails.length} replies`);
+                  resolve(emails);
+                }
               }
             });
           });
@@ -295,7 +295,7 @@ export class EmailReplyMonitor {
           });
 
           fetch.once('end', () => {
-            resolve(emails);
+            // Don't resolve here - wait for all individual message processing to complete
           });
         });
       });
@@ -309,16 +309,12 @@ export class EmailReplyMonitor {
       const content = this.extractTextContent(parsed.text || parsed.html || '');
       const messageId = parsed.messageId || '';
 
-      console.log("parsed", parsed);
-      // Extract thread ID from subject or email headers
       const threadId = this.extractThreadId(subject, parsed.headers);
       
       if (!threadId) {
-        console.log('No thread ID found in email:', subject);
         return null;
       }
 
-      // Check if this email was already processed
       if (this.processedEmails.has(messageId)) {
         return null;
       }
@@ -341,6 +337,25 @@ export class EmailReplyMonitor {
   }
 
   private extractThreadId(subject: string, headers: any): string | null {
+    // Helper function to safely extract string from header value
+    const getHeaderString = (headerValue: any): string | null => {
+      if (!headerValue) return null;
+      
+      if (typeof headerValue === 'string') {
+        return headerValue;
+      }
+      
+      if (Array.isArray(headerValue)) {
+        return headerValue[0] || null;
+      }
+      
+      if (typeof headerValue === 'object') {
+        return headerValue.text || headerValue.value || String(headerValue);
+      }
+      
+      return String(headerValue);
+    };
+
     // Method 1: Look for thread ID in subject (e.g., "Re: [ThreadID: abc123] Original Subject")
     const subjectMatch = subject.match(/\[ThreadID:\s*([a-f0-9-]+)\]/i);
     if (subjectMatch) {
@@ -348,9 +363,7 @@ export class EmailReplyMonitor {
     }
 
     // Method 2: Look for thread ID in email headers
-    const inReplyTo = headers.get('in-reply-to');
-    const references = headers.get('references');
-    
+    const inReplyTo = getHeaderString(headers.get('in-reply-to'));
     if (inReplyTo) {
       const threadMatch = inReplyTo.match(/thread-([a-f0-9-]+)@/i);
       if (threadMatch) {
@@ -358,6 +371,7 @@ export class EmailReplyMonitor {
       }
     }
 
+    const references = getHeaderString(headers.get('references'));
     if (references) {
       const threadMatch = references.match(/thread-([a-f0-9-]+)@/i);
       if (threadMatch) {
@@ -366,13 +380,13 @@ export class EmailReplyMonitor {
     }
 
     // Method 3: Look for thread ID in custom headers
-    const customThreadId = headers.get('x-thread-id');
+    const customThreadId = getHeaderString(headers.get('x-thread-id'));
     if (customThreadId) {
       return customThreadId;
     }
 
     // Method 4: Look for thread ID in Message-ID header
-    const messageId = headers.get('message-id');
+    const messageId = getHeaderString(headers.get('message-id'));
     if (messageId) {
       const threadMatch = messageId.match(/thread-([a-f0-9-]+)@/i);
       if (threadMatch) {
@@ -381,7 +395,7 @@ export class EmailReplyMonitor {
     }
 
     // Method 5: Try to extract from Reply-To header
-    const replyTo = headers.get('reply-to');
+    const replyTo = getHeaderString(headers.get('reply-to'));
     if (replyTo) {
       const threadMatch = replyTo.match(/thread-([a-f0-9-]+)@/i);
       if (threadMatch) {
@@ -400,24 +414,127 @@ export class EmailReplyMonitor {
 
   private extractTextContent(content: string): string {
     // Remove HTML tags and clean up the text
-    const textContent = content
+    let textContent = content
       .replace(/<[^>]*>/g, '') // Remove HTML tags
       .replace(/\s+/g, ' ') // Replace multiple spaces with single space
       .trim();
 
-    // Remove common email reply patterns
-    const cleanedContent = textContent
-      .replace(/^On .+ wrote:$/gm, '') // Remove "On ... wrote:" lines
-      .replace(/^From: .+$/gm, '') // Remove "From:" lines
-      .replace(/^Sent: .+$/gm, '') // Remove "Sent:" lines
-      .replace(/^To: .+$/gm, '') // Remove "To:" lines
-      .replace(/^Subject: .+$/gm, '') // Remove "Subject:" lines
-      .replace(/^Date: .+$/gm, '') // Remove "Date:" lines
-      .replace(/^>.*$/gm, '') // Remove quoted lines starting with >
+    // Split by common email reply separators to get the actual reply
+    const replySeparators = [
+      /On .+ wrote:/gi,
+      /From: .+$/gm,
+      /Sent: .+$/gm,
+      /To: .+$/gm,
+      /Subject: .+$/gm,
+      /Date: .+$/gm,
+      /^>.*$/gm, // Quoted lines starting with >
+      /Best Regards.*$/gmi,
+      /Sincerely.*$/gmi,
+      /Thanks.*$/gmi,
+      /Regards.*$/gmi
+    ];
+
+    // Find the first occurrence of any separator
+    let earliestMatch = textContent.length;
+    let separatorFound = false;
+
+    for (const separator of replySeparators) {
+      const match = textContent.search(separator);
+      if (match !== -1 && match < earliestMatch) {
+        earliestMatch = match;
+        separatorFound = true;
+      }
+    }
+
+    // If we found a separator, extract only the content before it
+    if (separatorFound) {
+      textContent = textContent.substring(0, earliestMatch).trim();
+    }
+
+    // Additional cleanup
+    textContent = textContent
+      .replace(/^\s*[-=*_]{3,}.*$/gm, '') // Remove separator lines
+      .replace(/^\s*$/, '') // Remove empty lines at start
       .replace(/\n\s*\n/g, '\n') // Remove multiple empty lines
       .trim();
 
-    return cleanedContent;
+    return textContent;
+  }
+
+  async debugEmailReplies(orgId?: string): Promise<void> {
+    try {
+      let organizations;
+      
+      if (orgId) {
+        // Debug specific organization
+        const org = await prisma.organization.findUnique({
+          where: { id: orgId },
+          select: {
+            id: true,
+            aiOrgId: true,
+            emailConfig: true
+          }
+        });
+        
+        if (!org || !org.emailConfig) {
+          console.log(`Organization ${orgId} not found or has no email config`);
+          return;
+        }
+        
+        organizations = [org];
+      } else {
+        // Debug all organizations
+        organizations = await prisma.organization.findMany({
+          where: {
+            emailConfig: {
+              not: null
+            } as any
+          },
+          select: {
+            id: true,
+            aiOrgId: true,
+            emailConfig: true
+          }
+        });
+      }
+
+      console.log(`Found ${organizations.length} organizations with email config`);
+      
+      for (const org of organizations) {
+        if (!org.emailConfig) continue;
+
+        try {
+          const emailConfig = org.emailConfig as unknown as EmailConfig;
+          
+          // Validate email configuration
+          if (!this.validateEmailConfig(emailConfig)) {
+            console.error(`Invalid email configuration for org ${org.id}:`, emailConfig);
+            continue;
+          }
+
+          console.log(`Testing email connection for org ${org.id} (${emailConfig.user})`);
+          const testResult = await this.testEmailConnection(emailConfig);
+
+          if (!testResult.success) {
+            console.error(`Email connection test failed for org ${org.id}:`, testResult.error);
+            continue;
+          }
+
+          console.log("Email connection test passed, checking for replies...");
+          const replies = await this.checkForReplies(emailConfig);
+          console.log("Got replies:", replies);
+
+          for (const reply of replies) {
+            console.log("Adding reply to thread:", reply);
+            await this.addReplyToThread(reply, org.aiOrgId || 0);
+          }
+        } catch (error) {
+          console.error(`Error processing emails for org ${org.id}:`, error);
+        }
+      }
+    } catch (error) {
+      console.error('Error in debug email replies:', error);
+    }
   }
 
   async processEmailReplies(): Promise<void> {
@@ -442,7 +559,6 @@ export class EmailReplyMonitor {
 
         try {
           const emailConfig = org.emailConfig as unknown as EmailConfig;
-          console.log("emailConfig", emailConfig);
           
           // Validate email configuration
           if (!this.validateEmailConfig(emailConfig)) {
@@ -451,8 +567,10 @@ export class EmailReplyMonitor {
           }
 
           const replies = await this.checkForReplies(emailConfig);
+          console.log("Got replies", replies);
 
           for (const reply of replies) {
+            console.log("adding reply to thread", reply);
             await this.addReplyToThread(reply, org.aiOrgId || 0);
           }
         } catch (error) {
@@ -507,6 +625,72 @@ export class EmailReplyMonitor {
       console.log(`Added reply to thread ${reply.threadId} from ${reply.sender}`);
     } catch (error) {
       console.error(`Error adding reply to thread ${reply.threadId}:`, error);
+    }
+  }
+
+  async testEmailConnection(emailConfig: EmailConfig): Promise<{ success: boolean; error?: string; details?: any }> {
+    try {
+      // Test connection
+      const connected = await this.connectToEmail(emailConfig);
+      if (!connected) {
+        return { success: false, error: 'Failed to connect to email server' };
+      }
+
+      // Test inbox access
+      return new Promise((resolve) => {
+        if (!this.imap) {
+          resolve({ success: false, error: 'IMAP not connected' });
+          return;
+        }
+
+        this.imap.openBox('INBOX', false, (err, box) => {
+          if (err) {
+            resolve({ 
+              success: false, 
+              error: 'Failed to open inbox', 
+              details: { error: err.message } 
+            });
+            return;
+          }
+
+          // Test search with a broader date range
+          const weekAgo = new Date();
+          weekAgo.setDate(weekAgo.getDate() - 7);
+          
+          const searchCriteria = [['SINCE', weekAgo]];
+          
+          this.imap!.search(searchCriteria, (searchErr, results) => {
+            if (searchErr) {
+              resolve({ 
+                success: false, 
+                error: 'Failed to search emails', 
+                details: { error: searchErr.message } 
+              });
+              return;
+            }
+
+            resolve({
+              success: true,
+              details: {
+                totalMessages: box.messages.total,
+                foundEmails: results ? results.length : 0,
+                searchCriteria,
+                dateRange: {
+                  from: weekAgo.toISOString(),
+                  to: new Date().toISOString()
+                }
+              }
+            });
+          });
+        });
+      });
+    } catch (error) {
+      console.error('Test connection error:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error',
+        details: { error }
+      };
     }
   }
 
