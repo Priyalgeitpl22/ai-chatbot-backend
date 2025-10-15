@@ -274,7 +274,6 @@ export const socketSetup = (server: any) => {
     // Check thread status
     const thread = await prisma.thread.findUnique({
       where: { id: data.threadId },
-      select: { status: true },
     });
 
     if (!thread) {
@@ -283,6 +282,29 @@ export const socketSetup = (server: any) => {
 
     if (thread.status === 'ended') {
       return socket.emit("error", { message: "This chat has been ended. No further messages allowed." });
+    }
+
+    console.log("thread.isTicketCreated", thread?.isTicketCreated);
+    console.log("data.sender", data.sender);
+
+    if(thread.isTicketCreated && data.sender === "Bot" && thread.email){
+
+        const subject = "New Message from Support Team";
+        const text = data.content;
+
+        const organization = await prisma.chatConfig.findFirst({
+          where: { aiOrgId: thread.aiOrgId },
+          select: { emailConfig: true },
+        });
+
+        console.log("organization?.emailConfig", organization?.emailConfig);
+        console.log("Sending email to", thread.email);
+          await sendEmailChat(
+            thread.email,
+            text,
+            subject,
+            organization?.emailConfig ?? ''
+          );
     }
 
     // Proceed to store message
@@ -380,6 +402,10 @@ export const socketSetup = (server: any) => {
         "low",
         data.orgId,
       );
+
+      await prisma.thread.update({where: { id: data.threadId }, data: { isTicketCreated: true as boolean } })
+      console.log("Thread updated with isTicketCreated true");
+      
       io.to(`org-${data.orgId}`).emit("taskCreated", data);
     });
 

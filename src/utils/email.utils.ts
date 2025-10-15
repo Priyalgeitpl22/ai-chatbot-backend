@@ -75,16 +75,21 @@ export const sendEmailToVerify = async (transporterOptions: any) => {
 
   await transporter.sendMail(mailOptions);
 }
-export const sendEmailChat = async(email:string,text:string,subject:string,emailConfig: any,cc?: string | string[],
+export const sendEmailChat = async (email: string, text: string, subject: string, emailConfig: any, cc?: string | string[],
   bcc?: string | string[]) => {
+
+  console.log("emailConfig", emailConfig);
+
+  let user = emailConfig.user ? emailConfig.user : process.env.EMAIL_USER;
+  let pass = emailConfig.pass ? emailConfig.pass : process.env.EMAIL_PASSWORD;
 
   const transporter = nodemailer.createTransport({
     host: emailConfig.host,
     port: Number(emailConfig.port),
     secure: emailConfig.secure.toString().toLowerCase() === "true",
     auth: {
-      user: emailConfig.user,
-      pass: emailConfig.pass,
+      user: user,
+      pass: pass,
     },
   });
 
@@ -93,7 +98,7 @@ export const sendEmailChat = async(email:string,text:string,subject:string,email
     from: emailConfig.user,
     to: email,
     subject: subject,
-    cc: cc && cc.length ? cc : undefined,   
+    cc: cc && cc.length ? cc : undefined,
     html: text,
   };
   await transporter.sendMail(mailOptions);
