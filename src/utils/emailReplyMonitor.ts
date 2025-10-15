@@ -1,4 +1,5 @@
 import Imap from 'imap';
+// @ts-ignore - mailparser types not available
 import { simpleParser, ParsedMail } from 'mailparser';
 import { PrismaClient } from '@prisma/client';
 
@@ -33,16 +34,147 @@ export class EmailReplyMonitor {
     // Initialize with empty set for processed emails
   }
 
-  async connectToEmail(emailConfig: EmailConfig): Promise<boolean> {
+  private validateEmailConfig(emailConfig: any): emailConfig is EmailConfig {
+    if (!emailConfig || typeof emailConfig !== 'object') {
+      return false;
+    }
+
+    // Check required fields
+    if (!emailConfig.host || !emailConfig.user || !emailConfig.pass) {
+      return false;
+    }
+
+    // Validate host format
+    const host = emailConfig.host.toLowerCase();
+    if (!host.includes('.') || host.length < 3) {
+      return false;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(emailConfig.user)) {
+      return false;
+    }
+
+    // Validate port if provided (handle both string and number)
+    if (emailConfig.port) {
+      const port = typeof emailConfig.port === 'string' ? parseInt(emailConfig.port, 10) : emailConfig.port;
+      if (isNaN(port) || port < 1 || port > 65535) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  private mapToImapConfig(emailConfig: EmailConfig): any {
+    const host = emailConfig.imapHost || emailConfig.host;
+    
+    // Map SMTP settings to IMAP settings for different providers
+    if (host.includes('gmail.com') || host.includes('googlemail.com')) {
+      return {
+        host: 'imap.gmail.com',
+        port: 993,
+        tls: true,
+        user: emailConfig.user,
+        password: emailConfig.pass
+      };
+    } else if (host.includes('outlook.com') || host.includes('hotmail.com') || host.includes('live.com')) {
+      return {
+        host: 'outlook.office365.com',
+        port: 993,
+        tls: true,
+        user: emailConfig.user,
+        password: emailConfig.pass
+      };
+    } else if (host.includes('yahoo.com')) {
+      return {
+        host: 'imap.mail.yahoo.com',
+        port: 993,
+        tls: true,
+        user: emailConfig.user,
+        password: emailConfig.pass
+      };
+    } else {
+      // For custom IMAP servers, use the provided config or defaults
+      const port = emailConfig.imapPort || emailConfig.port || 993;
+      return {
+        host: emailConfig.imapHost || emailConfig.host,
+        port: typeof port === 'string' ? parseInt(port, 10) : port,
+        tls: emailConfig.imapSecure !== false,
+        user: emailConfig.user,
+        password: emailConfig.pass
+      };
+    }
+  }
+
+  private getTlsOptions(emailConfig: EmailConfig): any {
+    const host = emailConfig.imapHost || emailConfig.host;
+    
+    // Gmail IMAP specific TLS configuration
+    if (host.includes('gmail.com') || host.includes('googlemail.com')) {
+      return {
+        rejectUnauthorized: true,
+        servername: 'imap.gmail.com',
+        ciphers: 'ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-SHA256:ECDHE-RSA-AES256-SHA384',
+        honorCipherOrder: true,
+        minVersion: 'TLSv1.2',
+        maxVersion: 'TLSv1.3'
+      };
+    } else if (host.includes('outlook.com') || host.includes('hotmail.com') || host.includes('live.com')) {
+      return {
+        rejectUnauthorized: true,
+        servername: 'outlook.office365.com',
+        ciphers: 'ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-SHA256:ECDHE-RSA-AES256-SHA384',
+        honorCipherOrder: true,
+        minVersion: 'TLSv1.2',
+        maxVersion: 'TLSv1.3'
+      };
+    } else if (host.includes('yahoo.com')) {
+      return {
+        rejectUnauthorized: true,
+        servername: 'imap.mail.yahoo.com',
+        ciphers: 'ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-SHA256:ECDHE-RSA-AES256-SHA384',
+        honorCipherOrder: true,
+        minVersion: 'TLSv1.2',
+        maxVersion: 'TLSv1.3'
+      };
+    }
+
+    // Default TLS options for other providers
+    return {
+      rejectUnauthorized: false,
+      ciphers: 'HIGH:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!MD5:!PSK:!SRP:!CAMELLIA',
+      minVersion: 'TLSv1.2'
+    };
+  }
+
+  async connectToEmail(emailConfig: EmailConfig, retryCount = 0): Promise<boolean> {
     return new Promise((resolve, reject) => {
       try {
+        // Disconnect any existing connection
+        if (this.imap && this.isConnected) {
+          this.disconnect();
+        }
+
+        // Map SMTP config to IMAP config for Gmail
+        const imapConfig = this.mapToImapConfig(emailConfig);
+        console.log("connectToEmail", imapConfig);
+        
         this.imap = new Imap({
-          host: emailConfig.imapHost || emailConfig.host,
-          port: emailConfig.imapPort || emailConfig.port || 993,
-          tls: emailConfig.imapSecure !== false,
-          user: emailConfig.user,
-          password: emailConfig.pass,
-          tlsOptions: { rejectUnauthorized: false }
+          host: imapConfig.host,
+          port: imapConfig.port,
+          tls: imapConfig.tls,
+          user: imapConfig.user,
+          password: imapConfig.password,
+          tlsOptions: this.getTlsOptions(emailConfig),
+          connTimeout: 60000,
+          authTimeout: 30000,
+          keepalive: {
+            interval: 10000,
+            idleInterval: 300000,
+            forceNoop: true
+          }
         });
 
         this.imap.once('ready', () => {
@@ -51,10 +183,24 @@ export class EmailReplyMonitor {
           resolve(true);
         });
 
-        this.imap.once('error', (err: Error) => {
+        this.imap.once('error', async (err: Error) => {
           console.error('IMAP connection error:', err);
           this.isConnected = false;
-          reject(err);
+          
+          // Retry connection up to 3 times with exponential backoff
+          if (retryCount < 3) {
+            console.log(`Retrying connection in ${Math.pow(2, retryCount) * 1000}ms... (attempt ${retryCount + 1}/3)`);
+            setTimeout(async () => {
+              try {
+                const result = await this.connectToEmail(emailConfig, retryCount + 1);
+                resolve(result);
+              } catch (retryError) {
+                reject(retryError);
+              }
+            }, Math.pow(2, retryCount) * 1000);
+          } else {
+            reject(err);
+          }
         });
 
         this.imap.once('end', () => {
@@ -71,53 +217,61 @@ export class EmailReplyMonitor {
   }
 
   async checkForReplies(emailConfig: EmailConfig): Promise<EmailReply[]> {
+    console.log("checkForReplies", emailConfig);
     if (!this.isConnected || !this.imap) {
       await this.connectToEmail(emailConfig);
     }
 
     return new Promise((resolve, reject) => {
+      console.log("checkForReplies", this.imap);
       if (!this.imap) {
         reject(new Error('IMAP not connected'));
         return;
       }
 
       this.imap.openBox('INBOX', false, (err, box) => {
+        console.log("checkForReplies", box);
         if (err) {
           console.error('Error opening inbox:', err);
           reject(err);
           return;
         }
 
-        // Search for unread emails from the last 24 hours
+        // Search for emails from the last 24 hours (both read and unread)
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
         
         const searchCriteria = [
-          'UNSEEN',
           ['SINCE', yesterday]
         ];
 
         this.imap!.search(searchCriteria, (err, results) => {
+          console.log("checkForReplies", results);
           if (err) {
+            console.log("checkForReplies", err);
             console.error('Error searching emails:', err);
             reject(err);
             return;
           }
 
           if (!results || results.length === 0) {
+            console.log("checkForReplies", results);
             resolve([]);
             return;
           }
 
           // Fetch emails
           const fetch = this.imap!.fetch(results, { bodies: '' });
+          console.log("checkForReplies", fetch);
           const emails: EmailReply[] = [];
 
           fetch.on('message', (msg, seqno) => {
+            console.log("checkForReplies", msg);
             let buffer = '';
 
             msg.on('body', (stream) => {
               stream.on('data', (chunk) => {
+                console.log("checkForReplies", chunk);
                 buffer += chunk.toString('utf8');
               });
             });
@@ -155,6 +309,7 @@ export class EmailReplyMonitor {
       const content = this.extractTextContent(parsed.text || parsed.html || '');
       const messageId = parsed.messageId || '';
 
+      console.log("parsed", parsed);
       // Extract thread ID from subject or email headers
       const threadId = this.extractThreadId(subject, parsed.headers);
       
@@ -216,6 +371,30 @@ export class EmailReplyMonitor {
       return customThreadId;
     }
 
+    // Method 4: Look for thread ID in Message-ID header
+    const messageId = headers.get('message-id');
+    if (messageId) {
+      const threadMatch = messageId.match(/thread-([a-f0-9-]+)@/i);
+      if (threadMatch) {
+        return threadMatch[1];
+      }
+    }
+
+    // Method 5: Try to extract from Reply-To header
+    const replyTo = headers.get('reply-to');
+    if (replyTo) {
+      const threadMatch = replyTo.match(/thread-([a-f0-9-]+)@/i);
+      if (threadMatch) {
+        return threadMatch[1];
+      }
+    }
+
+    // Method 6: Look for any UUID pattern in subject (fallback)
+    const uuidMatch = subject.match(/([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})/i);
+    if (uuidMatch) {
+      return uuidMatch[1];
+    }
+
     return null;
   }
 
@@ -248,7 +427,7 @@ export class EmailReplyMonitor {
         where: {
           emailConfig: {
             not: null
-          }
+          } as any
         },
         select: {
           id: true,
@@ -257,11 +436,20 @@ export class EmailReplyMonitor {
         }
       });
 
+      console.log(`Found ${organizations.length} organizations with email config`);
       for (const org of organizations) {
         if (!org.emailConfig) continue;
 
         try {
-          const emailConfig = org.emailConfig as EmailConfig;
+          const emailConfig = org.emailConfig as unknown as EmailConfig;
+          console.log("emailConfig", emailConfig);
+          
+          // Validate email configuration
+          if (!this.validateEmailConfig(emailConfig)) {
+            console.error(`Invalid email configuration for org ${org.id}:`, emailConfig);
+            continue;
+          }
+
           const replies = await this.checkForReplies(emailConfig);
 
           for (const reply of replies) {
@@ -269,6 +457,12 @@ export class EmailReplyMonitor {
           }
         } catch (error) {
           console.error(`Error processing emails for org ${org.id}:`, error);
+          
+          // If it's an SSL error, try to disconnect and reconnect
+          if (error instanceof Error && error.message.includes('SSL')) {
+            console.log(`SSL error detected for org ${org.id}, disconnecting...`);
+            this.disconnect();
+          }
         }
       }
     } catch (error) {

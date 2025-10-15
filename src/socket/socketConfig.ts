@@ -451,7 +451,10 @@ export const socketSetup = (server: any) => {
               thread.email,
               text,
               subject,
-              organization?.emailConfig ?? ''
+              organization?.emailConfig ?? '',
+              undefined, // cc
+              undefined, // bcc
+              data.threadId // threadId for reply tracking
             );
           }
 
@@ -476,7 +479,10 @@ export const socketSetup = (server: any) => {
                   thread.email,
                   text,
                   subject,
-                  organization.emailConfig
+                  organization.emailConfig,
+                  undefined, // cc
+                  undefined, // bcc
+                  data.threadId // threadId for reply tracking
                 );
               }
             } else {

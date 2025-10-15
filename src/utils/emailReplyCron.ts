@@ -12,7 +12,7 @@ class EmailReplyCronService {
   private initializeCronJob(): void {
     // Run every 5 minutes to check for email replies
     // You can adjust this interval as needed
-    const cronExpression = '*/5 * * * *'; // Every 5 minutes
+    const cronExpression = '*/1 * * * *'; // Every 5 minutes
     
     this.cronJob = new CronJob(
       cronExpression,
