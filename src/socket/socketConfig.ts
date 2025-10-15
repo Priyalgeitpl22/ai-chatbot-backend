@@ -548,6 +548,18 @@ for (const [key, value] of Object.entries(locaStorage)) {
        if (orgInfo) {
        socketOrgMap.delete(socket.id);
        }
+      
+      console.log("A user disconnected");
+      const rooms = Array.from(socket.rooms);
+      console.log("rooms", rooms);
+      rooms.forEach(roomId => {
+        if (roomId !== socket.id) { 
+          socket.leave(roomId);
+        }
+      });
+
+      console.log("rooms cleaned", rooms);
+      
       if (onlineAgents.has(agentId)) {
         
         const agentName = onlineAgents.get(agentId);
