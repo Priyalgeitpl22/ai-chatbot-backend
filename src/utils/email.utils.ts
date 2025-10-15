@@ -76,7 +76,7 @@ export const sendEmailToVerify = async (transporterOptions: any) => {
   await transporter.sendMail(mailOptions);
 }
 export const sendEmailChat = async (email: string, text: string, subject: string, emailConfig: any, cc?: string | string[],
-  bcc?: string | string[]) => {
+  bcc?: string | string[], threadId?: string) => {
 
   console.log("emailConfig", emailConfig);
 
@@ -93,13 +93,23 @@ export const sendEmailChat = async (email: string, text: string, subject: string
     },
   });
 
+  // Prepare headers for email reply tracking
+  const headers: any = {};
+  if (threadId) {
+    // Add custom headers for reply tracking
+    headers['X-Thread-ID'] = threadId;
+    headers['Message-ID'] = `thread-${threadId}@${emailConfig.host}`;
+    headers['Reply-To'] = emailConfig.user;
+  }
 
   const mailOptions = {
     from: emailConfig.user,
     to: email,
-    subject: subject,
+    subject: threadId ? `[ThreadID: ${threadId}] ${subject}` : subject,
     cc: cc && cc.length ? cc : undefined,
+    bcc: bcc && bcc.length ? bcc : undefined,
     html: text,
+    headers: headers,
   };
   await transporter.sendMail(mailOptions);
 }
@@ -158,6 +168,6 @@ export const sendChatTranscriptEmail = async ({
     </div>
   `;
 
-  await sendEmailChat(email, htmlContent, `Chat Transcript - Thread #${threadId}`, emailConfig, cc);
+  await sendEmailChat(email, htmlContent, `Chat Transcript - Thread #${threadId}`, emailConfig, cc, undefined, threadId);
 };
 
