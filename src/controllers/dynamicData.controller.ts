@@ -128,6 +128,14 @@ export const createDynamicData = async (req: any, res: Response) => {
       return;
     }
 
+    const org = await prisma.organization.findUnique({ where: { id: orgId } });
+    if (!org) {
+      res.status(404).json({ 
+        message: 'Organization not found.' 
+      });
+      return;
+    }
+
     const parsedCurl = parseCurl(apiCurl);
     if (!parsedCurl) {
       res.status(400).json({ 
