@@ -13,6 +13,7 @@ import { authMiddleware } from "../middlewares/authMiddleware";
 import securityRoutes from './security.route';
 import notificatioRoute from "../routes/notification.routes";
 import chatSummary from "./chatSummary.routes";
+import dynamicDataRoutes from "./dynamicData.routes";;
 import emailReplyRoutes from "./emailReply.routes";
 
 const router = Router();
@@ -30,6 +31,7 @@ router.use('/security', securityRoutes);
 router.use("/notification",notificatioRoute)
 router.use("/chat/analyze",chatSummary)
 router.use("/analytics", analyticsRoutes);
+router.use("/dynamic-data", dynamicDataRoutes);
 router.use("/email-reply", emailReplyRoutes);
 
 export default router;

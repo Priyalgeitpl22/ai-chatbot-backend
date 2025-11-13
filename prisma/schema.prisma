@@ -46,6 +46,7 @@ model Organization {
   aiEnabled         Boolean        @default(false)
   createdAt         DateTime       @default(now())
   Notification      Notification[]
+  dynamicData       DynamicData[]
 }
 
 model User {
@@ -65,6 +66,7 @@ model User {
   schedule       Json?
   deletedAt      DateTime?
   faqs           FAQ[]
+  dynamicData    DynamicData[]
   // Fields for OTP verification
   otpCode        String?
   otpExpiresAt   DateTime?
@@ -240,4 +242,16 @@ model ChatSummary {
   satisfactionScore  Int
   satisfactionReason String
   thread             Thread @relation(fields: [threadId], references: [id])
+}
+
+model DynamicData {
+  id        String   @id @default(uuid())
+  prompt    String   @db.Text
+  apiCurl   String   @db.Text
+  orgId     String?
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization? @relation(fields: [orgId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
