@@ -267,6 +267,7 @@ export const socketSetup = (server: any) => {
 
     socket.on("sendMessage", async (data) => {
       try {
+        //something to check here
         if (!data.threadId) {
           return socket.emit("error", { message: "Thread ID is required" });
         }
