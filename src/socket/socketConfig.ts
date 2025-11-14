@@ -133,7 +133,8 @@ const processAIResponse = async (data: any, io: Server) => {
           data.aiOrgId,
           data.threadId,
           data?.faqs,
-          data?.openAiKey
+          data?.openAiKey,
+          data?.dynamicData
         ) as any;
         if (response) {
           if (response?.answer.includes("I'm unable to")) {
