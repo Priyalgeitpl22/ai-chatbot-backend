@@ -20,14 +20,14 @@ export const getChatConfig = async (req: Request, res: Response): Promise<any> =
 
     const orgData = await prisma.organization.findFirst({
       where: { id: orgId },
-      include: { faqs: true, ApiData: true }
+      include: { faqs: true, dynamicData: true }
     });
 
     if (config && config.ChatBotLogoImage) {
       config.ChatBotLogoImage = await getPresignedUrl(config.ChatBotLogoImage);
     }
 
-    res.status(200).json({ code: 200, data: { ...config, aiEnabled: orgData?.aiEnabled, faqs: orgData?.faqs, openAiKey: orgData?.openAiKey, dynamicData: orgData?.ApiData }, message: "Success" });
+    res.status(200).json({ code: 200, data: { ...config, aiEnabled: orgData?.aiEnabled, faqs: orgData?.faqs, openAiKey: orgData?.openAiKey, dynamicData: orgData?.dynamicData }, message: "Success" });
   } catch (err) {
     console.error("Error fetching chat config:", err);
     res.status(500).json({ code: 500, message: "Internal Server Error" });
