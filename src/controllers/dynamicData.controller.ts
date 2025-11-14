@@ -180,6 +180,7 @@ export const createDynamicData = async (req: any, res: Response) => {
       return;
     }
 
+    //
     for (let i = 0; i < prompts.length; i++) {
       const prompt = prompts[i];
       const dynamicData = await prisma.dynamicData.create({
