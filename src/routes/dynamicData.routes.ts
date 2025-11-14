@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import {
   createDynamicData,
-  getDynamicData,
   getDynamicDataById,
   updateDynamicData,
   deleteDynamicData,
@@ -11,9 +10,9 @@ import { authMiddleware } from '../middlewares/authMiddleware';
 const router = Router();
 
 // All routes require authentication
-router.post('/create', createDynamicData);
-router.get('/:orgId', getDynamicDataById);
-router.put('/:orgId', updateDynamicData);
-router.delete('/:orgId', deleteDynamicData);
+router.post('/create', authMiddleware, createDynamicData);
+router.get('/:orgId', authMiddleware, getDynamicDataById);
+router.put('/:orgId', authMiddleware, updateDynamicData);
+router.delete('/:id', authMiddleware, deleteDynamicData);
 
 export default router;

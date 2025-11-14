@@ -119,70 +119,102 @@ async function validateApiEndpoint(parsedCurl: ParsedCurl): Promise<{ valid: boo
  */
 export const createDynamicData = async (req: any, res: Response) => {
   try {
-    const { prompt, apiCurl, orgId } = req.body;
+    const prompts = req.body;
 
-    if (!prompt || !apiCurl || !orgId) {
+    if(!prompts || prompts.length === 0) {
       res.status(400).json({ 
-        message: 'Both prompt, apiCurl and orgId are required.' 
+        message: 'Prompts are required.',
+        data: null
       });
       return;
     }
 
-    const org = await prisma.organization.findUnique({ where: { id: orgId } });
-    if (!org) {
-      res.status(404).json({ 
-        message: 'Organization not found.' 
+    for (const prompt of prompts) {
+      if (!prompt.prompt || !prompt.apiCurl || !prompt.orgId) {
+        res.status(400).json({ 
+          message: 'Both prompt, apiCurl and orgId are required.',
+          data: null
+        });
+        return;
+      }
+    }
+
+    for (const prompt of prompts) {
+      const org = await prisma.organization.findUnique({ where: { id: prompt.orgId } });
+      if (!org) {
+        res.status(404).json({ 
+          message: 'Organization not found.',
+          data: null
+        });
+        return;
+      }
+    }
+
+    for (const prompt of prompts) {
+      const parsedCurl = parseCurl(prompt.apiCurl);
+      if (!parsedCurl) {
+        res.status(400).json({ 
+          message: 'Invalid curl command format. Please provide a valid curl command with a URL.',
+          data: null
+        });
+        return;
+      }
+
+      const validation = await validateApiEndpoint(parsedCurl);
+      if (!validation.valid) {
+        res.status(400).json({ 
+          message: `API validation failed: ${validation.error}`,
+          data: null
+        });
+        return;
+      }
+    }
+
+    const user: any = req?.user;
+
+    if (!user) {
+      res.status(401).json({ 
+        message: 'Unauthorized. Please login to continue.',
+        data: null
       });
       return;
     }
 
-    const parsedCurl = parseCurl(apiCurl);
-    if (!parsedCurl) {
-      res.status(400).json({ 
-        message: 'Invalid curl command format. Please provide a valid curl command with a URL.' 
-      });
-      return;
-    }
-
-    const validation = await validateApiEndpoint(parsedCurl);
-    if (!validation.valid) {
-      res.status(400).json({ 
-        message: `API validation failed: ${validation.error}`,
-        details: {
-          url: parsedCurl.url,
-          method: parsedCurl.method
-        }
-      });
-      return;
-    }
-
-    const user: any = req.user;
-
-    const dynamicData = await prisma.dynamicData.create({
-      data: {
-        prompt,
-        apiCurl,
-        orgId: orgId as string,
-        userId: user?.id as string,
-      },
-      include: {
-        organization: {
-          select: {
-            id: true,
-            name: true,
+    for (let i = 0; i < prompts.length; i++) {
+      const prompt = prompts[i];
+      const dynamicData = await prisma.dynamicData.create({
+        data: {
+          prompt: prompt.prompt,
+          apiCurl: prompt.apiCurl,
+          orgId: prompt.orgId,
+          userId: user?.id as string,
+        },
+        include: {
+          organization: {
+            select: {
+              id: true,
+              name: true,
+            },
           },
         },
-      },
-    });
+      }); 
+      prompts[i] = dynamicData;
+    }
 
     res.status(201).json({
       message: 'Dynamic data created successfully',
-      data: dynamicData,
+      data: prompts.map((prompt: any) => ({
+        prompt: prompt.prompt,
+        apiCurl: prompt.apiCurl,
+        orgId: prompt.orgId
+      })),
     });
+
   } catch (error: any) {
     console.error('Error creating dynamic data:', error);
     res.status(500).json({ 
       message: 'Internal server error.',
+      data: null,
       error: error.message 
     });
   }
@@ -239,40 +271,24 @@ export const getDynamicData = async (req: any, res: Response) => {
  */
 export const getDynamicDataById = async (req: any, res: Response) => {
   try {
-    const { id } = req.params;
-    const user = req.user;
+    const { orgId } = req.query;
 
-    const dynamicData = await prisma.dynamicData.findUnique({
-      where: { id },
-      include: {
-        organization: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
+    const dynamicData = await prisma.dynamicData.findMany({
+      where: { orgId }
     });
 
-    if (!dynamicData) {
+    if (!dynamicData || dynamicData.length === 0) {
       res.status(404).json({ 
         message: 'Dynamic data not found.' 
       });
       return;
-    }
-
-    // Check if user has access (admin or same org)
-    if (user && user.role !== 'Admin' && dynamicData.orgId !== user.orgId) {
-      res.status(403).json({ 
-        message: 'Access denied. You do not have permission to view this data.' 
+      
+    } else{
+      res.status(200).json({
+        message: 'Dynamic data retrieved successfully',
+        data: dynamicData
       });
-      return;
     }
-
-    res.status(200).json({
-      message: 'Dynamic data retrieved successfully',
-      data: dynamicData,
-    });
   } catch (error: any) {
     console.error('Error fetching dynamic data:', error);
     res.status(500).json({ 
