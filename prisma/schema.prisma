@@ -8,11 +8,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum EndedByType {
-  user
-  bot
-}
-
 model access_token {
   id               String    @id @default(uuid())
   created_datetime DateTime? @default(now())
@@ -26,198 +21,177 @@ model access_token {
 
 model Organization {
   id                String         @id @default(uuid())
-  aiOrgId           Int?
   name              String?
-  enable_totp_auth  Boolean        @default(false)
+  domain            String?
+  country           String?
   phone             String?
+  createdAt         DateTime       @default(now())
+  aiOrgId           Int?
   address           String?
   city              String?
-  state             String?
-  country           String?
-  openAiKey         String?
-  zip               Int?
-  domain            String?
   industry          String?
+  state             String?
+  zip               Int?
   description       String?
-  users             User[]
-  faqs              FAQ[]
   emailConfig       Json?
   aiChatBotSettings Json?
   aiEnabled         Boolean        @default(false)
-  createdAt         DateTime       @default(now())
-  Notification      Notification[]
+  openAiKey         String?
+  enable_totp_auth  Boolean        @default(false)
   dynamicData       DynamicData[]
-  ApiData           ApiData[]
+  faqs              FAQ[]
+  Notification      Notification[]
+  users             User[]
 }
 
 model User {
-  id             String       @id @default(uuid())
-  email          String       @unique
-  fullName       String
-  password       String
-  phone          String?
-  role           String       @default("admin")
-  verified       Boolean      @default(false)
-  orgId          String
-  aiOrgId        Int?
-  profilePicture String?
-  organization   Organization @relation(fields: [orgId], references: [id])
-  createdAt      DateTime     @default(now())
-  online         Boolean      @default(false)
-  schedule       Json?
-  deletedAt      DateTime?
-  faqs           FAQ[]
-  // Fields for OTP verification
-  otpCode        String?
-  otpExpiresAt   DateTime?
-
-  // Fields for password reset
-  resetToken        String?
-  resetTokenExpires DateTime?
-
+  id                     String         @id @default(uuid())
+  email                  String         @unique
+  fullName               String
+  password               String
+  role                   String         @default("admin")
+  verified               Boolean        @default(false)
+  orgId                  String
+  createdAt              DateTime       @default(now())
+  otpCode                String?
+  otpExpiresAt           DateTime?
+  resetToken             String?
+  resetTokenExpires      DateTime?
+  profilePicture         String?
+  online                 Boolean        @default(false)
+  aiOrgId                Int?
   activationToken        String?
   activationTokenExpires DateTime?
+  schedule               Json?
+  phone                  String?
+  deletedAt              DateTime?
+  faqs                   FAQ[]
+  twoFactorAuth          TwoFactorAuth?
+  organization           Organization   @relation(fields: [orgId], references: [id])
   userSettings           UserSettings?
-
-  // 2FA relationship
-  twoFactorAuth TwoFactorAuth?
 }
 
 model TwoFactorAuth {
-  id     String @id @default(uuid())
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  // 2FA status
-  isEnabled               Boolean @default(false)
-  isAuthenticatorAppAdded Boolean @default(false)
-
-  // Secret management
-  secret     String? // Encrypted TOTP secret
-  tempSecret String? // Temporary secret during setup
-
-  // Timestamps
+  id                      String    @id @default(uuid())
+  userId                  String    @unique
+  isEnabled               Boolean   @default(false)
+  isAuthenticatorAppAdded Boolean   @default(false)
+  secret                  String?
+  tempSecret              String?
   enabledAt               DateTime?
   authenticatorAppAddedAt DateTime?
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
-
-  // Backup codes (optional)
-  backupCodes String[] // Array of hashed backup codes
-
-  // Last used timestamp for rate limiting
-  lastUsedAt DateTime?
+  backupCodes             String[]
+  lastUsedAt              DateTime?
+  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Thread {
-  id             String         @id @default(uuid())
-  user           String
-  messages       Message[]
-  aiOrgId        Int
-  readed         Boolean        @default(false)
-  assignedTo     String?
-  pageUrl        String         @default("")
-  ip             String         @default("")
-  name           String         @default("")
-  email          String         @default("")
-  phone          String         @default("")
-  createdAt      DateTime       @default(now())
+  id              String         @id @default(uuid())
+  user            String
+  createdAt       DateTime       @default(now())
+  type            String         @default("unassigned")
+  aiOrgId         Int
+  ip              String         @default("")
+  email           String         @default("")
+  name            String         @default("")
+  assignedTo      String?
+  readed          Boolean        @default(false)
+  endedAt         DateTime?
+  status          String         @default("active")
+  endedBy         EndedByType?
+  lastActivityAt  DateTime?      @default(now())
+  phone           String         @default("")
+  pageTitle       String         @default("")
+  pageUrl         String         @default("")
   isTicketCreated Boolean        @default(false)
-  type           String         @default("unassigned")
-  pageTitle      String         @default("")
-  status         String         @default("active") // "active", "ended", "ticket_created"
-  endedBy        EndedByType?
-  endedAt        DateTime?
-  lastActivityAt DateTime?      @default(now())
-  // Back-reference for tasks
-  tasks          Task[]
-  Notification   Notification[]
-  ChatSummary    ChatSummary[]
+  ChatSummary     ChatSummary[]
+  messages        Message[]
+  Notification    Notification[]
+  tasks           Task[]
 }
 
 model Message {
   id        String   @id @default(uuid())
   content   String
-  sender    String
-  seen      Boolean  @default(false)
-  threadId  String
-  thread    Thread   @relation(fields: [threadId], references: [id], onDelete: Cascade)
-  fileUrl   String?
-  fileType  String?
-  fileName  String?
   createdAt DateTime @default(now())
+  sender    String
+  threadId  String
+  seen      Boolean  @default(false)
+  fileName  String?
+  fileType  String?
+  fileUrl   String?
+  thread    Thread   @relation(fields: [threadId], references: [id], onDelete: Cascade)
 }
 
 model ChatConfig {
   id                      String   @id @default(uuid())
-  orgId                   String?
-  aiOrgId                 Int?
   allowFileUpload         Boolean?
-  addInitialPopupText     String?
-  addChatBotName          String?
-  ChatBotLogoImage        String?
-  allowNameEmail          Boolean?
   allowEmojis             Boolean?
-  allowCustomGreeting     Boolean?
-  customGreetingMessage   String?
-  allowFontFamily         Boolean?
-  customFontFamily        String?
   position                String?
   iconColor               String?
   chatWindowColor         String?
   fontColor               String?
   availability            Boolean?
   socketServer            String?
+  aiOrgId                 Int?
+  orgId                   String?
+  allowNameEmail          Boolean?
   emailConfig             Json?
-  allowCustomRecycleClear Boolean?
+  allowCustomGreeting     Boolean?
+  customGreetingMessage   String?
+  allowFontFamily         Boolean?
+  customFontFamily        String?
+  ChatBotLogoImage        String?
+  addChatBotName          String?
+  addInitialPopupText     String?
   CustomRecycleClear      Int?
+  allowCustomRecycleClear Boolean?
   customPersonalDetails   String?
 }
 
 model Task {
   id         String   @id @default(uuid())
-  name       String?
-  email      String?
-  orgId      String?
-  aiOrgId    Int
-  readed     Boolean  @default(false)
-  threadId   String
   query      String
   assignedTo String?
   status     String   @default("pending")
   priority   String   @default("low")
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-
-  // Relationships
-  thread Thread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  orgId      String?
+  threadId   String
+  aiOrgId    Int
+  email      String?
+  name       String?
+  readed     Boolean  @default(false)
+  thread     Thread   @relation(fields: [threadId], references: [id], onDelete: Cascade)
 }
 
 model UserSettings {
   id        String   @id @default(uuid())
   userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  settings  Json // Flexible JSON object for all types of settings
+  settings  Json
   updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model FAQ {
   id           Int          @id @default(autoincrement())
   orgId        String
-  userId       String?
-  question     String       @db.Text
-  answer       String       @db.Text
-  enabled      Boolean      @default(true)
-  user         User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  organization Organization @relation(fields: [orgId], references: [id])
+  question     String
+  answer       String
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
-  // Added for file upload support
+  userId       String?
   fileName     String?
   fileUrl      String?
-  fileContent  String?      @db.Text
-  uploadedBy   String?
   uploadedAt   DateTime?
+  uploadedBy   String?
+  fileContent  String?
+  enabled      Boolean      @default(true)
+  organization Organization @relation(fields: [orgId], references: [id])
+  user         User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Notification {
@@ -225,13 +199,13 @@ model Notification {
   message       String[]
   latestMessage String
   threadId      String
-  orgId         String
-  thread        Thread       @relation(fields: [threadId], references: [id])
-  organization  Organization @relation(fields: [orgId], references: [id])
   read          Boolean      @default(false)
-  notification  Boolean      @default(false)
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
+  notification  Boolean      @default(false)
+  orgId         String
+  organization  Organization @relation(fields: [orgId], references: [id])
+  thread        Thread       @relation(fields: [threadId], references: [id])
 }
 
 model ChatSummary {
@@ -245,23 +219,17 @@ model ChatSummary {
 }
 
 model DynamicData {
-  id        String   @id @default(uuid())
-  prompt    String   @db.Text
-  apiCurl   String   @db.Text
-  orgId     String?
-  userId    String?
-  organization Organization? @relation(fields: [orgId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String        @id @default(uuid())
+  prompt       String?
+  apiCurl      String?
+  orgId        String?
+  userId       String?
+  createdAt    DateTime?     @default(now()) @db.Timestamp(6)
+  updatedAt    DateTime?     @updatedAt @db.Timestamp(6)
+  organization Organization? @relation(fields: [orgId], references: [id], onUpdate: NoAction)
 }
 
-model ApiData {
-  id        String   @id @default(uuid())
-  prompt    String   @db.Text
-  apiCurl   String   @db.Text
-  orgId     String?
-  userId    String?
-  organization Organization? @relation(fields: [orgId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+enum EndedByType {
+  user
+  bot
 }
