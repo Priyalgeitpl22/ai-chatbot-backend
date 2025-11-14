@@ -183,7 +183,7 @@ export const createDynamicData = async (req: any, res: Response) => {
     //
     for (let i = 0; i < prompts.length; i++) {
       const prompt = prompts[i];
-      const dynamicData = await prisma.dynamicData.create({
+      const dynamicData = await prisma.apiData.create({
         data: {
           prompt: prompt.prompt,
           apiCurl: prompt.apiCurl,
@@ -239,7 +239,7 @@ export const getDynamicData = async (req: any, res: Response) => {
       where.orgId = orgId;
     }
 
-    const dynamicDataList = await prisma.dynamicData.findMany({
+    const dynamicDataList = await prisma.apiData.findMany({
       where,
       include: {
         organization: {
@@ -274,7 +274,7 @@ export const getDynamicDataById = async (req: any, res: Response) => {
   try {
     const { orgId } = req.query;
 
-    const dynamicData = await prisma.dynamicData.findMany({
+    const dynamicData = await prisma.apiData.findMany({
       where: { orgId }
     });
 
@@ -309,7 +309,7 @@ export const updateDynamicData = async (req: any, res: Response) => {
     const user = req.user;
 
     // Check if entry exists
-    const existing = await prisma.dynamicData.findUnique({
+    const existing = await prisma.apiData.findUnique({
       where: { id },
     });
 
@@ -356,7 +356,7 @@ export const updateDynamicData = async (req: any, res: Response) => {
     if (prompt !== undefined) updateData.prompt = prompt;
     if (apiCurl !== undefined) updateData.apiCurl = apiCurl;
 
-    const updated = await prisma.dynamicData.update({
+    const updated = await prisma.apiData.update({
       where: { id },
       data: updateData,
       include: {  
@@ -391,7 +391,7 @@ export const deleteDynamicData = async (req: any, res: Response) => {
     const user = req.user;
 
     // Check if entry exists
-    const existing = await prisma.dynamicData.findUnique({
+    const existing = await prisma.apiData.findUnique({
       where: { id },
     });
 
@@ -410,7 +410,7 @@ export const deleteDynamicData = async (req: any, res: Response) => {
       return;
     }
 
-    await prisma.dynamicData.delete({
+    await prisma.apiData.delete({
       where: { id },
     });
 
