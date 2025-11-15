@@ -189,9 +189,9 @@ const processAIResponse = async (data: any, io: Server) => {
 export const socketSetup = (server: any) => {
   io = new Server(server, {
     cors: {
-      origin: "*",
-      methods: ["GET", "POST"],
-      allowedHeaders: ["Content-Type"],
+      origin: true, // Allow all origins (matches Express config)
+      methods: ["GET", "POST", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"],
       credentials: true,
     },
     transports: ["websocket", "polling"],
