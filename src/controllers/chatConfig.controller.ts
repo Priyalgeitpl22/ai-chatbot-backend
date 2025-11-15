@@ -43,6 +43,7 @@ export const updateChatConfig = async (req: Request, res: Response): Promise<any
       const configData = req.body;
       delete configData.aiEnabled;
       delete configData.faqs;
+      delete configData.dynamicData;
 
       let ChatBotLogoImageURL: string | null = null;
       if (req.file) {
