@@ -80,7 +80,8 @@ export const getUnreadTicketCount = async (req: Request, res: Response): Promise
     const {orgId} = req.params;
     const count = await prisma.task.count({
       where: {
-        readed:false
+        readed:false,
+        orgId:orgId
       },
     });
     res.status(200).json({ code: 200, count });
