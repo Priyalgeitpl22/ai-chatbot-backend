@@ -12,16 +12,20 @@ const upload = multer({ storage: multer.memoryStorage() }).single("ChatBotLogoIm
 export const getChatConfig = async (req: Request, res: Response): Promise<any> => {
   try {
     const orgId = (req.query.orgId) as string;
+    console.log("orgId", orgId);
     const config = await prisma.chatConfig.findFirst({
       where: {
         orgId: orgId
       }
     });
 
+    console.log("config", config);
     const orgData = await prisma.organization.findFirst({
       where: { id: orgId },
       include: { faqs: true, dynamicData: true }
     });
+
+    console.log(orgData);
 
     if (config && config.ChatBotLogoImage) {
       config.ChatBotLogoImage = await getPresignedUrl(config.ChatBotLogoImage);
