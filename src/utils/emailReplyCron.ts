@@ -38,21 +38,21 @@ class EmailReplyCronService {
   }
 
   start(): void {
-    if (this.cronJob && !this.cronJob.running) {
+    if (this.cronJob && !this.cronJob.isActive) {
       this.cronJob.start();
       console.log('Email reply cron job started');
     }
   }
 
   stop(): void {
-    if (this.cronJob && this.cronJob.running) {
+    if (this.cronJob && this.cronJob.isActive) {
       this.cronJob.stop();
       console.log('Email reply cron job stopped');
     }
   }
 
   isJobRunning(): boolean {
-    return this.cronJob ? this.cronJob.running : false;
+    return this.cronJob ? this.cronJob.isActive : false;
   }
 
   getStatus(): { running: boolean; isProcessing: boolean } {

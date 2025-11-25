@@ -1,6 +1,6 @@
 import { AIResponse } from "../interfaces";
 
-export const getAIResponse = async (message: string, orgId: string, aiOrgId: number, threadId: string, faqs: any, openAiKey: string) => {
+export const getAIResponse = async (message: string, orgId: string, aiOrgId: number, threadId: string, faqs: any, openAiKey: string, dynamicData: any) => {
   try {
     const url = `${process.env.NODE_AI_URL}/api/organisation_chatbot`;
     console.log("openAiKey", openAiKey);
@@ -12,7 +12,7 @@ export const getAIResponse = async (message: string, orgId: string, aiOrgId: num
     //   agents_available = true;
     //   available_agents = agentsOnline
     // }
-    const requestBody = JSON.stringify({ organisation_id: aiOrgId, user_query: message, faqs: faqs, openAiKey: openAiKey });
+    const requestBody = JSON.stringify({ organisation_id: aiOrgId, user_query: message, faqs: faqs, openAiKey: openAiKey, dynamic_data: dynamicData });
 
     const response = await fetch(url, {
       method: "POST",

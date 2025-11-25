@@ -133,7 +133,8 @@ const processAIResponse = async (data: any, io: Server) => {
           data.aiOrgId,
           data.threadId,
           data?.faqs,
-          data?.openAiKey
+          data?.openAiKey,
+          data?.dynamicData
         ) as any;
         if (response) {
           if (response?.answer.includes("I'm unable to")) {
@@ -188,9 +189,9 @@ const processAIResponse = async (data: any, io: Server) => {
 export const socketSetup = (server: any) => {
   io = new Server(server, {
     cors: {
-      origin: "*",
-      methods: ["GET", "POST"],
-      allowedHeaders: ["Content-Type"],
+      origin: true, // Allow all origins (matches Express config)
+      methods: ["GET", "POST", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"],
       credentials: true,
     },
     transports: ["websocket", "polling"],
@@ -267,6 +268,7 @@ export const socketSetup = (server: any) => {
 
     socket.on("sendMessage", async (data) => {
       try {
+        //something to check here
         if (!data.threadId) {
           return socket.emit("error", { message: "Thread ID is required" });
         }
