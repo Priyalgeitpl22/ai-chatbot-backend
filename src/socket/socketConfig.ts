@@ -372,7 +372,7 @@ export const socketSetup = (server: any) => {
     });
 
     socket.on("createTask", async (data) => {
-      createTask(
+      await createTask(
         data.aiOrgId,
         data.threadId,
         data.name,
@@ -383,15 +383,28 @@ export const socketSetup = (server: any) => {
       );
 
       await prisma.thread.update({ where: { id: data.threadId }, data: { isTicketCreated: true, email: data.email } })
-      console.log("Thread updated with isTicketCreated true");
-
+      const count  = await prisma.task.count({
+      where: {
+        readed:false,
+        orgId:data.orgId
+      },
+    })
+      console.log("Thread updated with isTicketCreated true,",count);
+      io.to(`org-${data.orgId}`).emit("unreadTaskCount",{...data,count})
       io.to(`org-${data.orgId}`).emit("taskCreated", data);
     });
 
     socket.on("readedTask", async (data) => {
       if (data) {
-        ReadedTask(data)
+       await ReadedTask(data)
+       const count  = await prisma.task.count({
+      where: {
+        readed:false,
+        orgId:data.orgId
+      },
+    })
         io.emit("taskReaded", data.data)
+        io.to(`org-${data.orgId}`).emit("openTaskCount",count)
       }
     })
 
