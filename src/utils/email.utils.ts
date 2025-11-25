@@ -1,12 +1,12 @@
 import nodemailer from 'nodemailer';
 
 const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
+  host: 'smtp.zoho.in',
   port: 587,
   secure: false,
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD
+    pass: process.env.EMAIL_PASSWORD,
   },
 });
 
@@ -77,9 +77,6 @@ export const sendEmailToVerify = async (transporterOptions: any) => {
 }
 export const sendEmailChat = async (email: string, text: string, subject: string, emailConfig: any, cc?: string | string[],
   bcc?: string | string[], threadId?: string) => {
-
-  console.log("emailConfig", emailConfig);
-
   let user = emailConfig.user ? emailConfig.user : process.env.EMAIL_USER;
   let pass = emailConfig.pass ? emailConfig.pass : process.env.EMAIL_PASSWORD;
 
@@ -93,10 +90,8 @@ export const sendEmailChat = async (email: string, text: string, subject: string
     },
   });
 
-  // Prepare headers for email reply tracking
   const headers: any = {};
   if (threadId) {
-    // Add custom headers for reply tracking
     headers['X-Thread-ID'] = threadId;
     headers['Message-ID'] = `thread-${threadId}@${emailConfig.host}`;
     headers['Reply-To'] = emailConfig.user;
