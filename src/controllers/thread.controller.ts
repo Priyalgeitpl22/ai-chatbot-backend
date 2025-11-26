@@ -40,7 +40,7 @@ export const getAllThreads = async (req: Request, res: Response): Promise<any> =
     res.status(200).json({ code: 200, data: { threads: result, TotalThreads: threads.length }, message: "success" });
 
   } catch (err) {
-    res.status(500).json({ code: 500, message: "Error fetching threads" });
+    res.status(500).json({ code: 500, message: "Error fetching threads", error: err });
   }
 };
 
