@@ -28,7 +28,7 @@ export const register = async (req: Request, res: Response): Promise<any> => {
                 if (!existingUser.verified) {
                     await prisma.user.delete({ where: { email } });
                 } else {
-                    return res.status(400).json({ code: 400, message: "User already exists" });
+                    return res.status(400).json({ code: 400, message: "User already exists with this email Id" });
                 }
             }
 
