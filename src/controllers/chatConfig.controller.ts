@@ -105,7 +105,11 @@ export const getChatScript = async (req: Request, res: Response): Promise<void> 
     const config = await prisma.chatConfig.findFirst({ where: { orgId: orgeId } });
 
     if (!config) {
-      res.status(404).send("// Chat configuration not found");
+      res.status(200).json({
+      code: 200,
+      data: {},
+      message: "No chat configuration found",
+   });
       return;
     }
 
