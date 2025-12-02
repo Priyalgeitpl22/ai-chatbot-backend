@@ -5,41 +5,54 @@ const prisma = new PrismaClient();
 
 export const getAnalytics = async (req: Request, res: Response): Promise<any> => {
   try {
-    const { type } = req.query;
     const user = (req as any).user;
 
     if (!user) {
       return res.status(400).json({ code: 400, message: "Invalid user" });
     }
 
-    switch (type) {
-      case 'stats':
-        return await getDashboardStats(req, res, user);
-      case 'chat-volume':
-        return await getChatVolumeData(req, res, user);
-      case 'ai-effectiveness':
-        return await getAIEffectivenessData(req, res, user);
-      case 'chat-status-breakdown':
-        return await getChatStatusBreakdown(req, res, user);
-      case 'top-chat-intents':
-        return await getTopChatIntents(req, res, user);
-      case 'customer-satisfaction':
-        return await getCustomerSatisfactionSummary(req, res, user);
-      case 'email-transcript-count':
-        return await getEmailTranscriptCount(req, res, user);
-      default:
-        return res.status(400).json({
-          code: 400,
-          message: "Invalid analytics type. Use: stats, chat-volume, ai-effectiveness, chat-status-breakdown, top-chat-intents, customer-satisfaction, or email-transcript-count"
-        });
-    }
+    // RUN ALL ANALYTICS PARALLEL (FASTER)
+    const [
+      stats,
+      chatVolume,
+      aiEffectiveness,
+      chatStatusBreakdown,
+      topIntents,
+      customerSatisfaction,
+      emailTranscripts
+    ] = await Promise.all([
+      getDashboardStats(req, user),
+      getChatVolumeData(req,user),
+      getAIEffectivenessData(req,user),
+      getChatStatusBreakdown(req,user),
+      getTopChatIntents(req,user),
+      getCustomerSatisfactionSummary(req, user),
+      getEmailTranscriptCount(req,user),
+    ]);
+
+    return res.status(200).json({
+      code: 200,
+      message: "Analytics data retrieved successfully",
+      data: {
+        stats,
+        chatVolume,
+        aiEffectiveness,
+        chatStatusBreakdown,
+        topIntents,
+        customerSatisfaction,
+        emailTranscripts
+      }
+    });
+
   } catch (err) {
     console.error("Error in analytics controller:", err);
     res.status(500).json({ code: 500, message: "Error processing analytics request" });
   }
 };
 
-const getDashboardStats = async (req: Request, res: Response, user: any): Promise<any> => {
+
+
+const getDashboardStats = async (req: Request, user: any): Promise<any> => {
   try {
     const now = new Date();
     const currentPeriodStart = new Date(now.getFullYear(), now.getMonth(), 1); // Start of current month
@@ -161,21 +174,22 @@ const getDashboardStats = async (req: Request, res: Response, user: any): Promis
         trend: calculateTrend(completedChatsCurrent, completedChatsPrevious)
       }
     };
-
-    res.status(200).json({
-      code: 200,
-      data: stats,
-      message: "Dashboard stats retrieved successfully"
-    });
+       return stats;
+    // res.status(200).json({
+    //   code: 200,
+    //   data: stats,
+    //   message: "Dashboard stats retrieved successfully"
+    // });
+  
 
   } catch (err) {
     console.error("Error fetching dashboard stats:", err);
-    res.status(500).json({ code: 500, message: "Error fetching dashboard stats" });
+    // res.status(500).json({ code: 500, message: "Error fetching dashboard stats" });
   }
 };
 
 // Chat volume data function
-const getChatVolumeData = async (req: Request, res: Response, user: any): Promise<any> => {
+const getChatVolumeData = async (req: Request, user: any): Promise<any> => {
   try {
     const { startDate, endDate, period } = req.query;
 
@@ -258,20 +272,20 @@ const getChatVolumeData = async (req: Request, res: Response, user: any): Promis
         agent
       });
     }
-
-    res.status(200).json({
-      code: 200,
-      data: chatVolumeData,
-      message: "Chat volume data retrieved successfully"
-    });
+    return chatVolumeData;
+    // res.status(200).json({
+    //   code: 200,
+    //   data: chatVolumeData,
+    //   message: "Chat volume data retrieved successfully"
+    // });
 
   } catch (err) {
     console.error("Error fetching chat volume data:", err);
-    res.status(500).json({ code: 500, message: "Error fetching chat volume data" });
+    // res.status(500).json({ code: 500, message: "Error fetching chat volume data" });
   }
 };
 
-const getAIEffectivenessData = async (req: Request, res: Response, user: any): Promise<any> => {
+const getAIEffectivenessData = async (req: Request, user: any): Promise<any> => {
   try {
     const { period } = req.query;
 
@@ -341,19 +355,20 @@ const getAIEffectivenessData = async (req: Request, res: Response, user: any): P
       { name: "Ticket", value: failedToTicket }
     ];
 
-    res.status(200).json({
-      code: 200,
-      data: effectivenessData,
-      message: "AI effectiveness data retrieved successfully"
-    });
+    // res.status(200).json({
+    //   code: 200,
+    //   data: effectivenessData,
+    //   message: "AI effectiveness data retrieved successfully"
+    // });
+     return effectivenessData;
 
   } catch (err) {
     console.error("Error fetching AI effectiveness data:", err);
-    res.status(500).json({ code: 500, message: "Error fetching AI effectiveness data" });
+    // res.status(500).json({ code: 500, message: "Error fetching AI effectiveness data" });
   }
 };
 
-const getChatStatusBreakdown = async (req: Request, res: Response, user: any): Promise<any> => {
+const getChatStatusBreakdown = async (req: Request,user: any): Promise<any> => {
   try {
     const { startDate, endDate } = req.query;
 
@@ -402,19 +417,20 @@ const getChatStatusBreakdown = async (req: Request, res: Response, user: any): P
       { status: "Trashed", count: trashed },
     ];
 
-    res.status(200).json({
-      code: 200,
-      data: statusBreakdown,
-      message: "Chat status breakdown retrieved successfully"
-    });
+     return statusBreakdown;
+    // res.status(200).json({
+    //   code: 200,
+    //   data: statusBreakdown,
+    //   message: "Chat status breakdown retrieved successfully"
+    // });
 
   } catch (err) {
     console.error("Error fetching chat status breakdown:", err);
-    res.status(500).json({ code: 500, message: "Error fetching chat status breakdown" });
+    // res.status(500).json({ code: 500, message: "Error fetching chat status breakdown" });
   }
 };
 
-const getTopChatIntents = async (req: Request, res: Response, user: any): Promise<any> => {
+const getTopChatIntents = async (req: Request, user: any): Promise<any> => {
   try {
     const { limit = 10 } = req.query;
 
@@ -450,22 +466,26 @@ const getTopChatIntents = async (req: Request, res: Response, user: any): Promis
       percentage: totalIntents > 0 ? ((intent._count.intent / totalIntents) * 100).toFixed(1) : '0'
     }));
 
-    res.status(200).json({
-      code: 200,
-      data: {
-        intents: topIntents,
-        total: totalIntents
-      },
-      message: "Top chat intents retrieved successfully"
-    });
+    // res.status(200).json({
+    //   code: 200,
+    //   data: {
+    //     intents: topIntents,
+    //     total: totalIntents
+    //   },
+    //   message: "Top chat intents retrieved successfully"
+    // });
+    return {
+     intents: topIntents,
+     total: totalIntents
+    };
 
   } catch (err) {
     console.error("Error fetching top chat intents:", err);
-    res.status(500).json({ code: 500, message: "Error fetching top chat intents" });
+    // res.status(500).json({ code: 500, message: "Error fetching top chat intents" });
   }
 };
 
-const getCustomerSatisfactionSummary = async (req: Request, res: Response, user: any): Promise<any> => {
+const getCustomerSatisfactionSummary = async (req: Request, user: any): Promise<any> => {
   try {
     const { minScore } = req.query;
 
@@ -519,24 +539,29 @@ const getCustomerSatisfactionSummary = async (req: Request, res: Response, user:
       emoji: getEmoji(score.satisfactionScore)
     }));
 
-    res.status(200).json({
-      code: 200,
-      data: {
-        averageScore: avgSatisfaction._avg.satisfactionScore?.toFixed(1) || '0',
-        scoreBreakdown,
-        totalChats: scoreBreakdown.reduce((sum, item) => sum + item.count, 0)
-      },
-      message: "Customer satisfaction summary retrieved successfully"
-    });
+    // res.status(200).json({
+    //   code: 200,
+    //   data: {
+    //     averageScore: avgSatisfaction._avg.satisfactionScore?.toFixed(1) || '0',
+    //     scoreBreakdown,
+    //     totalChats: scoreBreakdown.reduce((sum, item) => sum + item.count, 0)
+    //   },
+    //   message: "Customer satisfaction summary retrieved successfully"
+    // });
+    return {
+    averageScore: avgSatisfaction._avg.satisfactionScore?.toFixed(1) || '0',
+    scoreBreakdown,
+    totalChats: scoreBreakdown.reduce((sum, item) => sum + item.count, 0)
+};
 
   } catch (err) {
     console.error("Error fetching customer satisfaction summary:", err);
-    res.status(500).json({ code: 500, message: "Error fetching customer satisfaction summary" });
+    // res.status(500).json({ code: 500, message: "Error fetching customer satisfaction summary" });
   }
 };
 
 
-const getEmailTranscriptCount = async (req: Request, res: Response, user: any): Promise<any> => {
+const getEmailTranscriptCount = async (req: Request, user: any): Promise<any> => {
   try {
     const { startDate, endDate, download } = req.query;
 
@@ -561,16 +586,19 @@ const getEmailTranscriptCount = async (req: Request, res: Response, user: any): 
       }
     });
 
-    res.status(200).json({
-      code: 200,
-      data: {
-        count: emailTranscripts,
-      },
-      message: "Email transcript count retrieved successfully"
-    });
+    // res.status(200).json({
+    //   code: 200,
+    //   data: {
+    //     count: emailTranscripts,
+    //   },
+    //   message: "Email transcript count retrieved successfully"
+    // });
+    return {
+     count: emailTranscripts 
+    };
 
   } catch (err) {
     console.error("Error fetching email transcript count:", err);
-    res.status(500).json({ code: 500, message: "Error fetching email transcript count" });
+    // res.status(500).json({ code: 500, message: "Error fetching email transcript count" });
   }
 }; 
