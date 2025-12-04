@@ -1287,14 +1287,14 @@
       chatInput.addEventListener("keydown", (event) => {
         if (event.key === "Enter" && !event.shiftKey) {
           event.preventDefault();
-        if (chatInput.value.length <= 100) {
+        if (chatInput.value.length <= 300) {
               sendMessageButton.click();
             }
         }
       });
      
       const updateSendState = () => {
-    if (chatInput.value.length > 100) {
+    if (chatInput.value.length > 300) {
     sendMessageButton.disabled = true;
     tooltip.style.display = "block";
     } else {
