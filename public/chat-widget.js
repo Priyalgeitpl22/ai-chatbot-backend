@@ -194,10 +194,10 @@
         .jooper-chat-messages::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
         .jooper-chat-messages::-webkit-scrollbar-thumb:hover { background: #b0b7c3; }
         .jooper-chat-messages { scrollbar-width: thin; scrollbar-color: #d1d5db #f5f5f5; }
-        .jooper-message { padding: 1px 14px; max-width: 80%; margin-top: 8px; display: inline-block; position: relative; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+        .jooper-message { padding: 1px 14px; max-width: 80%; margin-top: 8px; display: inline-block; position: relative; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); word-break:break-word; overflow-wrap:anywhere;white-space-pre-wrap;}
         .jooper-message.agent { background: #f5f5f5; color: #222; align-self: flex-start; }
         .jooper-message.user { background: ${this.options.iconColor
-        }; color: #fff; align-self: flex-end; }
+        }; color: #fff; align-self: flex-end; word-wrap: break-word; overflow-wrap: break-word;}
         .jooper-chat-input-container { display: flex; padding: 12px; gap: 8px; border-top: 1px solid #eee; background: #fafafa; }
         .jooper-chat-input-wrapper { display: flex; width: 100%; border: 1px solid #ddd; border-radius: 6px; background: #fff; }
         .jooper-chat-input { flex: 1; border: none; border-radius: 6px; padding: 10px; font-size: 15px; background: transparent; resize: none; }
