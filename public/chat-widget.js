@@ -161,6 +161,19 @@
         .jooper-chat-widget, .jooper-message, .jooper-suggestion, .jooper-contact-form, .jooper-chat-header, .jooper-chat-input, .jooper-form-title {
           font-family: ${fontFamily} !important;
         }
+          
+        #send-tooltip {
+        position: absolute;
+        bottom: 80px;
+        right: 10px;
+        color:#FF4D4D;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 10px;
+        display: none;
+        z-index: 9999;
+        }
+
         .jooper-chat-widget {
           font-family: ${fontFamily} !important;
           position: fixed;
@@ -1180,6 +1193,7 @@
                 .jooper-chat-input { scrollbar-width: none; -ms-overflow-style: none; }
               </style>
               <div class="jooper-chat-actions">
+                <span id="send-tooltip">Message is too long</span>
                 ${this.options.allowEmojis
           ? '<button id="emoji-picker"><img src="https://cdn-icons-png.flaticon.com/128/4989/4989500.png" alt="Emoji" width="20" height="20" /></button>'
           : ""
@@ -1267,15 +1281,29 @@
       const fileUploadInput = this.getElement("file-upload");
       const uploadButton = this.getElement("upload-button");
       const emojiPickerButton = this.getElement("emoji-picker");
+      const tooltip = this.getElement("send-tooltip");
 
       sendMessageButton.addEventListener("click", () => this.sendMessage());
       chatInput.addEventListener("keydown", (event) => {
         if (event.key === "Enter" && !event.shiftKey) {
           event.preventDefault();
-          sendMessageButton.click();
+        if (chatInput.value.length <= 100) {
+              sendMessageButton.click();
+            }
         }
       });
+     
+      const updateSendState = () => {
+    if (chatInput.value.length > 100) {
+    sendMessageButton.disabled = true;
+    tooltip.style.display = "block";
+    } else {
+    sendMessageButton.disabled = false;
+    tooltip.style.display = "none";
+    }
+   };
       chatInput.addEventListener('input', function () {
+          updateSendState();
         this.style.height = 'auto';
         this.style.height = Math.min(this.scrollHeight, 48) + 'px';
       });
