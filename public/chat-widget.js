@@ -161,6 +161,19 @@
         .jooper-chat-widget, .jooper-message, .jooper-suggestion, .jooper-contact-form, .jooper-chat-header, .jooper-chat-input, .jooper-form-title {
           font-family: ${fontFamily} !important;
         }
+          
+        #send-tooltip {
+        position: absolute;
+        bottom: 80px;
+        right: 10px;
+        color:#FF4D4D;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 10px;
+        display: none;
+        z-index: 9999;
+        }
+
         .jooper-chat-widget {
           font-family: ${fontFamily} !important;
           position: fixed;
@@ -194,10 +207,10 @@
         .jooper-chat-messages::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
         .jooper-chat-messages::-webkit-scrollbar-thumb:hover { background: #b0b7c3; }
         .jooper-chat-messages { scrollbar-width: thin; scrollbar-color: #d1d5db #f5f5f5; }
-        .jooper-message { padding: 1px 14px; max-width: 80%; margin-top: 8px; display: inline-block; position: relative; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+        .jooper-message { padding: 1px 14px; max-width: 80%; margin-top: 8px; display: inline-block; position: relative; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); word-break:break-word; overflow-wrap:anywhere;white-space-pre-wrap;}
         .jooper-message.agent { background: #f5f5f5; color: #222; align-self: flex-start; }
         .jooper-message.user { background: ${this.options.iconColor
-        }; color: #fff; align-self: flex-end; }
+        }; color: #fff; align-self: flex-end; word-wrap: break-word; overflow-wrap: break-word;}
         .jooper-chat-input-container { display: flex; padding: 12px; gap: 8px; border-top: 1px solid #eee; background: #fafafa; }
         .jooper-chat-input-wrapper { display: flex; width: 100%; border: 1px solid #ddd; border-radius: 6px; background: #fff; }
         .jooper-chat-input { flex: 1; border: none; border-radius: 6px; padding: 10px; font-size: 15px; background: transparent; resize: none; }
@@ -1180,6 +1193,7 @@
                 .jooper-chat-input { scrollbar-width: none; -ms-overflow-style: none; }
               </style>
               <div class="jooper-chat-actions">
+                <span id="send-tooltip">Message is too long</span>
                 ${this.options.allowEmojis
           ? '<button id="emoji-picker"><img src="https://cdn-icons-png.flaticon.com/128/4989/4989500.png" alt="Emoji" width="20" height="20" /></button>'
           : ""
@@ -1267,15 +1281,29 @@
       const fileUploadInput = this.getElement("file-upload");
       const uploadButton = this.getElement("upload-button");
       const emojiPickerButton = this.getElement("emoji-picker");
+      const tooltip = this.getElement("send-tooltip");
 
       sendMessageButton.addEventListener("click", () => this.sendMessage());
       chatInput.addEventListener("keydown", (event) => {
         if (event.key === "Enter" && !event.shiftKey) {
           event.preventDefault();
-          sendMessageButton.click();
+        if (chatInput.value.length <= 300) {
+              sendMessageButton.click();
+            }
         }
       });
+     
+      const updateSendState = () => {
+    if (chatInput.value.length > 300) {
+    sendMessageButton.disabled = true;
+    tooltip.style.display = "block";
+    } else {
+    sendMessageButton.disabled = false;
+    tooltip.style.display = "none";
+    }
+   };
       chatInput.addEventListener('input', function () {
+          updateSendState();
         this.style.height = 'auto';
         this.style.height = Math.min(this.scrollHeight, 48) + 'px';
       });
