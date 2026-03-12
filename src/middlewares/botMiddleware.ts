@@ -39,6 +39,7 @@ export const getAIResponse = async (message: string, orgId: string, aiOrgId: num
 export const sendOrganizationDetails = async (data: any, organisationId: any) => {
   try {
     let url = `${process.env.NODE_AI_URL}/api/organisation_database`;
+    console.log(url)
     const organization_details = { data };
     const requestBody = JSON.stringify({ organisation_data: organization_details, organisation_id: organisationId || null });
 

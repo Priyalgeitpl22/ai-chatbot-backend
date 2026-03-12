@@ -28,8 +28,24 @@ export const getAuthUser = async (req: Request, res: Response): Promise<void> =>
   if (user && user.profilePicture) {
     user.profilePicture = await getPresignedUrl(user.profilePicture);
   }
+
+  const organizationPlan = await prisma.organizationPlan.findFirst({
+    where: { orgId: user?.organization?.id, isActive: true },
+    include: {
+      plan: true,
+    },
+  });
+
+  const organizationAddOns = await prisma.organizationAddOn.findMany({
+    where: { orgId: user?.organization?.id, isActive: true },
+    include: {
+      addOn: true,
+    },
+  });
   res.status(200).json({
     user: user,
+    plan :organizationPlan,
+    addons: organizationAddOns,
     message: "User details fetched successfully",
     code: 200
   });

@@ -4,6 +4,7 @@ import { generateRandomToken } from '../utils/otp.utils';
 import multer from "multer";
 import { getPresignedUrl, uploadImageToS3 } from '../aws/imageUtils';
 import { sendActivationEmail } from '../utils/email.utils';
+import { OrganizationPlanService } from '../services/organization.plan.service';
 
 const prisma = new PrismaClient();
 const upload = multer({ storage: multer.memoryStorage() }).single("profilePicture");
@@ -16,6 +17,8 @@ export const createAgent = async (req: Request, res: Response): Promise<any> => 
             }
 
             const { email, fullName, orgId, aiOrgId, schedule, role, phone } = req.body;
+
+            // await OrganizationPlanService.assignFreePlan(orgId);
 
             if (!email ) {
                 return res.status(400).json({

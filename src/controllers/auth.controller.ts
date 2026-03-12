@@ -10,6 +10,7 @@ import { UserRoles } from '../enums';
 import { sendOrganizationDetails } from '../middlewares/botMiddleware';
 import speakeasy from 'speakeasy';
 import { decrypt } from '../utils/encryption.utils';
+import { OrganizationPlanService } from '../services/organization.plan.service';
 
 const prisma = new PrismaClient();
 const upload = multer({ storage: multer.memoryStorage() }).single("profilePicture");
@@ -45,6 +46,7 @@ export const register = async (req: Request, res: Response): Promise<any> => {
                 data: { aiOrgId: Number(aiOrganization.organisation_id), ...organizationData },
             });
 
+            await OrganizationPlanService.assignFreePlan(organization.id);
             const hashedPassword = await bcrypt.hash(password, 10);
             const otp = generateOtp();
 

@@ -8,6 +8,22 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum PlanCode {
+  FREE
+  STARTER
+  PROFESSIONAL
+  ENTERPRISE
+}
+
+enum AddOnCode {
+ EXTRA_USER_SESSIONS
+}
+
+enum BillingPeriod {
+  MONTHLY
+  YEARLY
+}
+
 model access_token {
   id               String    @id @default(uuid())
   created_datetime DateTime? @default(now())
@@ -42,6 +58,9 @@ model Organization {
   faqs              FAQ[]
   Notification      Notification[]
   users             User[]
+  plans                    OrganizationPlan[]
+addOns                   OrganizationAddOn[]
+reminderLogs             SubscriptionReminderLog[]
 }
 
 model User {
@@ -232,4 +251,145 @@ model DynamicData {
 enum EndedByType {
   user
   bot
+}
+
+
+model Plan {
+  id             Int      @id @default(autoincrement())
+  code           PlanCode @unique
+  name           String
+  description    String?
+  priceMonthly   Decimal?
+  priceYearly    Decimal?
+  isContactSales Boolean  @default(false)
+  // ===== Platform Limits =====
+  maxUserSessions     Int?   // number of chat sessions per month
+  maxDynamicData      Int?   // number of dynamic data APIs
+  chatHistoryLimit    Int?   // number of messages stored per thread
+  maxAgents           Int?   // number of agents (users)
+
+  // ===== Features =====
+  hasAnalytics        Boolean @default(false)
+  hasApiAccess        Boolean @default(false)
+  hasCustomBranding   Boolean @default(false)
+  hasPrioritySupport  Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subscriptions OrganizationPlan[]
+  addOns        PlanAddOn[]
+}
+
+model AddOn {
+  id                     Int       @id @default(autoincrement())
+  code                   AddOnCode @unique
+  name                   String
+  description            String?
+  priceMonthly           Decimal?
+  priceYearly            Decimal?
+  extraUserSessions Int? // e.g. 5000 sessions
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  plans         PlanAddOn[]
+  organizations OrganizationAddOn[]
+}
+
+model PlanAddOn {
+  planId  Int
+  addOnId Int
+
+  plan  Plan  @relation(fields: [planId], references: [id], onDelete: Cascade)
+  addOn AddOn @relation(fields: [addOnId], references: [id], onDelete: Cascade)
+
+  @@id([planId, addOnId])
+  @@index([planId])
+  @@index([addOnId])
+}
+
+model OrganizationAddOn {
+  orgId    String
+  addOnId  Int
+  isActive Boolean @default(false)
+
+  // Optional limit override (e.g. purchased 5000 verifications instead of add-on default)
+  limitOverride  Int?
+  // Usage this billing period (e.g. email verifications used)
+  usedThisPeriod Int       @default(0)
+  periodStartsAt DateTime?
+  periodEndsAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  addOn        AddOn        @relation(fields: [addOnId], references: [id], onDelete: Cascade)
+
+  @@id([orgId, addOnId])
+  @@index([orgId])
+  @@index([addOnId])
+}
+
+model OrganizationPlan {
+  id            Int           @id @default(autoincrement())
+  orgId         String
+  planId        Int
+  billingPeriod BillingPeriod @default(MONTHLY)
+
+  isActive Boolean   @default(false)
+  startsAt DateTime  @default(now())
+  endsAt   DateTime?
+
+  // Stripe/Payment info
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+
+  reminder15Sent Boolean @default(false)
+  reminder10Sent Boolean @default(false)
+  reminder5Sent  Boolean @default(false)
+  reminder1Sent  Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  plan         Plan         @relation(fields: [planId], references: [id])
+
+  @@unique([orgId, isActive]) // Only one active plan per org
+  @@index([orgId])
+}
+
+model SubscriptionReminderLog {
+  id             Int      @id @default(autoincrement())
+  orgId          String
+  orgPlanId      Int
+  reminderStage  Int // 15, 10, 5, or 1
+  sentAt         DateTime @default(now())
+  recipientEmail String
+  success        Boolean
+  errorMessage   String?
+
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+  @@index([orgPlanId])
+}
+
+model Configuration {
+  id                 Int        @id @default(autoincrement())
+  uuid               String     @unique @default(uuid())
+  configurationKey   String     @unique
+  configurationValue Json?
+  status             Boolean    @default(true)
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+  createdById        String?
+  updatedById        String?
+  deletedAt          DateTime?
+  isDeleted          Boolean    @default(false)
+
+  @@index([isDeleted])
+  @@index([configurationKey])
+  @@index([status])
 }
