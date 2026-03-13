@@ -18,6 +18,7 @@ import emailReplyRoutes from "./emailReply.routes";
 import planRoutes from "./plan.routes";
 import addOnRoutes from "./add-on.routes";
 import organizationPlanRoutes from "./organization.plan.routes";
+import subscriptionRequestsRoutes from './subscription.request.routes'
 
 const router = Router();
 
@@ -39,5 +40,6 @@ router.use("/email-reply", emailReplyRoutes);
 router.use("/plan", planRoutes);
 router.use("/add-on", addOnRoutes);
 router.use("/org-plan", organizationPlanRoutes);
+router.use("/subscription-requests", authMiddleware, subscriptionRequestsRoutes);
 
 export default router;
