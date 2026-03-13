@@ -1,12 +1,13 @@
 import { Request, Response, NextFunction } from "express";
 import { PrismaClient } from "@prisma/client";
 import { getUsageAndLimits } from "../services/organization.susbcription.usage.service";
+import { AuthenticatedRequest } from "../types/request.types";
 
 
 const prisma = new PrismaClient();
 
 export async function enforcePlanLimits(
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
 ) {

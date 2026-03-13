@@ -1,6 +1,7 @@
 export enum UserRoles {
     ADMIN = 'Admin',
-    AGENT = 'Agent'
+    AGENT = 'Agent',
+    SUPER_ADMIN='SUPER_ADMIN'
 }
 
 export enum ThreadType {
@@ -9,3 +10,15 @@ export enum ThreadType {
     ALL_OPEN = "all_open",
     BOT = "bot"
 }
+
+export enum PlanCode {
+    FREE = "FREE",
+    STARTER = "STARTER",
+    PROFESSIONAL = "PROFESSIONAL",
+    ENTERPRISE = "ENTERPRISE",
+  }
+  
+  export enum BillingPeriod {
+    MONTHLY = "MONTHLY",
+    YEARLY = "YEARLY",
+  }

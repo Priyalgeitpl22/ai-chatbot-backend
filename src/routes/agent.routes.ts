@@ -5,8 +5,7 @@ import { enforcePlanLimits } from "../middlewares/enforcePlanLimits";
 const router = Router();
 
 router.get("/org/:orgId", getAgents);
-router.post("/", createAgent);
-// router.post("/",enforcePlanLimits, createAgent);
+router.post("/",enforcePlanLimits, createAgent);
 router.get("/:id", getAgent);
 router.put("/", updateAgent);
 router.delete("/:id", softDeleteAgent)

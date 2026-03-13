@@ -4,7 +4,8 @@ import { generateRandomToken } from '../utils/otp.utils';
 import multer from "multer";
 import { getPresignedUrl, uploadImageToS3 } from '../aws/imageUtils';
 import { sendActivationEmail } from '../utils/email.utils';
-import { OrganizationPlanService } from '../services/organization.plan.service';
+import { incrementAgentCount } from '../services/organization.susbcription.usage.service';
+
 
 const prisma = new PrismaClient();
 const upload = multer({ storage: multer.memoryStorage() }).single("profilePicture");
@@ -18,7 +19,6 @@ export const createAgent = async (req: Request, res: Response): Promise<any> => 
 
             const { email, fullName, orgId, aiOrgId, schedule, role, phone } = req.body;
 
-            // await OrganizationPlanService.assignFreePlan(orgId);
 
             if (!email ) {
                 return res.status(400).json({
@@ -60,6 +60,8 @@ export const createAgent = async (req: Request, res: Response): Promise<any> => 
             if(profilePictureUrl) {
                 profilePicture = await getPresignedUrl(profilePictureUrl);
             }
+
+            await incrementAgentCount(orgId);
 
             const activationLink = `${process.env.FRONTEND_URL}/activate-account?token=${tokenData.token}&email=${agent.email}`;
             await sendActivationEmail(agent.email, agent.fullName, activationLink);

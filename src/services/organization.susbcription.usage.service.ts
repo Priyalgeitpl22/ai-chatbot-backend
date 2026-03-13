@@ -3,17 +3,26 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 /**
- * Increment chat sessions usage
+ * Increment chat session usage (Thread created)
  */
 export async function incrementUserSessions(orgId: string): Promise<void> {
   try {
+
     const activePlan = await prisma.organizationPlan.findFirst({
       where: { orgId, isActive: true },
     });
 
     if (!activePlan) return;
 
-    // Sessions counted from Thread table
+    await prisma.organizationPlan.update({
+      where: { id: activePlan.id },
+      data: {
+        userSessionsUsed: {
+          increment: 1,
+        },
+      },
+    });
+
   } catch (error) {
     console.error(
       `[OrganizationUsageService] Failed to increment sessions for org ${orgId}:`,
@@ -23,15 +32,25 @@ export async function incrementUserSessions(orgId: string): Promise<void> {
 }
 
 /**
- * Increment dynamic data usage
+ * Increment dynamic API usage
  */
 export async function incrementDynamicData(orgId: string): Promise<void> {
   try {
+
     const activePlan = await prisma.organizationPlan.findFirst({
       where: { orgId, isActive: true },
     });
 
     if (!activePlan) return;
+
+    await prisma.organizationPlan.update({
+      where: { id: activePlan.id },
+      data: {
+        dynamicDataUsed: {
+          increment: 1,
+        },
+      },
+    });
 
   } catch (error) {
     console.error(
@@ -42,19 +61,58 @@ export async function incrementDynamicData(orgId: string): Promise<void> {
 }
 
 /**
- * Increment agents count
+ * Increment agent count
  */
 export async function incrementAgentCount(orgId: string): Promise<void> {
   try {
+
     const activePlan = await prisma.organizationPlan.findFirst({
       where: { orgId, isActive: true },
     });
 
     if (!activePlan) return;
 
+    await prisma.organizationPlan.update({
+      where: { id: activePlan.id },
+      data: {
+        agentsUsed: {
+          increment: 1,
+        },
+      },
+    });
+
   } catch (error) {
     console.error(
       `[OrganizationUsageService] Failed to increment agent count for org ${orgId}:`,
+      error
+    );
+  }
+}
+
+/**
+ * Increment message usage
+ */
+export async function incrementMessages(orgId: string): Promise<void> {
+  try {
+
+    const activePlan = await prisma.organizationPlan.findFirst({
+      where: { orgId, isActive: true },
+    });
+
+    if (!activePlan) return;
+
+    await prisma.organizationPlan.update({
+      where: { id: activePlan.id },
+      data: {
+        messagesUsed: {
+          increment: 1,
+        },
+      },
+    });
+
+  } catch (error) {
+    console.error(
+      `[OrganizationUsageService] Failed to increment messages for org ${orgId}:`,
       error
     );
   }
@@ -69,7 +127,7 @@ export async function getUsageAndLimits(orgId: string) {
     where: { orgId, isActive: true },
     include: {
       plan: true,
-      organization: true   // ✅ FIX
+      organization: true,
     },
   });
 
@@ -86,20 +144,20 @@ export async function getUsageAndLimits(orgId: string) {
 
     prisma.thread.count({
       where: {
-        aiOrgId: aiOrgId ?? undefined
-      }
+        aiOrgId: aiOrgId ?? undefined,
+      },
     }),
 
     prisma.dynamicData.count({
-      where: { orgId }
+      where: { orgId },
     }),
 
     prisma.user.count({
       where: {
         orgId,
-        deletedAt: null
-      }
-    })
+        deletedAt: null,
+      },
+    }),
 
   ]);
 

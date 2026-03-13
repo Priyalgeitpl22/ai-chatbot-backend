@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { Request, Response, NextFunction } from "express";
 import { decrypt } from "../utils/encryption.utils";
+import { UserRoles } from "../enums";
 
 const prisma = new PrismaClient();
 
@@ -75,4 +76,13 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
   } catch (error) {
     return res.status(403).json({ code: 403, message: "Authentication failed" });
   }
+};
+
+
+export const verifySuperAdmin = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
+  const user = (req as any).user;
+  if (!user || (user.role !== UserRoles.ADMIN && user.role !== UserRoles.SUPER_ADMIN)) {
+    return res.status(401).json({ code: 401, message: "Unauthorized" });
+  }
+  next();  
 };

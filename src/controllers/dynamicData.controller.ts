@@ -211,7 +211,7 @@ export const createDynamicData = async (req: any, res: Response) => {
         },
       }); 
 
-      // await incrementDynamicData(prompt.orgId);
+      await incrementDynamicData(prompt.orgId);
       prompts[i] = dynamicData;
     }
 
