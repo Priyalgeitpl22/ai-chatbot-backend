@@ -1,9 +1,11 @@
 import { Router } from "express";
 import { getAllThreads, searchThreads ,assignThread ,markThreadReaded,createChatOrTicket} from "../controllers/thread.controller";
 import { authMiddleware } from "../middlewares/authMiddleware";
+import { enforcePlanLimits } from "../middlewares/enforcePlanLimits";
 
 const router = Router();
-router.post("/chat", createChatOrTicket);
+router.post("/chat",createChatOrTicket);
+// router.post("/chat", enforcePlanLimits,createChatOrTicket);
 router.get("/", getAllThreads);
 router.get("/search", authMiddleware,searchThreads);
 router.patch("/:threadId/assign",assignThread)

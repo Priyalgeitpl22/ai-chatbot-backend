@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import axios from 'axios';
+import { getUsageAndLimits, incrementDynamicData } from '../services/organization.susbcription.usage.service';
 
 const prisma = new PrismaClient();
 
@@ -129,6 +130,16 @@ export const createDynamicData = async (req: any, res: Response) => {
       return;
     }
 
+    const usage = await getUsageAndLimits(prompts[0].orgId);
+
+    if (!usage) {
+      res.status(400).json({
+        message: "No active subscription found.",
+        data: null
+      });
+      return;
+    }
+   
     for (const prompt of prompts) {
       if (!prompt.prompt || !prompt.apiCurl || !prompt.orgId) {
         res.status(400).json({ 
@@ -199,6 +210,8 @@ export const createDynamicData = async (req: any, res: Response) => {
           },
         },
       }); 
+
+      // await incrementDynamicData(prompt.orgId);
       prompts[i] = dynamicData;
     }
 

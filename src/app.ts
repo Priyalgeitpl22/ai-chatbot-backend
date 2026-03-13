@@ -4,6 +4,7 @@ import cors from "cors";
 const path = require("path");
 import dotenv from 'dotenv';
 import { CronJob } from "cron";
+import { startSubscriptionReminderCron, startSubscriptionDowngradeCron } from "./jobs/cron";
 import { deleteThread } from "./controllers/thread.controller";
 dotenv.config();
 
@@ -17,6 +18,9 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.static("public"));
 app.use("/api", routes);
+
+startSubscriptionReminderCron();
+startSubscriptionDowngradeCron();
 app.use(express.static(path.join(__dirname, "public")));
 app.get("/", (req, res) => {
   res.send("Welcome to the AI Chatbot!!");

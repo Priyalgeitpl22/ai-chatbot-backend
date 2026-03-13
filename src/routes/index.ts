@@ -15,6 +15,9 @@ import notificatioRoute from "../routes/notification.routes";
 import chatSummary from "./chatSummary.routes";
 import dynamicDataRoutes from "./dynamicData.routes";;
 import emailReplyRoutes from "./emailReply.routes";
+import planRoutes from "./plan.routes";
+import addOnRoutes from "./add-on.routes";
+import organizationPlanRoutes from "./organization.plan.routes";
 
 const router = Router();
 
@@ -33,5 +36,8 @@ router.use("/chat/analyze",chatSummary)
 router.use("/analytics", analyticsRoutes);
 router.use("/dynamic-data", dynamicDataRoutes);
 router.use("/email-reply", emailReplyRoutes);
+router.use("/plan", planRoutes);
+router.use("/add-on", addOnRoutes);
+router.use("/org-plan", organizationPlanRoutes);
 
 export default router;
