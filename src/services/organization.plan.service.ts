@@ -198,7 +198,8 @@ export class OrganizationPlanService {
     billingPeriod: string,
     totalCost: number
   ) {
-    if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
+
+    if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN" && user.role !== "Admin") {
       return { code: 401, message: "Only admin can change the subscription plan" };
     }
 

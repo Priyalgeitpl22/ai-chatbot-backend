@@ -6,6 +6,7 @@ import SMTPTransport from "nodemailer/lib/smtp-transport";
 import { SocksProxyAgent } from "socks-proxy-agent";
 import { sendEmailToVerify } from '../utils/email.utils';
 import { webcrawl } from '../utils/webcrawler.util';
+import { OrganizationPlanService } from '../services/organization.plan.service';
 
 
 const prisma = new PrismaClient();
@@ -24,6 +25,8 @@ export const saveOrganization = async (req: Request, res: Response): Promise<any
     const organization = await prisma.organization.create({
       data: { name, domain, country, phone }
     });
+
+    await OrganizationPlanService.assignFreePlan(organization.id);
 
     res.status(200).json({
       code: 200,

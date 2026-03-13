@@ -1,5 +1,6 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 import { Request, Response } from "express";
+import { getUsageAndLimits, incrementUserSessions } from "../services/organization.susbcription.usage.service";
 
 const prisma = new PrismaClient();
 
@@ -207,6 +208,23 @@ export const createChatOrTicket = async (req: any, res: any) => {
     if (!org) {
       return res.status(404).json({ code: 404, message: "Organization not found" });
     }
+
+    // const usage = await getUsageAndLimits(orgId);
+
+    // if (!usage) {
+    //   return res.status(403).json({
+    //     code: 403,
+    //     message: "No active subscription"
+    //   });
+    // }
+
+    // if (usage.usage.sessionsUsed >= (usage.limits.maxUserSessions ?? 0)) {
+    //   return res.status(403).json({
+    //     code: 403,
+    //     message: "Chat session limit reached for your plan"
+    //   });
+    // }
+
 
     if (!org.aiEnabled) {
       const onlineAgents = await prisma.user.findMany({
