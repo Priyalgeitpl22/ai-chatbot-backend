@@ -24,6 +24,12 @@ enum BillingPeriod {
   YEARLY
 }
 
+enum SubscriptionRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model access_token {
   id               String    @id @default(uuid())
   created_datetime DateTime? @default(now())
@@ -59,8 +65,9 @@ model Organization {
   Notification      Notification[]
   users             User[]
   plans                    OrganizationPlan[]
-addOns                   OrganizationAddOn[]
-reminderLogs             SubscriptionReminderLog[]
+  addOns                   OrganizationAddOn[]
+  reminderLogs             SubscriptionReminderLog[]
+  SubscriptionRequest SubscriptionRequest[]
 }
 
 model User {
@@ -88,6 +95,7 @@ model User {
   twoFactorAuth          TwoFactorAuth?
   organization           Organization   @relation(fields: [orgId], references: [id])
   userSettings           UserSettings?
+  SubscriptionRequest    SubscriptionRequest[]
 }
 
 model TwoFactorAuth {
@@ -253,7 +261,6 @@ enum EndedByType {
   bot
 }
 
-
 model Plan {
   id             Int      @id @default(autoincrement())
   code           PlanCode @unique
@@ -263,10 +270,10 @@ model Plan {
   priceYearly    Decimal?
   isContactSales Boolean  @default(false)
   // ===== Platform Limits =====
-  maxUserSessions     Int?   // number of chat sessions per month
-  maxDynamicData      Int?   // number of dynamic data APIs
-  chatHistoryLimit    Int?   // number of messages stored per thread
-  maxAgents           Int?   // number of agents (users)
+  maxUserSessions  Int? // number of chat sessions per month
+  maxDynamicData   Int? // number of dynamic data APIs
+  chatHistoryLimit Int? // number of messages stored per thread
+  maxAgents        Int? // number of agents (users)
 
   // ===== Features =====
   hasAnalytics        Boolean @default(false)
@@ -276,8 +283,9 @@ model Plan {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  subscriptions OrganizationPlan[]
-  addOns        PlanAddOn[]
+  subscriptions       OrganizationPlan[]
+  addOns              PlanAddOn[]
+  SubscriptionRequest SubscriptionRequest[]
 }
 
 model AddOn {
@@ -292,8 +300,9 @@ model AddOn {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  plans         PlanAddOn[]
-  organizations OrganizationAddOn[]
+  plans                    PlanAddOn[]
+  organizations            OrganizationAddOn[]
+  SubscriptionRequestAddOn SubscriptionRequestAddOn[]
 }
 
 model PlanAddOn {
@@ -341,6 +350,11 @@ model OrganizationPlan {
   startsAt DateTime  @default(now())
   endsAt   DateTime?
 
+  userSessionsUsed Int @default(0)
+  dynamicDataUsed  Int @default(0)
+  agentsUsed       Int @default(0)
+  messagesUsed     Int @default(0)
+
   // Stripe/Payment info
   stripeCustomerId     String?
   stripeSubscriptionId String?
@@ -377,19 +391,57 @@ model SubscriptionReminderLog {
 }
 
 model Configuration {
-  id                 Int        @id @default(autoincrement())
-  uuid               String     @unique @default(uuid())
-  configurationKey   String     @unique
+  id                 Int       @id @default(autoincrement())
+  uuid               String    @unique @default(uuid())
+  configurationKey   String    @unique
   configurationValue Json?
-  status             Boolean    @default(true)
-  createdAt          DateTime   @default(now())
-  updatedAt          DateTime   @updatedAt
+  status             Boolean   @default(true)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
   createdById        String?
   updatedById        String?
   deletedAt          DateTime?
-  isDeleted          Boolean    @default(false)
+  isDeleted          Boolean   @default(false)
 
   @@index([isDeleted])
   @@index([configurationKey])
   @@index([status])
+}
+
+model SubscriptionRequest {
+  id             String                    @id @default(uuid())
+  orgId          String
+  planId         Int
+  requestedById  String?
+  billingPeriod  BillingPeriod             @default(MONTHLY)
+  requesteeName  String
+  requesteeEmail String
+  requesteePhone String?
+  requesteeAddress String?
+  totalCost      Decimal?
+  status         SubscriptionRequestStatus @default(PENDING)
+  approvedAt     DateTime?
+  approvedBy     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization               @relation(fields: [orgId], references: [id])
+  plan         Plan                       @relation(fields: [planId], references: [id])
+  requestedBy  User?                      @relation(fields: [requestedById], references: [id])
+  addOns       SubscriptionRequestAddOn[]
+
+  @@index([orgId])
+}
+
+model SubscriptionRequestAddOn {
+  id                    String @id @default(uuid())
+  subscriptionRequestId String
+  addOnId               Int
+  limitOverride         Int?
+
+  subscriptionRequest SubscriptionRequest @relation(fields: [subscriptionRequestId], references: [id])
+  addOn               AddOn               @relation(fields: [addOnId], references: [id])
+
+  @@unique([subscriptionRequestId, addOnId])
 }
