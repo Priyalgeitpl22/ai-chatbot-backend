@@ -14,9 +14,6 @@ CREATE TYPE "AddOnCode" AS ENUM ('EMAIL_VERIFICATION');
 CREATE TYPE "BillingPeriod" AS ENUM ('MONTHLY', 'YEARLY');
 
 -- DropForeignKey
-ALTER TABLE "ApiData" DROP CONSTRAINT "ApiData_orgId_fkey";
-
--- DropForeignKey
 ALTER TABLE "DynamicData" DROP CONSTRAINT "DynamicData_orgId_fkey";
 
 -- AlterTable
@@ -26,9 +23,6 @@ ALTER COLUMN "createdAt" DROP NOT NULL,
 ALTER COLUMN "createdAt" SET DATA TYPE TIMESTAMP(6),
 ALTER COLUMN "updatedAt" DROP NOT NULL,
 ALTER COLUMN "updatedAt" SET DATA TYPE TIMESTAMP(6);
-
--- DropTable
-DROP TABLE "ApiData";
 
 -- CreateTable
 CREATE TABLE "Plan" (
