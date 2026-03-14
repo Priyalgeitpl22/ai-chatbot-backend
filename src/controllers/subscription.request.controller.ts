@@ -2,10 +2,11 @@ import { UserRoles } from "../enums";
 
 import { Request, Response } from "express";
 import { SubscriptionRequestsService } from "../services/subscription.request.service";
+import { AuthenticatedRequest } from "../types/request.types";
 
-export const getAllSubscriptionRequests = async (req: Request, res: Response): Promise<void> => {
+export const getAllSubscriptionRequests = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
-        const user = req.user;
+        const user = req.user as any;
         if (!user || (user.role !== UserRoles.ADMIN && user.role !== UserRoles.SUPER_ADMIN)) {
             res.status(401).json({ code: 401, message: "Unauthorized" });
             return;
@@ -19,7 +20,7 @@ export const getAllSubscriptionRequests = async (req: Request, res: Response): P
     }
 };
 
-export const approveSubscriptionRequest = async (req: Request, res: Response): Promise<void> => {
+export const approveSubscriptionRequest = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
         const { id } = req.params as any;
         const user = req.user;

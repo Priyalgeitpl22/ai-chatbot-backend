@@ -1,8 +1,10 @@
-import { AddOnCode, PlanCode, PrismaClient } from "@prisma/client";
+import { AddOnCode, PlanCode, PrismaClient, SubscriptionRequest, SubscriptionRequestStatus } from "@prisma/client";
 import { subscriptionActivationEmail } from "./subscription.email.service";
 import * as OrganizationAddOnService from "./organization.add-on.service"
 import { formatCurrentPlanData } from "./plan.service";
 import { ConfigurationService } from "./consfiguration.service";
+import { BillingPeriod, UserRoles } from "../enums";
+import { SubscriptionRequestsService } from "./subscription.request.service";
 
 
 const prisma = new PrismaClient();
@@ -191,20 +193,27 @@ export class OrganizationPlanService {
     };
   }
 
+
   static async contactSales(
-    user: { orgId: string; email: string; role: string },
+    user: { id: string; orgId: string; email: string; role: string },
     planCode: string,
     addOns: { name: string; code: string }[],
-    billingPeriod: string,
-    totalCost: number
+    billingPeriod: BillingPeriod,
+    totalCost: number,
+    requestee: { name: string; email: string; phone?: string; address?: string }
   ) {
+    let subscriptionRequest: SubscriptionRequest | null = null;
 
-    if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN" && user.role !== "Admin") {
+    if (user.role !== UserRoles.ADMIN && user.role !== UserRoles.SUPER_ADMIN) {
       return { code: 401, message: "Only admin can change the subscription plan" };
     }
 
     if (!planCode || !billingPeriod || !addOns || totalCost == null) {
       return { code: 400, message: "All fields (planCode, billingPeriod, addOns, totalCost) are required" };
+    }
+
+    if (!requestee?.name || !requestee?.email) {
+      return { code: 400, message: "Requestee name and email are required" };
     }
 
     const plan = await prisma.plan.findUnique({ where: { code: planCode as PlanCode } });
@@ -218,39 +227,44 @@ export class OrganizationPlanService {
     if (!organization) return { code: 400, message: "Organization not found" };
     if (!plan) return { code: 400, message: "Plan not found" };
 
-    await subscriptionActivationEmail(planCode, billingPeriod, addOns, organization.name || "", user.email || "", totalCost);
+    await subscriptionActivationEmail(planCode, billingPeriod, addOns, organization.name || "", requestee.email, totalCost);
 
-    const existingPlan = await prisma.organizationPlan.findFirst({ where: { orgId: user.orgId } });
-    if (existingPlan) {
-      await prisma.organizationPlan.update({
-        where: { id: existingPlan.id },
-        data: { planId: plan.id, billingPeriod: billingPeriod as "MONTHLY" | "YEARLY", isActive: false },
-      });
+    const existingRequest = await prisma.subscriptionRequest.findFirst({
+      where: { orgId: user.orgId, status: { in: [SubscriptionRequestStatus.PENDING] } }
+    })
+
+    if (existingRequest && existingRequest.status === SubscriptionRequestStatus.APPROVED) {
+      return { code: 200, message: "Subscription request already approved" };
+    }
+
+    if (existingRequest && existingRequest.status === SubscriptionRequestStatus.PENDING) {
+      return { code: 200, message: "Subscription request already pending" };
+    }
+
+    if (existingRequest) {
+      subscriptionRequest = await SubscriptionRequestsService.updateSubscriptionRequest(
+        existingRequest.id,
+        {
+          status: SubscriptionRequestStatus.PENDING,
+          approvedAt: null,
+          approvedBy: null,
+          requestedById: user.id,
+          requesteeName: requestee.name,
+          requesteeEmail: requestee.email,
+          requesteePhone: requestee.phone,
+          requesteeAddress: requestee.address,
+          totalCost: totalCost
+        });
+      if (!subscriptionRequest) return { code: 500, message: "Failed to update subscription request", data: null };
+
+      return { code: 200, message: "Email sent successfully", data: subscriptionRequest };
     } else {
-      await prisma.organizationPlan.create({
-        data: { orgId: user.orgId, planId: plan.id, billingPeriod: billingPeriod as "MONTHLY" | "YEARLY", isActive: false },
-      });
+      const result = await SubscriptionRequestsService.createSubscriptionRequest(user.orgId, planCode as PlanCode, addOnsData.map((a) => a.code as AddOnCode), billingPeriod, requestee, totalCost, user.id);
+      if (!result) return { code: 500, message: "Failed to create subscription request", data: null };
+      subscriptionRequest = result as unknown as SubscriptionRequest;
     }
 
-    // Deactivate all existing org add-ons (pending subscription change)
-    const existingAddOns = await prisma.organizationAddOn.findMany({ where: { orgId: user.orgId } });
-    for (const orgAddOn of existingAddOns) {
-      await prisma.organizationAddOn.update({
-        where: { orgId_addOnId: { orgId: user.orgId, addOnId: orgAddOn.addOnId } },
-        data: { isActive: false },
-      });
-    }
-
-    // Upsert requested add-ons as inactive (to be activated after payment)
-    for (const addOn of addOnsData) {
-      await prisma.organizationAddOn.upsert({
-        where: { orgId_addOnId: { orgId: user.orgId, addOnId: addOn.id } },
-        create: { orgId: user.orgId, addOnId: addOn.id, isActive: false },
-        update: { isActive: false },
-      });
-    }
-
-    return { code: 200, message: "Email sent successfully" };
+    return { code: 200, message: "Email sent successfully", data: subscriptionRequest };
   }
 
   static async assignFreePlanToAllOrgs() {
@@ -336,7 +350,7 @@ export class OrganizationPlanService {
       OrganizationAddOnService.getOrgAddOns(orgId),
     ]);
     const addOns = orgAddOnsResult.code === 200 ? (orgAddOnsResult.data ?? []) : [];
-    const subscriptionList = subscriptions.map((s : any) => ({
+    const subscriptionList = subscriptions.map((s: any) => ({
       id: s.id,
       orgId: s.orgId,
       planId: s.planId,
