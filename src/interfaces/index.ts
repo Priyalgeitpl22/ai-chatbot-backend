@@ -1,4 +1,4 @@
-import { AddOnCode, PlanCode } from "@prisma/client";
+import { AddOnCode, BillingPeriod, PlanCode, SubscriptionRequestStatus } from "@prisma/client";
 
 export interface AIResponse {
   connect_agent: any;
@@ -57,4 +57,24 @@ export interface CurrentPlanData {
     periodStartsAt: Date | null;
     periodEndsAt: Date | null;
   }[];
+
+  subscriptionRequest: {
+    id: string;
+    orgId: string;
+    planCode: PlanCode;
+    planId: number;
+    billingPeriod: BillingPeriod;
+    requestedById: string | null;
+    totalCost: number;
+    status: SubscriptionRequestStatus;
+    approvedAt: Date | null;
+    approvedBy: string | null;
+    name: string;
+  } | null;
+  requestedAddOns: {
+    id: number;
+    addOnId: number;
+    subscriptionRequestId: string;
+  }[] | null;
+
 }
