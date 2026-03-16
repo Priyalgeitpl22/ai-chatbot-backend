@@ -62,7 +62,10 @@ export class SubscriptionRequestsService {
         if (addOnsData.length !== addOns.length) return { code: 400, message: "Invalid add-ons: one or more add-on codes not found" };
 
         const subscriptionRequest = await prisma.subscriptionRequest.create({
-            data: { orgId, planId: plan.id, billingPeriod, requesteeName: requestee.name, requesteeEmail: requestee.email, requesteePhone: requestee.phone, requesteeAddress: requestee.address, totalCost, ...(requestedById && { requestedById }) },
+            data: {
+                orgId, planId: plan.id, billingPeriod,
+                addOns: { create: addOnsData.map((a) => ({ addOnId: a.id })) },
+                requesteeName: requestee.name, requesteeEmail: requestee.email, requesteePhone: requestee.phone, requesteeAddress: requestee.address, totalCost, ...(requestedById && { requestedById }) },
             include: {
                 plan: true,
                 requestedBy: true,
@@ -73,7 +76,7 @@ export class SubscriptionRequestsService {
         return subscriptionRequest;
     }
 
-    static async updateSubscriptionRequest(subscriptionRequestId: string, data: any): Promise<SubscriptionRequest | null> {
+    static async updateSubscriptionRequest(subscriptionRequestId: string, data: any, addOns: AddOnCode[]): Promise<SubscriptionRequest | null> {
         try {
             const existingSubscriptionRequest = await prisma.subscriptionRequest.findUnique({ where: { id: subscriptionRequestId } });
             if (!existingSubscriptionRequest) return null;
