@@ -42,10 +42,43 @@ export const getAuthUser = async (req: Request, res: Response): Promise<void> =>
       addOn: true,
     },
   });
+
+  const addOnDetails: any = organizationAddOns.map((addOn) => ({
+    addOnId: addOn.addOn.id,
+    code: addOn.addOn.code,
+    name: addOn.addOn.name,
+    isActive: addOn.isActive,
+    extraUserSessions: addOn.addOn.extraUserSessions,
+    usedThisPeriod: addOn.usedThisPeriod,
+    periodStartsAt: addOn.periodStartsAt,
+    periodEndsAt: addOn.periodEndsAt,
+    priceMonthly: addOn.addOn.priceMonthly,
+    priceYearly: addOn.addOn.priceYearly,
+  }));
+
+  const planDetails = {
+    id: organizationPlan?.id,
+    isActive: organizationPlan?.isActive,
+    planId: organizationPlan?.plan.id,
+    planCode: organizationPlan?.plan.code,
+    planName: organizationPlan?.plan.name,
+    priceMonthly: organizationPlan?.plan.priceMonthly,
+    priceYearly: organizationPlan?.plan.priceYearly,
+    periodStartsAt: organizationPlan?.startsAt,
+    periodEndsAt: organizationPlan?.endsAt,
+    maxUserSessions: organizationPlan?.plan.maxUserSessions,
+    maxDynamicData: organizationPlan?.plan.maxDynamicData,
+    chatHistoryLimit: organizationPlan?.plan.chatHistoryLimit,
+    maxAgents: organizationPlan?.plan.maxAgents,
+    userSessionsUsed: organizationPlan?.userSessionsUsed,
+    dynamicDataUsed: organizationPlan?.dynamicDataUsed,
+    agentsUsed: organizationPlan?.agentsUsed,
+    messagesUsed: organizationPlan?.messagesUsed,
+    addOns: addOnDetails,
+  };
   res.status(200).json({
     user: user,
-    plan :organizationPlan,
-    addons: organizationAddOns,
+    plan :planDetails,
     message: "User details fetched successfully",
     code: 200
   });
