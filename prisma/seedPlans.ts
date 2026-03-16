@@ -18,7 +18,7 @@ async function main() {
       maxUserSessions: 1000,
       maxDynamicData: 2,
       chatHistoryLimit: 50,
-      maxAgents: 1,
+      maxAgents: 3,
 
       hasApiAccess: false,
       hasCustomBranding: false,
@@ -45,31 +45,12 @@ async function main() {
       hasPrioritySupport: false,
     },
     {
-      code: PlanCode.PROFESSIONAL,
-      name: "Professional",
-      description: "Advanced AI chatbot automation for growing teams.",
-
-      priceMonthly: 79,
-      priceYearly: 790,
-      isContactSales: false,
-
-      maxUserSessions: 50000,
-      maxDynamicData: 50,
-      chatHistoryLimit: 500,
-      maxAgents: 10,
-
-      hasApiAccess: true,
-      hasCustomBranding: true,
-      hasAnalytics: true,
-      hasPrioritySupport: false,
-    },
-    {
       code: PlanCode.ENTERPRISE,
       name: "Enterprise",
       description: "Custom AI automation solution for large organizations.",
 
-      priceMonthly: null,
-      priceYearly: null,
+      priceMonthly: 79,
+      priceYearly: 790,
       isContactSales: true,
 
       maxUserSessions: null,
@@ -154,7 +135,7 @@ async function main() {
 }
 
 main()
-  .catch((e:any) => {
+  .catch((e: any) => {
     console.error(e);
     process.exit(1);
   })
