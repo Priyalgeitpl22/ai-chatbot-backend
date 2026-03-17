@@ -88,156 +88,40 @@ export const sendEmailToVerify = async (transporterOptions: any) => {
 
     await sendMailViaZepto(mailOptions);
 }
-// export const sendEmailChat = async (email: string, text: string, subject: string, emailConfig: any, cc?: string | string[],
-//   bcc?: string | string[], threadId?: string) => {
-//   let user = emailConfig.user ? emailConfig.user : process.env.EMAIL_USER;
-//   let pass = emailConfig.pass ? emailConfig.pass : process.env.EMAIL_PASSWORD;
 
-//   const transporter = nodemailer.createTransport({
-//     host: emailConfig.host,
-//     port: Number(emailConfig.port),
-//     secure: emailConfig.secure.toString().toLowerCase() === "true",
-//     auth: {
-//       user: user,
-//       pass: pass,
-//     },
-//   });
-
-//   const headers: any = {};
-//   if (threadId) {
-//     headers['X-Thread-ID'] = threadId;
-//     headers['Message-ID'] = `thread-${threadId}@${emailConfig.host}`;
-//     headers['Reply-To'] = emailConfig.user;
-//   }
-
-//   const mailOptions = {
-//     from: emailConfig.user,
-//     to: email,
-//     subject: threadId ? `[ThreadID: ${threadId}] ${subject}` : subject,
-//     cc: cc && cc.length ? cc : undefined,
-//     bcc: bcc && bcc.length ? bcc : undefined,
-//     html: text,
-//     headers: headers,
-//   };
-//   await sendMailViaZepto(mailOptions);
-// }
-export const sendEmailChat = async (
-    email: string,
-    text: string,
-    subject: string,
-    emailConfig: any,
-    cc?: string | string[],
-    bcc?: string | string[],
-    threadId?: string
-) => {
-    try {
-        /**
-         * 🟢 CASE 1: SMTP (dynamic)
-         */
-        if (emailConfig?.type === "SMTP") {
-            const transporter = nodemailer.createTransport({
-                host: emailConfig.host,
-                port: Number(emailConfig.port),
-                secure:
-                    emailConfig.secure?.toString().toLowerCase() === "true",
-                auth: {
-                    user: emailConfig.user,
-                    pass: emailConfig.pass,
-                },
-            });
-
-            const headers: any = {};
-            if (threadId) {
-                headers["X-Thread-ID"] = threadId;
-                headers["Message-ID"] = `thread-${threadId}@${emailConfig.host}`;
-                headers["Reply-To"] = emailConfig.user;
-            }
-
-            await transporter.sendMail({
-                from: emailConfig.user,
-                to: email,
-                subject: threadId
-                    ? `[ThreadID: ${threadId}] ${subject}`
-                    : subject,
-                cc,
-                bcc,
-                html: text,
-                headers,
-            });
-
-            console.log("✅ Sent via SMTP:", emailConfig.user);
-            return;
-        }
-
-        /**
-         * 🟣 CASE 2: ZeptoMail (dynamic)
-         */
-        if (emailConfig?.type === "ZEPTO") {
-            if (!emailConfig.token || !emailConfig.fromEmail) {
-                throw new Error("ZEPTO config missing token or fromEmail");
-            }
-
-            const client = new SendMailClient({
-                url:
-                    emailConfig.url ||
-                    "https://api.zeptomail.in/v1.1/email",
-                token: emailConfig.token,
-            });
-
-            await client.sendMail({
-                from: {
-                    address: emailConfig.fromEmail,
-                    name: emailConfig.fromName || emailConfig.fromEmail,
-                },
-                to: [
-                    {
-                        email_address: {
-                            address: email,
-                            name: ''
-                        },
-                    },
-                ],
-                subject: threadId
-                    ? `[ThreadID: ${threadId}] ${subject}`
-                    : subject,
-                htmlbody: text,
-            });
-
-            console.log("✅ Sent via Zepto:", emailConfig.fromEmail);
-            return;
-        }
-
-        /**
-         * 🔴 CASE 3: Fallback (global Zepto)
-         */
-        const client = new SendMailClient({
-            url: process.env.ZEPTOMAIL_API_URL!,
-            token: process.env.ZEPTOMAIL_TOKEN!,
-        });
-
-        await client.sendMail({
-            from: {
-                address: process.env.ZEPTOMAIL_FROM_EMAIL!,
-                name: ''
-            },
-            to: [
-                {
-                    email_address: {
-                        address: email,
-                        name: ''
-                    },
-                },
-            ],
-            subject,
-            htmlbody: text,
-        });
-
-        console.log("✅ Sent via default Zepto");
-    } catch (error) {
-        console.error("❌ Email send failed:", error);
-        throw error;
+export const sendEmailChat = async (email: string, text: string, subject: string, emailConfig: any, cc?: string | string[],
+    bcc?: string | string[], threadId?: string) => {
+    let user = emailConfig.user ? emailConfig.user : process.env.EMAIL_USER;
+    let pass = emailConfig.pass ? emailConfig.pass : process.env.EMAIL_PASSWORD;
+  
+    const transporter = nodemailer.createTransport({
+      host: emailConfig.host,
+      port: Number(emailConfig.port),
+      secure: emailConfig.secure.toString().toLowerCase() === "true",
+      auth: {
+        user: user,
+        pass: pass,
+      },
+    });
+  
+    const headers: any = {};
+    if (threadId) {
+      headers['X-Thread-ID'] = threadId;
+      headers['Message-ID'] = `thread-${threadId}@${emailConfig.host}`;
+      headers['Reply-To'] = emailConfig.user;
     }
-};
+  
+    const mailOptions = {
+      from: emailConfig.user,
+      to: email,
+      subject: threadId ? `[ThreadID: ${threadId}] ${subject}` : subject,
+      cc: cc && cc.length ? cc : undefined,
+      bcc: bcc && bcc.length ? bcc : undefined,
+      html: text,
+      headers: headers,
+    };
+    await transporter.sendMail(mailOptions);
+  }
 
 export const sendChatTranscriptEmail = async ({
     email,
