@@ -2,10 +2,11 @@ import { Server } from "socket.io";
 import { PrismaClient } from "@prisma/client";
 import { getAIResponse } from "../middlewares/botMiddleware";
 import { createTask, ReadedTask } from "../controllers/task.controller";
-import { sendEmailChat } from '../utils/email.utils'
+
 import { getPresignedUrl } from "../aws/imageUtils";
 import { moveToTrash } from "../controllers/thread.controller";
 import { endChatFunction } from "../controllers/chatConfig.controller";
+import { sendEmailChat } from "../services/transactional.email.service";
 
 
 const prisma = new PrismaClient();

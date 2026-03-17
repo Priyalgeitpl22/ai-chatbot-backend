@@ -4,9 +4,11 @@ import { sendOrganizationDetails } from '../middlewares/botMiddleware';
 import nodemailer from "nodemailer";
 import SMTPTransport from "nodemailer/lib/smtp-transport";
 import { SocksProxyAgent } from "socks-proxy-agent";
-import { sendEmailToVerify } from '../utils/email.utils';
+
 import { webcrawl } from '../utils/webcrawler.util';
 import { OrganizationPlanService } from '../services/organization.plan.service';
+import { sendEmailToVerify } from '../services/transactional.email.service';
+import { isZeptoMailConfigured, sendZeptoMail } from '../services/zepto.mail.service';
 
 
 const prisma = new PrismaClient();
@@ -139,6 +141,30 @@ export const verifyEmail = async (req: Request, res: Response): Promise<any> => 
     if (!orgId) {
       return res.status(400).json({ code: 400, message: "Organization ID is required." });
     }
+
+    if (isZeptoMailConfigured()) {
+      try {
+        await sendZeptoMail({
+          from: {
+            address: process.env.ZEPTOMAIL_FROM_EMAIL!,
+          },
+          to: {
+            address: process.env.ZEPTOMAIL_FROM_EMAIL!,
+          },
+          subject: "ZeptoMail Verification",
+          textbody: "ZeptoMail is working successfully ✅",
+        });
+
+        return res.status(200).json({
+          code: 200,
+          message: "Email configuration verified successfully (ZeptoMail).",
+        });
+      } catch (error) {
+        console.error("ZeptoMail failed, fallback to SMTP:", error);
+        // fallback continues
+      }
+    }
+
 
     if (!host || !port || !user || !pass) {
       return res.status(400).json({ code: 400, message: "SMTP configuration is incomplete." });

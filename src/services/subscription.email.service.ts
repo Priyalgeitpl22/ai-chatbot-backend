@@ -1,4 +1,5 @@
-import { transporter } from "../utils/email.utils";
+import { sendMailViaZepto } from "./transactional.email.service";
+
 
 
 
@@ -10,13 +11,17 @@ export async function subscriptionActivationEmail(
   contactEmail: string = "",
   totalCost: number
 ) {
-  const adminEmail = process.env.ADMIN_EMAIL || "muskan.t@goldeneagle.ai";
-  const emailUser = process.env.EMAIL_USER;
-  if (!emailUser) {
-    throw new Error("ADMIN_EMAIL and ADMIN_NAME environment variables are required");
-  }
+  const adminEmail =
+    process.env.ADMIN_EMAIL || "muskan.t@goldeneagle.ai";
+
+  const fromEmail = process.env.ZEPTOMAIL_FROM_EMAIL!;
+  console.log(fromEmail,"fromEmail")
+
+  if (!fromEmail) {
+    throw new Error("ZEPTOMAIL_FROM_EMAIL is required");
+}
   const mailOptions = {
-    from: emailUser,
+    from: fromEmail,
     to: adminEmail,
     subject: "Subscription Activation Request",
     html: `
@@ -31,7 +36,7 @@ export async function subscriptionActivationEmail(
       <p>Your Support Team</p>
     `,
   }
-  await transporter.sendMail(mailOptions);
+  await sendMailViaZepto(mailOptions);
 }
 
 export async function subscriptionExpiryReminderEmail(
@@ -113,7 +118,7 @@ export async function subscriptionExpiryReminderEmail(
   `;
 
   try {
-    await transporter.sendMail({
+    await sendMailViaZepto({
       from: emailUser,
       to: toEmail,
       subject,
