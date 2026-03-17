@@ -37,7 +37,7 @@ const formatPlanResponse = (plan: Plan, orgPlan?: OrganizationPlan) => ({
     : null,
 });
 
-export const formatCurrentPlanData = (currentPlan: any, addOns: any[]): CurrentPlanData => {
+export const formatCurrentPlanData = (currentPlan: any, addOns: any[],requestedAddOns: any[], subscriptionRequest: any): CurrentPlanData => {
   return {
     basePlan: {
       id: currentPlan.planId,
@@ -55,6 +55,7 @@ export const formatCurrentPlanData = (currentPlan: any, addOns: any[]): CurrentP
 
       startsAt: currentPlan.startsAt,
       endsAt: currentPlan.endsAt,
+    
     },
 
     addOns:
@@ -71,6 +72,8 @@ export const formatCurrentPlanData = (currentPlan: any, addOns: any[]): CurrentP
           periodEndsAt: addOn.periodEndsAt,
         };
       }) || [],
+      subscriptionRequest,
+      requestedAddOns
   };
 };
 

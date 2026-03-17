@@ -184,8 +184,10 @@ export class OrganizationPlanService {
 
     const orgAddOnsResult = await OrganizationAddOnService.getOrgAddOns(orgId);
     const addOns = orgAddOnsResult.code === 200 ? (orgAddOnsResult.data ?? []) : [];
+    const subscriptionRequests = await prisma.subscriptionRequest.findMany({ where: { orgId }, include: { addOns: { include: { addOn: true } } } });
+    const requestedAddOns = subscriptionRequests.map((subscriptionRequest) => subscriptionRequest.addOns.map((addOn) => addOn.addOn.code as AddOnCode));
 
-    const currentPlanData = formatCurrentPlanData(currentPlan, addOns);
+    const currentPlanData = formatCurrentPlanData(currentPlan, addOns, requestedAddOns, subscriptionRequests[0]);
     return {
       code: 200,
       message: "Current plan fetched successfully",
@@ -237,7 +239,8 @@ export class OrganizationPlanService {
       return { code: 200, message: "Subscription request already approved" };
     }
 
-    if (existingRequest && existingRequest.status === SubscriptionRequestStatus.PENDING) {
+
+    if (existingRequest && existingRequest.status === SubscriptionRequestStatus.PENDING && Number(existingRequest.planId) === Number(plan.id)) {
       return { code: 200, message: "Subscription request already pending" };
     }
 
@@ -245,6 +248,8 @@ export class OrganizationPlanService {
       subscriptionRequest = await SubscriptionRequestsService.updateSubscriptionRequest(
         existingRequest.id,
         {
+          planId: plan.id,
+          billingPeriod: billingPeriod,
           status: SubscriptionRequestStatus.PENDING,
           approvedAt: null,
           approvedBy: null,
@@ -254,7 +259,7 @@ export class OrganizationPlanService {
           requesteePhone: requestee.phone,
           requesteeAddress: requestee.address,
           totalCost: totalCost
-        });
+        }, addOnsData.map((a) => a.code as AddOnCode));
       if (!subscriptionRequest) return { code: 500, message: "Failed to update subscription request", data: null };
 
       return { code: 200, message: "Email sent successfully", data: subscriptionRequest };
@@ -464,7 +469,7 @@ export class OrganizationPlanService {
         }
       });
 
-      return { code: 200, message: "Plan activated successfully", data: newPlan };
+      return { code: 200, message: "Plan activated successfully", data: {...newPlan , offer }};
     } catch (error: any) {
       console.error(error);
       return { code: 500, message: "Failed to activate plan with offer token", error: error.message };

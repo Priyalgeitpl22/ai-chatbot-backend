@@ -14,6 +14,11 @@ export async function enforcePlanLimits(
   try {
     const user: any = req.user;
     const orgId = user?.orgId;
+    // const role = user?.role;
+
+    // if (role === "SUPER_ADMIN") {
+    //   return next();
+    // }
 
     if (!orgId) {
       res.status(400).json({
