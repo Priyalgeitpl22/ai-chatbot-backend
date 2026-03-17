@@ -174,12 +174,12 @@ export class OrganizationPlanService {
 
   static async getCurrentPlan(orgId: string) {
     const currentPlan = await prisma.organizationPlan.findFirst({
-      where: { orgId },
+      where: { orgId ,isActive : true},
       include: { plan: true },
     });
 
     if (!currentPlan) {
-      return { code: 400, message: "No plan assigned to this organization" };
+      return { code: 200, message: "No plan assigned to this organization",data : [] };
     }
 
     const orgAddOnsResult = await OrganizationAddOnService.getOrgAddOns(orgId);
@@ -384,6 +384,9 @@ export class OrganizationPlanService {
   static async getAllSubscriptionsPerOrganization() {
     const [subscriptions, allOrgAddOns] = await Promise.all([
       prisma.organizationPlan.findMany({
+        where:{
+          isActive : true
+        },
         include: { plan: true, organization: { select: { id: true, name: true } } },
         orderBy: [{ orgId: "asc" }, { startsAt: "desc" }],
       }),

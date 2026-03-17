@@ -24,7 +24,7 @@ export class AddOnService {
         : addOnSelect,
     });
     if (!addOns?.length) {
-      return { code: 404, message: "No add-ons found" };
+      return { code: 200, message: "No add-ons found" , data : []};
     }
     return { code: 200, message: "Add-ons fetched successfully", data: addOns };
   }

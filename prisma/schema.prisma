@@ -289,12 +289,14 @@ model Plan {
   hasApiAccess       Boolean  @default(false)
   hasCustomBranding  Boolean  @default(false)
   hasPrioritySupport Boolean  @default(false)
+  hasAiChat          Boolean  @default(false) 
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
-  subscriptions       OrganizationPlan[]
-  addOns              PlanAddOn[]
-  SubscriptionRequest SubscriptionRequest[]
+  subscriptions             OrganizationPlan[]
+  addOns                    PlanAddOn[]
+  SubscriptionRequest       SubscriptionRequest[]
+  SubscriptionCancelRequest SubscriptionCancelRequest[]
 }
 
 model AddOn {
@@ -309,9 +311,10 @@ model AddOn {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  plans                    PlanAddOn[]
-  organizations            OrganizationAddOn[]
-  SubscriptionRequestAddOn SubscriptionRequestAddOn[]
+  plans                          PlanAddOn[]
+  organizations                  OrganizationAddOn[]
+  SubscriptionRequestAddOn       SubscriptionRequestAddOn[]
+  SubscriptionCancelRequestAddOn SubscriptionCancelRequestAddOn[]
 }
 
 model PlanAddOn {
@@ -457,31 +460,58 @@ model SubscriptionRequestAddOn {
 }
 
 model SubscriptionCancelRequest {
-  id String @id @default(uuid())
-
-  orgId     String
-  orgPlanId Int
-
+  id            String  @id @default(uuid()) @db.Uuid
+  orgId         String
+  planId        Int
   requestedById String?
+
+  billingPeriod BillingPeriod @default(MONTHLY)
+
+  // 👇 same as subscription request
+  requesteeName    String
+  requesteeEmail   String
+  requesteePhone   String?
+  requesteeAddress String?
 
   reason   String?
   feedback String?
 
+  totalCost Decimal? // optional (good for tracking refunds)
+
   status CancelRequestStatus @default(PENDING)
 
-  approvedById String?
-  approvedAt   DateTime?
+  approvedAt DateTime?
+  approvedBy String?
 
   cancelledAt DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  organization     Organization     @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  organizationPlan OrganizationPlan @relation(fields: [orgPlanId], references: [id], onDelete: Cascade)
-  requestedBy      User?            @relation(fields: [requestedById], references: [id], onDelete: SetNull)
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  plan         Plan         @relation(fields: [planId], references: [id])
+  requestedBy  User?        @relation(fields: [requestedById], references: [id], onDelete: SetNull)
+
+  addOns             SubscriptionCancelRequestAddOn[]
+  organizationPlan   OrganizationPlan?                @relation(fields: [organizationPlanId], references: [id])
+  organizationPlanId Int?
 
   @@index([orgId])
-  @@index([orgPlanId])
+  @@index([planId])
   @@index([status])
+  @@index([requestedById])
+}
+
+model SubscriptionCancelRequestAddOn {
+  id                          String @id @default(uuid()) @db.Uuid
+  subscriptionCancelRequestId String @db.Uuid
+  addOnId                     Int
+  limitOverride               Int?
+
+  subscriptionCancelRequest SubscriptionCancelRequest @relation(fields: [subscriptionCancelRequestId], references: [id], onDelete: Cascade)
+  addOn                     AddOn                     @relation(fields: [addOnId], references: [id], onDelete: Cascade)
+
+  @@unique([subscriptionCancelRequestId, addOnId])
+  @@index([subscriptionCancelRequestId])
+  @@index([addOnId])
 }

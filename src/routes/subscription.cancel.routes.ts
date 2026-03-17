@@ -1,12 +1,13 @@
 import { Router } from "express";
-import { SubscriptionCancelController } from "../controllers/subscription.cancel.controller";
+
+import { verifySuperAdmin } from "../middlewares/authMiddleware";
+import { createCancelRequest, approveCancelRequest, getAllCancelRequests } from "../controllers/subscription.cancel.controller";
+
 
 const router = Router();
-const controller = new SubscriptionCancelController();
 
-router.post("/", controller.createCancelRequest.bind(controller));
-router.post("/:id/approve", controller.approveCancelRequest.bind(controller));
-router.post("/:id/reject", controller.rejectCancelRequest.bind(controller));
-router.get("/", controller.getCancelRequests.bind(controller));
+router.post("/", createCancelRequest);
+router.get("/", verifySuperAdmin, getAllCancelRequests);
+router.post("/:id/approve", verifySuperAdmin, approveCancelRequest);
 
 export default router;

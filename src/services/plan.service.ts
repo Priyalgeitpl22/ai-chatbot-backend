@@ -82,7 +82,7 @@ export class PlanService {
     const plans = await prisma.plan.findMany({ orderBy: { id: "asc" } });
 
     if (!plans || plans.length === 0) {
-      return { code: 404, message: "No plans found" };
+      return { code: 200, message: "No plans found",data : [] };
     }
 
     return { code: 200, message: "Plans fetched successfully", data: plans.map((plan) => formatPlanResponse(plan)) };
