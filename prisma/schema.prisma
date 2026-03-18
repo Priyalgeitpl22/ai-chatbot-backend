@@ -30,6 +30,12 @@ enum SubscriptionRequestStatus {
   REJECTED
 }
 
+enum AddOnRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum CancelRequestStatus {
   PENDING
   APPROVED
@@ -76,6 +82,7 @@ model Organization {
   reminderLogs              SubscriptionReminderLog[]
   SubscriptionRequest       SubscriptionRequest[]
   SubscriptionCancelRequest SubscriptionCancelRequest[]
+  AddOnRequest              AddOnRequest[]
 }
 
 model User {
@@ -105,6 +112,7 @@ model User {
   userSettings              UserSettings?
   SubscriptionRequest       SubscriptionRequest[]
   SubscriptionCancelRequest SubscriptionCancelRequest[]
+  AddOnRequest              AddOnRequest[]
 }
 
 model TwoFactorAuth {
@@ -289,7 +297,7 @@ model Plan {
   hasApiAccess       Boolean  @default(false)
   hasCustomBranding  Boolean  @default(false)
   hasPrioritySupport Boolean  @default(false)
-  hasAiChat          Boolean  @default(false) 
+  hasAiChat          Boolean  @default(false)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
@@ -311,10 +319,9 @@ model AddOn {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  plans                          PlanAddOn[]
-  organizations                  OrganizationAddOn[]
-  SubscriptionRequestAddOn       SubscriptionRequestAddOn[]
-  SubscriptionCancelRequestAddOn SubscriptionCancelRequestAddOn[]
+  plans         PlanAddOn[]
+  organizations OrganizationAddOn[]
+  AddOnRequest  AddOnRequest[]
 }
 
 model PlanAddOn {
@@ -439,24 +446,11 @@ model SubscriptionRequest {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  organization Organization               @relation(fields: [orgId], references: [id])
-  plan         Plan                       @relation(fields: [planId], references: [id])
-  requestedBy  User?                      @relation(fields: [requestedById], references: [id])
-  addOns       SubscriptionRequestAddOn[]
+  organization Organization @relation(fields: [orgId], references: [id])
+  plan         Plan         @relation(fields: [planId], references: [id])
+  requestedBy  User?        @relation(fields: [requestedById], references: [id])
 
   @@index([orgId])
-}
-
-model SubscriptionRequestAddOn {
-  id                    String @id @default(uuid())
-  subscriptionRequestId String
-  addOnId               Int
-  limitOverride         Int?
-
-  subscriptionRequest SubscriptionRequest @relation(fields: [subscriptionRequestId], references: [id])
-  addOn               AddOn               @relation(fields: [addOnId], references: [id])
-
-  @@unique([subscriptionRequestId, addOnId])
 }
 
 model SubscriptionCancelRequest {
@@ -492,8 +486,7 @@ model SubscriptionCancelRequest {
   plan         Plan         @relation(fields: [planId], references: [id])
   requestedBy  User?        @relation(fields: [requestedById], references: [id], onDelete: SetNull)
 
-  addOns             SubscriptionCancelRequestAddOn[]
-  organizationPlan   OrganizationPlan?                @relation(fields: [organizationPlanId], references: [id])
+  organizationPlan   OrganizationPlan? @relation(fields: [organizationPlanId], references: [id])
   organizationPlanId Int?
 
   @@index([orgId])
@@ -502,16 +495,37 @@ model SubscriptionCancelRequest {
   @@index([requestedById])
 }
 
-model SubscriptionCancelRequestAddOn {
-  id                          String @id @default(uuid()) @db.Uuid
-  subscriptionCancelRequestId String @db.Uuid
-  addOnId                     Int
-  limitOverride               Int?
+model AddOnRequest {
+  id            String  @id @default(uuid())
+  orgId         String
+  addOnId       Int
+  requestedById String?
 
-  subscriptionCancelRequest SubscriptionCancelRequest @relation(fields: [subscriptionCancelRequestId], references: [id], onDelete: Cascade)
-  addOn                     AddOn                     @relation(fields: [addOnId], references: [id], onDelete: Cascade)
+  requesteeName    String
+  requesteeEmail   String
+  requesteePhone   String?
+  requesteeAddress String?
 
-  @@unique([subscriptionCancelRequestId, addOnId])
-  @@index([subscriptionCancelRequestId])
+  reason   String?
+
+  billingPeriod BillingPeriod @default(MONTHLY)
+
+  limitOverride Int? // e.g. custom sessions
+  totalCost     Decimal?
+
+  status AddOnRequestStatus @default(PENDING)
+
+  approvedAt DateTime?
+  approvedBy String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  addOn        AddOn        @relation(fields: [addOnId], references: [id])
+  requestedBy  User?        @relation(fields: [requestedById], references: [id], onDelete: SetNull)
+
+  @@index([orgId])
   @@index([addOnId])
+  @@index([status])
 }

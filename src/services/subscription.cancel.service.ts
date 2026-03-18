@@ -152,18 +152,10 @@ export class SubscriptionCancelService {
           totalCost,
           reason,
           feedback,
-
-          addOns: {
-            deleteMany: {}, // 🔥 reset old addons
-            create: addOnsData.map((a) => ({
-              addOnId: a.id
-            }))
-          }
         },
         include: {
           plan: true,
           requestedBy: true,
-          addOns: true
         }
       });
 
@@ -187,18 +179,11 @@ export class SubscriptionCancelService {
         requesteeAddress: requestee.address,
         totalCost,
         reason,
-        feedback,
-
-        addOns: {
-          create: addOnsData.map((a) => ({
-            addOnId: a.id
-          }))
-        }
+        feedback
       },
       include: {
         plan: true,
         requestedBy: true,
-        addOns: true
       }
     });
 

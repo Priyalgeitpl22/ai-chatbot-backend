@@ -30,7 +30,7 @@ export const getCurrentPlan = async (req: AuthenticatedRequest, res: Response): 
 export const contactSales = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const user = req.user as any 
-    const { planCode, billingPeriod, addOns, totalCost, name, email, phone, address } = req.body;
+    const { planCode, billingPeriod, totalCost, name, email, phone, address } = req.body;
 
     if (!user || (user.role !== UserRoles.ADMIN && user.role !== UserRoles.SUPER_ADMIN)) {
       res.status(401).json({ code: 401, message: "Only admin can contact sales" });
@@ -40,7 +40,6 @@ export const contactSales = async (req: AuthenticatedRequest, res: Response): Pr
     const response = await OrganizationPlanService.contactSales(
       { id: user.id, orgId: user.orgId, email: user.email, role: user.role },
       planCode,
-      addOns,
       billingPeriod,
       totalCost,
       {

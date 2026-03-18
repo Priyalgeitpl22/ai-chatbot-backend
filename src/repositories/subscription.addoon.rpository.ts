@@ -1,10 +1,9 @@
-import { PrismaClient, SubscriptionCancelRequest } from "@prisma/client";
-
+import { PrismaClient, AddOnRequest } from "@prisma/client";
 const prisma = new PrismaClient();
 
-export const getAllCancelRequests = async (): Promise<SubscriptionCancelRequest[]> => {
+export const getAllAddOnRequests = async (): Promise<AddOnRequest[]> => {
     try {
-        return await prisma.subscriptionCancelRequest.findMany({
+        return await prisma.addOnRequest.findMany({
             orderBy: {
                 createdAt: "desc",
             },
@@ -20,6 +19,6 @@ export const getAllCancelRequests = async (): Promise<SubscriptionCancelRequest[
 
     } catch (error) {
         console.error(error);
-        throw new Error("Failed to fetch cancel requests");
+        throw new Error("Failed to fetch add-on requests");
     }
 };
