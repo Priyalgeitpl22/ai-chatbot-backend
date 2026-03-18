@@ -10,9 +10,6 @@ export const getAllAddOnRequests = async (): Promise<AddOnRequest[]> => {
             include: {
                 requestedBy: {
                     select: { id: true, email: true, fullName: true }
-                },
-                plan: {
-                    select: { id: true, name: true, code: true }
                 }
             }
         });
