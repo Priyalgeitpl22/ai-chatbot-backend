@@ -37,7 +37,7 @@ const formatPlanResponse = (plan: Plan, orgPlan?: OrganizationPlan) => ({
     : null,
 });
 
-export const formatCurrentPlanData = (currentPlan: any, addOns: any[],requestedAddOns: any[], subscriptionRequest: any): CurrentPlanData => {
+export const formatCurrentPlanData = (currentPlan: any, subscriptionRequest: any): CurrentPlanData => {
   return {
     basePlan: {
       id: currentPlan.planId,
@@ -58,22 +58,8 @@ export const formatCurrentPlanData = (currentPlan: any, addOns: any[],requestedA
     
     },
 
-    addOns:
-      addOns.map((addOn: any) => {
-        return {
-          id: addOn.addOn.id,
-          code: addOn.addOn.code as AddOnCode,
-          name: addOn.addOn.name,
-
-          extraUserSessions: addOn.addOn.extraUserSessions,
-
-          usedThisPeriod: addOn.usedThisPeriod,
-          periodStartsAt: addOn.periodStartsAt,
-          periodEndsAt: addOn.periodEndsAt,
-        };
-      }) || [],
+  
       subscriptionRequest,
-      requestedAddOns
   };
 };
 
@@ -82,7 +68,7 @@ export class PlanService {
     const plans = await prisma.plan.findMany({ orderBy: { id: "asc" } });
 
     if (!plans || plans.length === 0) {
-      return { code: 404, message: "No plans found" };
+      return { code: 200, message: "No plans found",data : [] };
     }
 
     return { code: 200, message: "Plans fetched successfully", data: plans.map((plan) => formatPlanResponse(plan)) };

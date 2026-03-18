@@ -43,21 +43,6 @@ export interface CurrentPlanData {
     endsAt: Date | null;
   };
 
-  addOns: {
-    id: number;
-    code: AddOnCode;
-    name: string;
-
-    // Addon benefit
-    extraUserSessions: number | null;
-
-    // Usage
-    usedThisPeriod: number;
-
-    periodStartsAt: Date | null;
-    periodEndsAt: Date | null;
-  }[];
-
   subscriptionRequest: {
     id: string;
     orgId: string;
@@ -71,10 +56,6 @@ export interface CurrentPlanData {
     approvedBy: string | null;
     name: string;
   } | null;
-  requestedAddOns: {
-    id: number;
-    addOnId: number;
-    subscriptionRequestId: string;
-  }[] | null;
+
 
 }

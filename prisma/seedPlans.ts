@@ -9,48 +9,70 @@ async function main() {
     {
       code: PlanCode.FREE,
       name: "Free",
-      description: "Perfect for testing the AI chatbot.",
+      description: "Basic plan for testing",
 
       priceMonthly: null,
       priceYearly: null,
       isContactSales: false,
 
-      maxUserSessions: 1000,
+      maxUserSessions: 100,
       maxDynamicData: 2,
       chatHistoryLimit: 50,
-      maxAgents: 3,
+      maxAgents: 2,
 
       hasApiAccess: false,
       hasCustomBranding: false,
       hasAnalytics: false,
       hasPrioritySupport: false,
+      hasAiChat: false,
     },
     {
       code: PlanCode.STARTER,
       name: "Starter",
-      description: "For small businesses using AI chatbot automation.",
+      description: "For small teams",
 
-      priceMonthly: 29,
-      priceYearly: 290,
+      priceMonthly: 10,
+      priceYearly: 100,
       isContactSales: false,
 
-      maxUserSessions: 10000,
+      maxUserSessions: null, // unlimited
       maxDynamicData: 10,
       chatHistoryLimit: 200,
-      maxAgents: 3,
+      maxAgents: 10,
 
-      hasApiAccess: true,
+      hasApiAccess: false,
       hasCustomBranding: false,
       hasAnalytics: false,
       hasPrioritySupport: false,
+      hasAiChat: false,
+    },
+    {
+      code: PlanCode.PROFESSIONAL,
+      name: "Professional",
+      description: "Growing businesses",
+
+      priceMonthly: 30,
+      priceYearly: 300,
+      isContactSales: false,
+
+      maxUserSessions: null,
+      maxDynamicData: 20,
+      chatHistoryLimit: 500,
+      maxAgents: 30,
+
+      hasApiAccess: false,
+      hasCustomBranding: true,
+      hasAnalytics: true,
+      hasPrioritySupport: false,
+      hasAiChat: true,
     },
     {
       code: PlanCode.ENTERPRISE,
       name: "Enterprise",
-      description: "Custom AI automation solution for large organizations.",
+      description: "Custom solution for large orgs",
 
-      priceMonthly: 79,
-      priceYearly: 790,
+      priceMonthly: null,
+      priceYearly: null,
       isContactSales: true,
 
       maxUserSessions: null,
@@ -62,6 +84,7 @@ async function main() {
       hasCustomBranding: true,
       hasAnalytics: true,
       hasPrioritySupport: true,
+      hasAiChat: true,
     },
   ];
 
@@ -73,11 +96,9 @@ async function main() {
     });
   }
 
-  console.log("✅ Seeded AI chatbot plans");
+  console.log("✅ Seeded Plans");
 
-
-
-  // 2️⃣ Seed Add-on
+  // 2️⃣ Add-on
   const addOns = [
     {
       code: AddOnCode.EXTRA_USER_SESSIONS,
@@ -86,7 +107,6 @@ async function main() {
 
       priceMonthly: 10,
       priceYearly: 100,
-
       extraUserSessions: 5000,
     },
   ];
@@ -99,9 +119,7 @@ async function main() {
     });
   }
 
-  console.log("✅ Seeded add-ons");
-
-
+  console.log("✅ Seeded Add-ons");
 
   // 3️⃣ Link Add-ons to Plans
   const allPlans = await prisma.plan.findMany({
@@ -135,7 +153,7 @@ async function main() {
 }
 
 main()
-  .catch((e: any) => {
+  .catch((e) => {
     console.error(e);
     process.exit(1);
   })

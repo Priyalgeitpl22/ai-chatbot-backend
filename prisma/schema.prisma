@@ -16,7 +16,7 @@ enum PlanCode {
 }
 
 enum AddOnCode {
- EXTRA_USER_SESSIONS
+  EXTRA_USER_SESSIONS
 }
 
 enum BillingPeriod {
@@ -28,6 +28,19 @@ enum SubscriptionRequestStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+enum AddOnRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum CancelRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
 }
 
 model access_token {
@@ -42,60 +55,64 @@ model access_token {
 }
 
 model Organization {
-  id                String         @id @default(uuid())
-  name              String?
-  domain            String?
-  country           String?
-  phone             String?
-  createdAt         DateTime       @default(now())
-  aiOrgId           Int?
-  address           String?
-  city              String?
-  industry          String?
-  state             String?
-  zip               Int?
-  description       String?
-  emailConfig       Json?
-  aiChatBotSettings Json?
-  aiEnabled         Boolean        @default(false)
-  openAiKey         String?
-  enable_totp_auth  Boolean        @default(false)
-  dynamicData       DynamicData[]
-  faqs              FAQ[]
-  Notification      Notification[]
-  users             User[]
-  plans                    OrganizationPlan[]
-  addOns                   OrganizationAddOn[]
-  reminderLogs             SubscriptionReminderLog[]
-  SubscriptionRequest SubscriptionRequest[]
+  id                        String                      @id @default(uuid())
+  name                      String?
+  domain                    String?
+  country                   String?
+  phone                     String?
+  createdAt                 DateTime                    @default(now())
+  aiOrgId                   Int?
+  address                   String?
+  city                      String?
+  industry                  String?
+  state                     String?
+  zip                       Int?
+  description               String?
+  emailConfig               Json?
+  aiChatBotSettings         Json?
+  aiEnabled                 Boolean                     @default(false)
+  openAiKey                 String?
+  enable_totp_auth          Boolean                     @default(false)
+  dynamicData               DynamicData[]
+  faqs                      FAQ[]
+  Notification              Notification[]
+  users                     User[]
+  plans                     OrganizationPlan[]
+  addOns                    OrganizationAddOn[]
+  reminderLogs              SubscriptionReminderLog[]
+  SubscriptionRequest       SubscriptionRequest[]
+  SubscriptionCancelRequest SubscriptionCancelRequest[]
+  AddOnRequest              AddOnRequest[]
 }
 
 model User {
-  id                     String         @id @default(uuid())
-  email                  String         @unique
-  fullName               String
-  password               String
-  role                   String         @default("admin")
-  verified               Boolean        @default(false)
-  orgId                  String
-  createdAt              DateTime       @default(now())
-  otpCode                String?
-  otpExpiresAt           DateTime?
-  resetToken             String?
-  resetTokenExpires      DateTime?
-  profilePicture         String?
-  online                 Boolean        @default(false)
-  aiOrgId                Int?
-  activationToken        String?
-  activationTokenExpires DateTime?
-  schedule               Json?
-  phone                  String?
-  deletedAt              DateTime?
-  faqs                   FAQ[]
-  twoFactorAuth          TwoFactorAuth?
-  organization           Organization   @relation(fields: [orgId], references: [id])
-  userSettings           UserSettings?
-  SubscriptionRequest    SubscriptionRequest[]
+  id                        String                      @id @default(uuid())
+  email                     String                      @unique
+  fullName                  String
+  password                  String
+  role                      String                      @default("admin")
+  verified                  Boolean                     @default(false)
+  orgId                     String
+  createdAt                 DateTime                    @default(now())
+  otpCode                   String?
+  otpExpiresAt              DateTime?
+  resetToken                String?
+  resetTokenExpires         DateTime?
+  profilePicture            String?
+  online                    Boolean                     @default(false)
+  aiOrgId                   Int?
+  activationToken           String?
+  activationTokenExpires    DateTime?
+  schedule                  Json?
+  phone                     String?
+  deletedAt                 DateTime?
+  faqs                      FAQ[]
+  twoFactorAuth             TwoFactorAuth?
+  organization              Organization                @relation(fields: [orgId], references: [id])
+  userSettings              UserSettings?
+  SubscriptionRequest       SubscriptionRequest[]
+  SubscriptionCancelRequest SubscriptionCancelRequest[]
+  AddOnRequest              AddOnRequest[]
 }
 
 model TwoFactorAuth {
@@ -262,13 +279,13 @@ enum EndedByType {
 }
 
 model Plan {
-  id             Int      @id @default(autoincrement())
-  code           PlanCode @unique
-  name           String
-  description    String?
-  priceMonthly   Decimal?
-  priceYearly    Decimal?
-  isContactSales Boolean  @default(false)
+  id               Int      @id @default(autoincrement())
+  code             PlanCode @unique
+  name             String
+  description      String?
+  priceMonthly     Decimal?
+  priceYearly      Decimal?
+  isContactSales   Boolean  @default(false)
   // ===== Platform Limits =====
   maxUserSessions  Int? // number of chat sessions per month
   maxDynamicData   Int? // number of dynamic data APIs
@@ -276,33 +293,35 @@ model Plan {
   maxAgents        Int? // number of agents (users)
 
   // ===== Features =====
-  hasAnalytics        Boolean @default(false)
-  hasApiAccess        Boolean @default(false)
-  hasCustomBranding   Boolean @default(false)
-  hasPrioritySupport  Boolean @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  hasAnalytics       Boolean  @default(false)
+  hasApiAccess       Boolean  @default(false)
+  hasCustomBranding  Boolean  @default(false)
+  hasPrioritySupport Boolean  @default(false)
+  hasAiChat          Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
-  subscriptions       OrganizationPlan[]
-  addOns              PlanAddOn[]
-  SubscriptionRequest SubscriptionRequest[]
+  subscriptions             OrganizationPlan[]
+  addOns                    PlanAddOn[]
+  SubscriptionRequest       SubscriptionRequest[]
+  SubscriptionCancelRequest SubscriptionCancelRequest[]
 }
 
 model AddOn {
-  id                     Int       @id @default(autoincrement())
-  code                   AddOnCode @unique
-  name                   String
-  description            String?
-  priceMonthly           Decimal?
-  priceYearly            Decimal?
+  id                Int       @id @default(autoincrement())
+  code              AddOnCode @unique
+  name              String
+  description       String?
+  priceMonthly      Decimal?
+  priceYearly       Decimal?
   extraUserSessions Int? // e.g. 5000 sessions
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  plans                    PlanAddOn[]
-  organizations            OrganizationAddOn[]
-  SubscriptionRequestAddOn SubscriptionRequestAddOn[]
+  plans         PlanAddOn[]
+  organizations OrganizationAddOn[]
+  AddOnRequest  AddOnRequest[]
 }
 
 model PlanAddOn {
@@ -367,8 +386,9 @@ model OrganizationPlan {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  plan         Plan         @relation(fields: [planId], references: [id])
+  organization              Organization                @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  plan                      Plan                        @relation(fields: [planId], references: [id])
+  SubscriptionCancelRequest SubscriptionCancelRequest[]
 
   @@unique([orgId, isActive]) // Only one active plan per org
   @@index([orgId])
@@ -409,39 +429,103 @@ model Configuration {
 }
 
 model SubscriptionRequest {
-  id             String                    @id @default(uuid())
-  orgId          String
-  planId         Int
-  requestedById  String?
-  billingPeriod  BillingPeriod             @default(MONTHLY)
-  requesteeName  String
-  requesteeEmail String
-  requesteePhone String?
+  id               String                    @id @default(uuid())
+  orgId            String
+  planId           Int
+  requestedById    String?
+  billingPeriod    BillingPeriod             @default(MONTHLY)
+  requesteeName    String
+  requesteeEmail   String
+  requesteePhone   String?
   requesteeAddress String?
-  totalCost      Decimal?
-  status         SubscriptionRequestStatus @default(PENDING)
-  approvedAt     DateTime?
-  approvedBy     String?
+  totalCost        Decimal?
+  status           SubscriptionRequestStatus @default(PENDING)
+  approvedAt       DateTime?
+  approvedBy       String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  organization Organization               @relation(fields: [orgId], references: [id])
-  plan         Plan                       @relation(fields: [planId], references: [id])
-  requestedBy  User?                      @relation(fields: [requestedById], references: [id])
-  addOns       SubscriptionRequestAddOn[]
+  organization Organization @relation(fields: [orgId], references: [id])
+  plan         Plan         @relation(fields: [planId], references: [id])
+  requestedBy  User?        @relation(fields: [requestedById], references: [id])
 
   @@index([orgId])
 }
 
-model SubscriptionRequestAddOn {
-  id                    String @id @default(uuid())
-  subscriptionRequestId String
-  addOnId               Int
-  limitOverride         Int?
+model SubscriptionCancelRequest {
+  id            String  @id @default(uuid()) @db.Uuid
+  orgId         String
+  planId        Int
+  requestedById String?
 
-  subscriptionRequest SubscriptionRequest @relation(fields: [subscriptionRequestId], references: [id])
-  addOn               AddOn               @relation(fields: [addOnId], references: [id])
+  billingPeriod BillingPeriod @default(MONTHLY)
 
-  @@unique([subscriptionRequestId, addOnId])
+  // 👇 same as subscription request
+  requesteeName    String
+  requesteeEmail   String
+  requesteePhone   String?
+  requesteeAddress String?
+
+  reason   String?
+  feedback String?
+
+  totalCost Decimal? // optional (good for tracking refunds)
+
+  status CancelRequestStatus @default(PENDING)
+
+  approvedAt DateTime?
+  approvedBy String?
+
+  cancelledAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  plan         Plan         @relation(fields: [planId], references: [id])
+  requestedBy  User?        @relation(fields: [requestedById], references: [id], onDelete: SetNull)
+
+  organizationPlan   OrganizationPlan? @relation(fields: [organizationPlanId], references: [id])
+  organizationPlanId Int?
+
+  @@index([orgId])
+  @@index([planId])
+  @@index([status])
+  @@index([requestedById])
+}
+
+model AddOnRequest {
+  id            String  @id @default(uuid())
+  orgId         String
+  addOnId       Int
+  requestedById String?
+
+  requesteeName    String
+  requesteeEmail   String
+  requesteePhone   String?
+  requesteeAddress String?
+
+  reason   String?
+
+  billingPeriod BillingPeriod @default(MONTHLY)
+
+  limitOverride Int? // e.g. custom sessions
+  totalCost     Decimal?
+
+  status AddOnRequestStatus @default(PENDING)
+
+  approvedAt DateTime?
+  approvedBy String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  addOn        AddOn        @relation(fields: [addOnId], references: [id])
+  requestedBy  User?        @relation(fields: [requestedById], references: [id], onDelete: SetNull)
+
+  @@index([orgId])
+  @@index([addOnId])
+  @@index([status])
 }

@@ -6,7 +6,7 @@ export const getAllSubscriptionRequests = async (): Promise<SubscriptionRequest[
         return await prisma.subscriptionRequest.findMany({
             include: {
                 requestedBy: { select: { id: true, email: true, fullName: true } },
-                addOns: { include: { addOn: { select: { id: true, name: true, code: true } } } },
+                // addOns: { include: { addOn: { select: { id: true, name: true, code: true } } } },
                 plan: { select: { id: true, name: true, code: true } }
             },
         });

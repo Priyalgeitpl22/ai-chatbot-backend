@@ -174,20 +174,18 @@ export class OrganizationPlanService {
 
   static async getCurrentPlan(orgId: string) {
     const currentPlan = await prisma.organizationPlan.findFirst({
-      where: { orgId },
+      where: { orgId, isActive: true },
       include: { plan: true },
     });
 
     if (!currentPlan) {
-      return { code: 400, message: "No plan assigned to this organization" };
+      return { code: 200, message: "No plan assigned to this organization", data: [] };
     }
 
-    const orgAddOnsResult = await OrganizationAddOnService.getOrgAddOns(orgId);
-    const addOns = orgAddOnsResult.code === 200 ? (orgAddOnsResult.data ?? []) : [];
-    const subscriptionRequests = await prisma.subscriptionRequest.findMany({ where: { orgId }, include: { addOns: { include: { addOn: true } } } });
-    const requestedAddOns = subscriptionRequests.map((subscriptionRequest) => subscriptionRequest.addOns.map((addOn) => addOn.addOn.code as AddOnCode));
+    const subscriptionRequests = await prisma.subscriptionRequest.findMany({ where: { orgId } });
 
-    const currentPlanData = formatCurrentPlanData(currentPlan, addOns, requestedAddOns, subscriptionRequests[0]);
+
+    const currentPlanData = formatCurrentPlanData(currentPlan, subscriptionRequests[0]);
     return {
       code: 200,
       message: "Current plan fetched successfully",
@@ -199,7 +197,6 @@ export class OrganizationPlanService {
   static async contactSales(
     user: { id: string; orgId: string; email: string; role: string },
     planCode: string,
-    addOns: { name: string; code: string }[],
     billingPeriod: BillingPeriod,
     totalCost: number,
     requestee: { name: string; email: string; phone?: string; address?: string }
@@ -210,8 +207,8 @@ export class OrganizationPlanService {
       return { code: 401, message: "Only admin can change the subscription plan" };
     }
 
-    if (!planCode || !billingPeriod || !addOns || totalCost == null) {
-      return { code: 400, message: "All fields (planCode, billingPeriod, addOns, totalCost) are required" };
+    if (!planCode || !billingPeriod || totalCost == null) {
+      return { code: 400, message: "All fields (planCode, billingPeriod, totalCost) are required" };
     }
 
     if (!requestee?.name || !requestee?.email) {
@@ -219,17 +216,12 @@ export class OrganizationPlanService {
     }
 
     const plan = await prisma.plan.findUnique({ where: { code: planCode as PlanCode } });
-    const addOnCodes = addOns.map((a) => a.code as AddOnCode);
-    const addOnsData = await prisma.addOn.findMany({ where: { code: { in: addOnCodes } } });
-    if (addOnsData.length !== addOns.length) {
-      return { code: 400, message: "Invalid add-ons: one or more add-on codes not found" };
-    }
 
     const organization = await prisma.organization.findUnique({ where: { id: user.orgId } });
     if (!organization) return { code: 400, message: "Organization not found" };
     if (!plan) return { code: 400, message: "Plan not found" };
 
-    await subscriptionActivationEmail(planCode, billingPeriod, addOns, organization.name || "", requestee.email, totalCost);
+    await subscriptionActivationEmail(planCode, billingPeriod, organization.name || "", requestee.email, totalCost);
 
     const existingRequest = await prisma.subscriptionRequest.findFirst({
       where: { orgId: user.orgId, status: { in: [SubscriptionRequestStatus.PENDING] } }
@@ -259,12 +251,12 @@ export class OrganizationPlanService {
           requesteePhone: requestee.phone,
           requesteeAddress: requestee.address,
           totalCost: totalCost
-        }, addOnsData.map((a) => a.code as AddOnCode));
+        });
       if (!subscriptionRequest) return { code: 500, message: "Failed to update subscription request", data: null };
 
       return { code: 200, message: "Email sent successfully", data: subscriptionRequest };
     } else {
-      const result = await SubscriptionRequestsService.createSubscriptionRequest(user.orgId, planCode as PlanCode, addOnsData.map((a) => a.code as AddOnCode), billingPeriod, requestee, totalCost, user.id);
+      const result = await SubscriptionRequestsService.createSubscriptionRequest(user.orgId, planCode as PlanCode, billingPeriod, requestee, totalCost, user.id);
       if (!result) return { code: 500, message: "Failed to create subscription request", data: null };
       subscriptionRequest = result as unknown as SubscriptionRequest;
     }
@@ -328,14 +320,6 @@ export class OrganizationPlanService {
       }
     });
 
-    const existingAddOns = await prisma.organizationAddOn.findMany({ where: { orgId } });
-    for (const orgAddOn of existingAddOns) {
-      await prisma.organizationAddOn.update({
-        where: { orgId_addOnId: { orgId, addOnId: orgAddOn.addOnId } },
-        data: { isActive: true, periodStartsAt: new Date(), periodEndsAt: billingPeriod === "MONTHLY" ? new Date(new Date().setMonth(new Date().getMonth() + 1)) : new Date(new Date().setFullYear(new Date().getFullYear() + 1)) },
-      });
-    }
-
     return { code: 200, message: "Plan activated successfully" };
   }
 
@@ -354,7 +338,7 @@ export class OrganizationPlanService {
       }),
       OrganizationAddOnService.getOrgAddOns(orgId),
     ]);
-    const addOns = orgAddOnsResult.code === 200 ? (orgAddOnsResult.data ?? []) : [];
+
     const subscriptionList = subscriptions.map((s: any) => ({
       id: s.id,
       orgId: s.orgId,
@@ -376,41 +360,29 @@ export class OrganizationPlanService {
       code: 200,
       message: "Subscriptions fetched successfully",
       data: subscriptionList,
-      addOns,
     };
   }
 
   /** All subscriptions grouped by organization (for admin). Includes add-ons per org. */
   static async getAllSubscriptionsPerOrganization() {
-    const [subscriptions, allOrgAddOns] = await Promise.all([
-      prisma.organizationPlan.findMany({
-        include: { plan: true, organization: { select: { id: true, name: true } } },
-        orderBy: [{ orgId: "asc" }, { startsAt: "desc" }],
-      }),
-      prisma.organizationAddOn.findMany({
-        include: { addOn: true },
-      }),
-    ]);
-    const addOnsByOrg = new Map<string, any[]>();
-    for (const row of allOrgAddOns) {
-      const limit = row.limitOverride ?? row.addOn.extraUserSessions ?? null;
-      const entry = {
-        addOn: row.addOn,
-        isActive: row.isActive,
-        limitOverride: row.limitOverride,
-        effectiveLimit: limit,
-        usedThisPeriod: row.usedThisPeriod,
-        remainingThisPeriod: limit != null ? Math.max(0, limit - row.usedThisPeriod) : null,
-        periodStartsAt: row.periodStartsAt,
-        periodEndsAt: row.periodEndsAt,
-      };
-      if (!addOnsByOrg.has(row.orgId)) addOnsByOrg.set(row.orgId, []);
-      addOnsByOrg.get(row.orgId)!.push(entry);
-    }
+
+    const subscriptions = await prisma.organizationPlan.findMany({
+      include: {
+        plan: true,
+        organization: { select: { id: true, name: true } }
+      },
+      orderBy: [
+        { orgId: "asc" },
+        { startsAt: "desc" }
+      ],
+    });
+
+    // ✅ Group by organization
     const byOrg = new Map<
       string,
       { orgId: string; orgName: string | null; subscriptions: typeof subscriptions }
     >();
+
     for (const s of subscriptions) {
       if (!byOrg.has(s.orgId)) {
         byOrg.set(s.orgId, {
@@ -421,22 +393,33 @@ export class OrganizationPlanService {
       }
       byOrg.get(s.orgId)!.subscriptions.push(s);
     }
+
+    // ✅ Format response
     const data = Array.from(byOrg.values()).map(({ orgId, orgName, subscriptions: subs }) => ({
       orgId,
       orgName,
       subscriptions: subs.map((s) => ({
         id: s.id,
         planId: s.planId,
-        plan: s.plan ? { id: s.plan.id, code: s.plan.code, name: s.plan.name } : null,
+        plan: s.plan
+          ? {
+            id: s.plan.id,
+            code: s.plan.code,
+            name: s.plan.name
+          }
+          : null,
         billingPeriod: s.billingPeriod,
-        billingAmount: s.billingPeriod === "MONTHLY" ? s.plan?.priceMonthly ?? 0 : s.plan?.priceYearly ?? 0,
+        billingAmount:
+          s.billingPeriod === "MONTHLY"
+            ? s.plan?.priceMonthly ?? 0
+            : s.plan?.priceYearly ?? 0,
         isActive: s.isActive,
         startsAt: s.startsAt,
         endsAt: s.endsAt,
         createdAt: s.createdAt,
       })),
-      addOns: addOnsByOrg.get(orgId) ?? [],
     }));
+
     return {
       code: 200,
       message: "All subscriptions per organization fetched successfully",
@@ -469,7 +452,7 @@ export class OrganizationPlanService {
         }
       });
 
-      return { code: 200, message: "Plan activated successfully", data: {...newPlan , offer }};
+      return { code: 200, message: "Plan activated successfully", data: { ...newPlan, offer } };
     } catch (error: any) {
       console.error(error);
       return { code: 500, message: "Failed to activate plan with offer token", error: error.message };

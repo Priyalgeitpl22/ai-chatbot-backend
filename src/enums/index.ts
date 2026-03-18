@@ -22,3 +22,10 @@ export enum PlanCode {
     MONTHLY = "MONTHLY",
     YEARLY = "YEARLY",
   }
+
+  export enum CancelRequestStatus {
+    PENDING = "PENDING",
+    APPROVED = "APPROVED",
+    REJECTED = "REJECTED",
+    CANCELLED = "CANCELLED"
+  }

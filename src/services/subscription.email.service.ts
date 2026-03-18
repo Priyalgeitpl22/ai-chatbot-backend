@@ -6,7 +6,6 @@ import { sendMailViaZepto } from "./transactional.email.service";
 export async function subscriptionActivationEmail(
   planCode: string,
   billingPeriod: string,
-  addOns: { name: string; code: string }[],
   organizationName: string = "",
   contactEmail: string = "",
   totalCost: number
@@ -29,7 +28,6 @@ export async function subscriptionActivationEmail(
       <p>We have received a request to activate a subscription for ${organizationName} organization.</p>
       <p>Plan Code: ${planCode}</p>
       <p>Billing Period: ${billingPeriod}</p>
-      ${addOns.length > 0 ? `<p>Add-Ons: ${addOns.map((addOn) => addOn.name).join(", ")}</p>` : "<p>None</p>"}
       <p>Total billing amount: ${totalCost}$</p>
       <p>Contact Email: ${contactEmail}</p>
       <p>Best regards,</p>
