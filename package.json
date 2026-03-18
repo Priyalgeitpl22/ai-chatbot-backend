@@ -47,7 +47,8 @@
     "qrcode": "^1.5.4",
     "socket.io": "^4.8.1",
     "socks-proxy-agent": "^8.0.5",
-    "speakeasy": "^2.0.0"
+    "speakeasy": "^2.0.0",
+    "zeptomail": "^7.0.2"
   },
   "devDependencies": {
     "@types/axios": "^0.9.36",

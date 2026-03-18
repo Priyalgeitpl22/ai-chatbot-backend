@@ -4,9 +4,11 @@ import { sendOrganizationDetails } from '../middlewares/botMiddleware';
 import nodemailer from "nodemailer";
 import SMTPTransport from "nodemailer/lib/smtp-transport";
 import { SocksProxyAgent } from "socks-proxy-agent";
-import { sendEmailToVerify } from '../utils/email.utils';
+
 import { webcrawl } from '../utils/webcrawler.util';
 import { OrganizationPlanService } from '../services/organization.plan.service';
+import { sendEmailToVerify } from '../services/transactional.email.service';
+import { isZeptoMailConfigured, sendZeptoMail } from '../services/zepto.mail.service';
 
 
 const prisma = new PrismaClient();

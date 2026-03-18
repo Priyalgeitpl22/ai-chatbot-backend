@@ -1,6 +1,5 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { sendOtpEmail, sendResetPasswordEmail } from '../utils/email.utils';
 import { generateOtp, generateRandomToken } from '../utils/otp.utils';
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
@@ -11,6 +10,7 @@ import { sendOrganizationDetails } from '../middlewares/botMiddleware';
 import speakeasy from 'speakeasy';
 import { decrypt } from '../utils/encryption.utils';
 import { OrganizationPlanService } from '../services/organization.plan.service';
+import { sendOtpEmail, sendResetPasswordEmail } from '../services/transactional.email.service';
 
 const prisma = new PrismaClient();
 const upload = multer({ storage: multer.memoryStorage() }).single("profilePicture");

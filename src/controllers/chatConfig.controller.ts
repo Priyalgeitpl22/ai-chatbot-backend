@@ -2,9 +2,10 @@ import { PrismaClient, EndedByType } from "@prisma/client";
 import { Request, Response } from "express";
 import { getPresignedUrl, uploadImageToS3 } from "../aws/imageUtils";
 import multer from "multer";
-import { sendChatTranscriptEmail } from "../utils/email.utils"
+
 import { createChatSummaryFunction } from "./chatSummary.controller";
 import { crawlForPersonalData } from "../utils/chat-widget-crawler";
+import { sendChatTranscriptEmail } from "../services/transactional.email.service";
 
 const prisma = new PrismaClient();
 const upload = multer({ storage: multer.memoryStorage() }).single("ChatBotLogoImage");

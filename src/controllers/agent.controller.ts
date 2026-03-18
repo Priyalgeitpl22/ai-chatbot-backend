@@ -3,8 +3,9 @@ import { PrismaClient } from '@prisma/client';
 import { generateRandomToken } from '../utils/otp.utils';
 import multer from "multer";
 import { getPresignedUrl, uploadImageToS3 } from '../aws/imageUtils';
-import { sendActivationEmail } from '../utils/email.utils';
+
 import { incrementAgentCount } from '../services/organization.susbcription.usage.service';
+import { sendActivationEmail } from '../services/transactional.email.service';
 
 
 const prisma = new PrismaClient();
