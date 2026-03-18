@@ -8,14 +8,15 @@ import {
 } from "@prisma/client";
 
 import { UserRoles } from "../enums";
-import { getAllCancelRequests } from "../repositories/subscription.cancel.repostory";
+import { fetchAllCancelRequest } from "../repositories/subscription.cancel.repostory";
+
 
 const prisma = new PrismaClient();
 
 export class SubscriptionCancelService {
 
   static async getAllCancelRequests(): Promise<SubscriptionCancelRequest[]> {
-    return await getAllCancelRequests();
+    return await fetchAllCancelRequest();
   }
 
 
@@ -29,177 +30,125 @@ export class SubscriptionCancelService {
     reason: string,
     feedback?: string
   ) {
-    let cancelRequest: any = null;
+    try {
+      // ✅ ROLE CHECK
+      if (user.role !== UserRoles.ADMIN && user.role !== UserRoles.SUPER_ADMIN) {
+        return { code: 401, message: "Only admin can cancel the subscription" };
+      }
 
-    // ✅ ROLE CHECK
-    if (user.role !== UserRoles.ADMIN && user.role !== UserRoles.SUPER_ADMIN) {
-      return { code: 401, message: "Only admin can cancel the subscription" };
-    }
+      // ✅ REQUIRED FIELDS
+      if (!planCode || !billingPeriod || totalCost == null) {
+        return { code: 400, message: "All fields (planCode, billingPeriod, totalCost) are required" };
+      }
 
-    // ✅ REQUIRED FIELDS
-    if (!planCode || !billingPeriod || totalCost == null) {
-      return { code: 400, message: "All fields (planCode, billingPeriod, addOns, totalCost) are required" };
-    }
+      if (!requestee?.name || !requestee?.email || !requestee?.phone) {
+        return { code: 400, message: "Name, email and phone are required" };
+      }
 
-    if (!requestee?.name || !requestee?.email || !requestee?.phone) {
-      return { code: 400, message: "Name, email and phone are required" };
-    }
+      if (!reason) {
+        return { code: 400, message: "Reason is required" };
+      }
 
-    if (!reason) {
-      return { code: 400, message: "Reason is required" };
-    }
+      // ✅ VALIDATE PLAN CODE FIRST
+      if (!Object.values(PlanCode).includes(planCode as PlanCode)) {
+        return {
+          code: 400,
+          message: "Invalid plan code"
+        };
+      }
 
-    // ✅ FETCH PLAN
-    const plan = await prisma.plan.findUnique({
-      where: { code: planCode as PlanCode }
-    });
-
-    if (!plan) return { code: 400, message: "Plan not found" };
-
-    // ✅ FETCH ADDONS
-    const safeAddOns = addOns ?? [];
-
-    let addOnsData: any[] = [];
-
-    if (safeAddOns.length > 0) {
-      const addOnCodes = safeAddOns.map((a) => a.code as AddOnCode);
-
-      addOnsData = await prisma.addOn.findMany({
-        where: { code: { in: addOnCodes } }
+      // ✅ FETCH PLAN
+      const plan = await prisma.plan.findUnique({
+        where: { code: planCode as PlanCode }
       });
 
-      if (addOnsData.length !== safeAddOns.length) {
-        return { code: 400, message: "Invalid add-ons" };
+      if (!plan) {
+        return { code: 400, message: "Plan not found" };
       }
-    }
 
-    // ✅ ORG CHECK
-    const organization = await prisma.organization.findUnique({
-      where: { id: user.orgId }
-    });
+      // ✅ ORG CHECK
+      const organization = await prisma.organization.findUnique({
+        where: { id: user.orgId }
+      });
 
-    if (!organization) {
-      return { code: 400, message: "Organization not found" };
-    }
-
-    // ✅ CHECK ACTIVE PLAN
-    const activePlan = await prisma.organizationPlan.findFirst({
-      where: {
-        orgId: user.orgId,
-        isActive: true
+      if (!organization) {
+        return { code: 400, message: "Organization not found" };
       }
-    });
 
-    if (!activePlan) {
-      return { code: 400, message: "No active subscription to cancel" };
-    }
-
-    // ✅ SEND EMAIL (you can create this similar to activation email)
-    // await subscriptionCancelEmail(
-    //   planCode,
-    //   billingPeriod,
-    //   addOns,
-    //   organization.name || "",
-    //   requestee,
-    //   totalCost,
-    //   reason
-    // );
-
-    // ✅ CHECK EXISTING REQUEST
-    const existingRequest = await prisma.subscriptionCancelRequest.findFirst({
-      where: {
-        orgId: user.orgId,
-        status: {
-          in: [CancelRequestStatus.PENDING, CancelRequestStatus.APPROVED]
+      // ✅ CHECK ACTIVE PLAN
+      const activePlan = await prisma.organizationPlan.findFirst({
+        where: {
+          orgId: user.orgId,
+          isActive: true
         }
-      },
-      orderBy: { createdAt: "desc" }
-    });
+      });
+      console.log(activePlan,"activePlan")
 
-    if (existingRequest) {
+      if (!activePlan) {
+        return { code: 400, message: "No active subscription to cancel" };
+      }
 
-      if (existingRequest.status === CancelRequestStatus.APPROVED) {
+      // ✅ OPTIONAL: Ensure user is cancelling CURRENT active plan only
+      if (activePlan.planId !== plan.id) {
         return {
           code: 400,
-          message: "Cancel request already approved"
+          message: "You can only cancel the currently active plan"
         };
       }
 
-      if (existingRequest.status === CancelRequestStatus.PENDING) {
+
+      // ✅ CHECK EXISTING PENDING REQUEST (ONLY for same plan)
+      const existingRequest = await prisma.subscriptionCancelRequest.findFirst({
+        where: {
+          orgId: user.orgId,
+          planId: plan.id,
+          status: CancelRequestStatus.PENDING
+        }
+      });
+
+      if (existingRequest) {
         return {
           code: 400,
-          message: "Cancel request already exists and is pending"
+          message: "Cancel request already exists for this plan"
         };
       }
+
+      // 🆕 CREATE NEW CANCEL REQUEST
+      const cancelRequest = await prisma.subscriptionCancelRequest.create({
+        data: {
+          orgId: user.orgId,
+          planId: plan.id,
+          billingPeriod,
+          requestedById: user.id,
+          requesteeName: requestee.name,
+          requesteeEmail: requestee.email,
+          requesteePhone: requestee.phone,
+          requesteeAddress: requestee.address,
+          totalCost,
+          reason,
+          feedback,
+          status: CancelRequestStatus.PENDING
+        },
+        include: {
+          plan: true,
+          requestedBy: true
+        }
+      });
+
+      return {
+        code: 200,
+        message: "Cancel request created successfully",
+        data: cancelRequest
+      };
+
+    } catch (error) {
+      console.error("Cancel Subscription Error:", error);
+      return {
+        code: 500,
+        message: "Internal server error"
+      };
     }
-
-    // 🔁 UPDATE EXISTING
-    // if (existingRequest) {
-
-    //   cancelRequest = await prisma.subscriptionCancelRequest.update({
-    //     where: { id: existingRequest.id },
-    //     data: {
-    //       planId: plan.id,
-    //       billingPeriod,
-    //       status: CancelRequestStatus.PENDING,
-    //       approvedAt: null,
-    //       approvedBy: null,
-    //       requestedById: user.id,
-    //       requesteeName: requestee.name,
-    //       requesteeEmail: requestee.email,
-    //       requesteePhone: requestee.phone,
-    //       requesteeAddress: requestee.address,
-    //       totalCost,
-    //       reason,
-    //       feedback,
-    //     },
-    //     include: {
-    //       plan: true,
-    //       requestedBy: true,
-    //     }
-    //   });
-
-    //   return {
-    //     code: 200,
-    //     message: "Cancel request updated & email sent successfully",
-    //     data: cancelRequest
-    //   };
-    // }
-
-    // 🆕 CREATE NEW
-    const result = await prisma.subscriptionCancelRequest.create({
-      data: {
-        orgId: user.orgId,
-        planId: plan.id,
-        billingPeriod,
-        requestedById: user.id,
-        requesteeName: requestee.name,
-        requesteeEmail: requestee.email,
-        requesteePhone: requestee.phone,
-        requesteeAddress: requestee.address,
-        totalCost,
-        reason,
-        feedback
-      },
-      include: {
-        plan: true,
-        requestedBy: true,
-      }
-    });
-
-    if (!result) {
-      return { code: 500, message: "Failed to create cancel request", data: null };
-    }
-
-    cancelRequest = result;
-
-    return {
-      code: 200,
-      message: "Cancel request created & email sent successfully",
-      data: cancelRequest
-    };
   }
-
 
   static async approveCancelRequest(userId: string, cancelRequestId: string) {
 
@@ -231,13 +180,23 @@ export class SubscriptionCancelService {
     }
 
     // ✅ deactivate plan
-    await prisma.organizationPlan.update({
-      where: { id: activePlan.id },
-      data: {
-        isActive: false,
-        endsAt: new Date()
-      }
-    });
+  
+// ✅ Step 1: remove old inactive (to satisfy unique constraint)
+await prisma.organizationPlan.deleteMany({
+  where: {
+    orgId: activePlan.orgId,
+    isActive: false
+  }
+});
+
+// ✅ Step 2: deactivate current plan
+await prisma.organizationPlan.update({
+  where: { id: activePlan.id },
+  data: {
+    isActive: false,
+    endsAt: new Date()
+  }
+});
 
     // ✅ update request
     await prisma.subscriptionCancelRequest.update({

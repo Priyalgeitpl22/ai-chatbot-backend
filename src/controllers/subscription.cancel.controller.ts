@@ -3,7 +3,10 @@ import { SubscriptionCancelService } from "../services/subscription.cancel.servi
 import { Request, Response } from "express";
 import { AuthenticatedRequest } from "../types/request.types";
 
-export const createCancelRequest = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+export const createCancelRequest = async (
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void> => {
   try {
     const user = req.user;
 
@@ -11,9 +14,6 @@ export const createCancelRequest = async (req: AuthenticatedRequest, res: Respon
       res.status(401).json({ code: 401, message: "Unauthorized" });
       return;
     }
-
-    const orgId = user.orgId;
-    const userId = user.id;
 
     const {
       planCode,
@@ -28,10 +28,11 @@ export const createCancelRequest = async (req: AuthenticatedRequest, res: Respon
       feedback
     } = req.body;
 
-    if (!email || !name || !phone || !reason) {
+    // ✅ Minimal validation (optional, keep light)
+    if (!planCode || !billingPeriod) {
       res.status(400).json({
         code: 400,
-        message: "Email, Name, Phone and Reason are required"
+        message: "planCode and billingPeriod are required"
       });
       return;
     }
@@ -52,18 +53,18 @@ export const createCancelRequest = async (req: AuthenticatedRequest, res: Respon
       feedback
     );
 
-    res.status(201).json({
-      code: 201,
-      message: "Cancel request created successfully",
-      // data: response
-    });
+    // ✅ IMPORTANT: return correct status from service
+    res.status(response.code).json(response);
 
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ code: 500, message: "Failed to create cancel request" });
+    console.error("Create Cancel Request Error:", err);
+
+    res.status(500).json({
+      code: 500,
+      message: "Failed to create cancel request"
+    });
   }
 };
-
 export const getAllCancelRequests = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const user = req.user;

@@ -237,21 +237,21 @@ export class OrganizationPlanService {
     }
 
     if (existingRequest) {
-      subscriptionRequest = await SubscriptionRequestsService.updateSubscriptionRequest(
-        existingRequest.id,
-        {
-          planId: plan.id,
-          billingPeriod: billingPeriod,
-          status: SubscriptionRequestStatus.PENDING,
-          approvedAt: null,
-          approvedBy: null,
-          requestedById: user.id,
-          requesteeName: requestee.name,
-          requesteeEmail: requestee.email,
-          requesteePhone: requestee.phone,
-          requesteeAddress: requestee.address,
-          totalCost: totalCost
-        });
+      // subscriptionRequest = await SubscriptionRequestsService.updateSubscriptionRequest(
+      //   existingRequest.id,
+      //   {
+      //     planId: plan.id,
+      //     billingPeriod: billingPeriod,
+      //     status: SubscriptionRequestStatus.PENDING,
+      //     approvedAt: null,
+      //     approvedBy: null,
+      //     requestedById: user.id,
+      //     requesteeName: requestee.name,
+      //     requesteeEmail: requestee.email,
+      //     requesteePhone: requestee.phone,
+      //     requesteeAddress: requestee.address,
+      //     totalCost: totalCost
+        // });
       if (!subscriptionRequest) return { code: 500, message: "Failed to update subscription request", data: null };
 
       return { code: 200, message: "Email sent successfully", data: subscriptionRequest };
@@ -376,25 +376,24 @@ export class OrganizationPlanService {
         { startsAt: "desc" }
       ],
     });
-
-    // ✅ Group by organization
+  
+    // ✅ Group by organization (ONLY latest)
     const byOrg = new Map<
       string,
       { orgId: string; orgName: string | null; subscriptions: typeof subscriptions }
     >();
-
+  
     for (const s of subscriptions) {
       if (!byOrg.has(s.orgId)) {
         byOrg.set(s.orgId, {
           orgId: s.orgId,
           orgName: s.organization?.name ?? null,
-          subscriptions: [],
+          subscriptions: [s], // 🔥 only latest
         });
       }
-      byOrg.get(s.orgId)!.subscriptions.push(s);
     }
-
-    // ✅ Format response
+  
+    // ✅ Format response (UNCHANGED)
     const data = Array.from(byOrg.values()).map(({ orgId, orgName, subscriptions: subs }) => ({
       orgId,
       orgName,
@@ -403,10 +402,10 @@ export class OrganizationPlanService {
         planId: s.planId,
         plan: s.plan
           ? {
-            id: s.plan.id,
-            code: s.plan.code,
-            name: s.plan.name
-          }
+              id: s.plan.id,
+              code: s.plan.code,
+              name: s.plan.name
+            }
           : null,
         billingPeriod: s.billingPeriod,
         billingAmount:
@@ -419,14 +418,13 @@ export class OrganizationPlanService {
         createdAt: s.createdAt,
       })),
     }));
-
+  
     return {
       code: 200,
       message: "All subscriptions per organization fetched successfully",
       data,
     };
   }
-
   static async activatePlanWithOfferToken(orgId: string, offerToken: string) {
     try {
       const offer = await ConfigurationService.getSubscriptionOfferByToken(offerToken);
