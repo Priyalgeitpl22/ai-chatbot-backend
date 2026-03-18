@@ -134,37 +134,37 @@ export class SubscriptionCancelService {
     }
 
     // 🔁 UPDATE EXISTING
-    if (existingRequest) {
+    // if (existingRequest) {
 
-      cancelRequest = await prisma.subscriptionCancelRequest.update({
-        where: { id: existingRequest.id },
-        data: {
-          planId: plan.id,
-          billingPeriod,
-          status: CancelRequestStatus.PENDING,
-          approvedAt: null,
-          approvedBy: null,
-          requestedById: user.id,
-          requesteeName: requestee.name,
-          requesteeEmail: requestee.email,
-          requesteePhone: requestee.phone,
-          requesteeAddress: requestee.address,
-          totalCost,
-          reason,
-          feedback,
-        },
-        include: {
-          plan: true,
-          requestedBy: true,
-        }
-      });
+    //   cancelRequest = await prisma.subscriptionCancelRequest.update({
+    //     where: { id: existingRequest.id },
+    //     data: {
+    //       planId: plan.id,
+    //       billingPeriod,
+    //       status: CancelRequestStatus.PENDING,
+    //       approvedAt: null,
+    //       approvedBy: null,
+    //       requestedById: user.id,
+    //       requesteeName: requestee.name,
+    //       requesteeEmail: requestee.email,
+    //       requesteePhone: requestee.phone,
+    //       requesteeAddress: requestee.address,
+    //       totalCost,
+    //       reason,
+    //       feedback,
+    //     },
+    //     include: {
+    //       plan: true,
+    //       requestedBy: true,
+    //     }
+    //   });
 
-      return {
-        code: 200,
-        message: "Cancel request updated & email sent successfully",
-        data: cancelRequest
-      };
-    }
+    //   return {
+    //     code: 200,
+    //     message: "Cancel request updated & email sent successfully",
+    //     data: cancelRequest
+    //   };
+    // }
 
     // 🆕 CREATE NEW
     const result = await prisma.subscriptionCancelRequest.create({
