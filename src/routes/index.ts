@@ -44,7 +44,7 @@ router.use("/add-on", addOnRoutes);
 router.use("/org-plan", organizationPlanRoutes);
 router.use("/subscription-requests", authMiddleware, subscriptionRequestsRoutes);
 router.use("/cancel-subscription",authMiddleware, cancelSubscriptionRoutes)
-router.use("/addon",authMiddleware, addonFeatureRoutes)
+router.use("/addon-request",authMiddleware, addonFeatureRoutes)
 
 
 export default router;

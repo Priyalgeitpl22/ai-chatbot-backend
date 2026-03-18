@@ -297,6 +297,9 @@ model Plan {
   hasApiAccess       Boolean  @default(false)
   hasCustomBranding  Boolean  @default(false)
   hasPrioritySupport Boolean  @default(false)
+
+  hasSupportTickets   Boolean @default(false)
+  hasRealtimeApiData  Boolean @default(false)
   hasAiChat          Boolean  @default(false)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
