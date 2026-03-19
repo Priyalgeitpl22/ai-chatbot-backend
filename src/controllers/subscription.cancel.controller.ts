@@ -3,7 +3,10 @@ import { SubscriptionCancelService } from "../services/subscription.cancel.servi
 import { Request, Response } from "express";
 import { AuthenticatedRequest } from "../types/request.types";
 
-export const createCancelRequest = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+export const createCancelRequest = async (
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void> => {
   try {
     const user = req.user;
 
@@ -12,26 +15,21 @@ export const createCancelRequest = async (req: AuthenticatedRequest, res: Respon
       return;
     }
 
-    const orgId = user.orgId;
-    const userId = user.id;
-
     const {
       planCode,
       billingPeriod,
-      addOns,
       totalCost,
       name,
       email,
       phone,
       address,
       reason,
-      feedback
     } = req.body;
 
-    if (!email || !name || !phone || !reason) {
+    if (!planCode || !billingPeriod) {
       res.status(400).json({
         code: 400,
-        message: "Email, Name, Phone and Reason are required"
+        message: "planCode and billingPeriod are required"
       });
       return;
     }
@@ -39,7 +37,6 @@ export const createCancelRequest = async (req: AuthenticatedRequest, res: Respon
     const response = await SubscriptionCancelService.cancelSubscriptionRequest(
       user,
       planCode,
-      addOns,
       billingPeriod,
       totalCost,
       {
@@ -49,21 +46,19 @@ export const createCancelRequest = async (req: AuthenticatedRequest, res: Respon
         address
       },
       reason,
-      feedback
     );
 
-    res.status(201).json({
-      code: 201,
-      message: "Cancel request created successfully",
-      // data: response
-    });
+    res.status(response.code).json(response);
 
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ code: 500, message: "Failed to create cancel request" });
+    console.error("Create Cancel Request Error:", err);
+
+    res.status(500).json({
+      code: 500,
+      message: "Failed to create cancel request"
+    });
   }
 };
-
 export const getAllCancelRequests = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const user = req.user;

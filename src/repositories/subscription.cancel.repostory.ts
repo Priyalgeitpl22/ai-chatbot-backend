@@ -2,7 +2,7 @@ import { PrismaClient, SubscriptionCancelRequest } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-export const getAllCancelRequests = async (): Promise<SubscriptionCancelRequest[]> => {
+export const fetchAllCancelRequest = async (): Promise<SubscriptionCancelRequest[]> => {
     try {
         return await prisma.subscriptionCancelRequest.findMany({
             orderBy: {

@@ -288,15 +288,15 @@ model Plan {
   isContactSales   Boolean  @default(false)
   // ===== Platform Limits =====
   maxUserSessions  Int? // number of chat sessions per month
-  maxDynamicData   Int? // number of dynamic data APIs
-  chatHistoryLimit Int? // number of messages stored per thread
   maxAgents        Int? // number of agents (users)
 
   // ===== Features =====
-  hasAnalytics       Boolean  @default(false)
+
   hasApiAccess       Boolean  @default(false)
   hasCustomBranding  Boolean  @default(false)
-  hasPrioritySupport Boolean  @default(false)
+  hasSupportTickets   Boolean @default(false)
+  hasRealtimeApiData  Boolean @default(false)
+
   hasAiChat          Boolean  @default(false)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
@@ -370,9 +370,8 @@ model OrganizationPlan {
   endsAt   DateTime?
 
   userSessionsUsed Int @default(0)
-  dynamicDataUsed  Int @default(0)
   agentsUsed       Int @default(0)
-  messagesUsed     Int @default(0)
+
 
   // Stripe/Payment info
   stripeCustomerId     String?

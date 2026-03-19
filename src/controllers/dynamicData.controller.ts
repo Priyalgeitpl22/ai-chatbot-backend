@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import axios from 'axios';
-import { getUsageAndLimits, incrementDynamicData } from '../services/organization.susbcription.usage.service';
+import { getUsageAndLimits } from '../services/organization.susbcription.usage.service';
 
 const prisma = new PrismaClient();
 
@@ -211,7 +211,6 @@ export const createDynamicData = async (req: any, res: Response) => {
         },
       }); 
 
-      await incrementDynamicData(prompt.orgId);
       prompts[i] = dynamicData;
     }
 
