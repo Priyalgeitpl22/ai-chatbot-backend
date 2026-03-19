@@ -184,8 +184,33 @@ export class OrganizationPlanService {
 
     const subscriptionRequests = await prisma.subscriptionRequest.findMany({ where: { orgId } });
 
+    const addOns = await prisma.organizationAddOn.findMany({
+      where: {
+        orgId,
+        isActive: true
+      },
+      include: {
+        addOn: true
+      }
+    });
 
-    const currentPlanData = formatCurrentPlanData(currentPlan, subscriptionRequests[0]);
+    const currentPlanData = {
+      ...formatCurrentPlanData(currentPlan, subscriptionRequests[0]),
+
+      // ✅ ADD THIS
+      addOns: addOns.map((a) => ({
+        // id: a.id,
+        code: a.addOn.code,
+        name: a.addOn.name,
+        limitOverride: a.limitOverride,
+        usedThisPeriod: a.usedThisPeriod,
+        periodStartAt: a.periodStartsAt,
+        periodEndsAt: a.periodEndsAt,
+        startsAt: a.periodStartsAt,
+        endsAt: a.periodEndsAt
+      }))
+    };
+
     return {
       code: 200,
       message: "Current plan fetched successfully",
@@ -251,7 +276,7 @@ export class OrganizationPlanService {
       //     requesteePhone: requestee.phone,
       //     requesteeAddress: requestee.address,
       //     totalCost: totalCost
-        // });
+      // });
       if (!subscriptionRequest) return { code: 500, message: "Failed to update subscription request", data: null };
 
       return { code: 200, message: "Email sent successfully", data: subscriptionRequest };
@@ -366,46 +391,84 @@ export class OrganizationPlanService {
   /** All subscriptions grouped by organization (for admin). Includes add-ons per org. */
   static async getAllSubscriptionsPerOrganization() {
 
-    const subscriptions = await prisma.organizationPlan.findMany({
-      include: {
-        plan: true,
-        organization: { select: { id: true, name: true } }
-      },
-      orderBy: [
-        { orgId: "asc" },
-        { startsAt: "desc" }
-      ],
-    });
-  
-    // ✅ Group by organization (ONLY latest)
+    const [subscriptions, orgAddOns] = await Promise.all([
+      prisma.organizationPlan.findMany({
+        include: {
+          plan: true,
+          organization: { select: { id: true, name: true } }
+        },
+        orderBy: [
+          { orgId: "asc" },
+          { startsAt: "desc" }
+        ],
+      }),
+
+      prisma.organizationAddOn.findMany({
+        where: {
+          isActive: true // ✅ only approved/active add-ons
+        },
+        include: {
+          addOn: true,
+          organization: { select: { id: true, name: true } }
+        },
+        orderBy: [
+          { orgId: "asc" },
+          { periodStartsAt: "desc" }
+        ]
+      })
+    ]);
+
+    // ✅ Group by organization
     const byOrg = new Map<
       string,
-      { orgId: string; orgName: string | null; subscriptions: typeof subscriptions }
+      {
+        orgId: string;
+        orgName: string | null;
+        subscriptions: any[];
+        addOns: any[];
+      }
     >();
-  
+
+    // 🔹 Add subscriptions
     for (const s of subscriptions) {
       if (!byOrg.has(s.orgId)) {
         byOrg.set(s.orgId, {
           orgId: s.orgId,
           orgName: s.organization?.name ?? null,
-          subscriptions: [s], // 🔥 only latest
+          subscriptions: [s], // latest
+          addOns: []
         });
       }
     }
-  
-    // ✅ Format response (UNCHANGED)
-    const data = Array.from(byOrg.values()).map(({ orgId, orgName, subscriptions: subs }) => ({
+
+    // 🔹 Add add-ons
+    for (const a of orgAddOns) {
+      if (!byOrg.has(a.orgId)) {
+        byOrg.set(a.orgId, {
+          orgId: a.orgId,
+          orgName: a.organization?.name ?? null,
+          subscriptions: [],
+          addOns: [a]
+        });
+      } else {
+        byOrg.get(a.orgId)!.addOns.push(a);
+      }
+    }
+
+    // ✅ Final response
+    const data = Array.from(byOrg.values()).map(({ orgId, orgName, subscriptions: subs, addOns }) => ({
       orgId,
       orgName,
+
       subscriptions: subs.map((s) => ({
         id: s.id,
         planId: s.planId,
         plan: s.plan
           ? {
-              id: s.plan.id,
-              code: s.plan.code,
-              name: s.plan.name
-            }
+            id: s.plan.id,
+            code: s.plan.code,
+            name: s.plan.name
+          }
           : null,
         billingPeriod: s.billingPeriod,
         billingAmount:
@@ -417,14 +480,31 @@ export class OrganizationPlanService {
         endsAt: s.endsAt,
         createdAt: s.createdAt,
       })),
+
+      // ✅ ADD-ONS HERE
+      addOns: addOns.map((a) => ({
+        id: a.id,
+        addOnId: a.addOnId,
+        addOn: {
+          id: a.addOn.id,
+          code: a.addOn.code,
+          name: a.addOn.name
+        },
+        isActive: a.isActive,
+        limitOverride: a.limitOverride,
+        startsAt: a.periodStartsAt,
+        endsAt: a.periodEndsAt,
+        createdAt: a.createdAt
+      }))
     }));
-  
+
     return {
       code: 200,
       message: "All subscriptions per organization fetched successfully",
       data,
     };
   }
+
   static async activatePlanWithOfferToken(orgId: string, offerToken: string) {
     try {
       const offer = await ConfigurationService.getSubscriptionOfferByToken(offerToken);
