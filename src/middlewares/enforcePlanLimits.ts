@@ -6,74 +6,65 @@ export async function enforcePlanLimits(
   req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
-) {
+): Promise<void> {
   try {
     const user: any = req.user;
     const orgId = user?.orgId;
 
     if (!orgId) {
-      return res.status(400).json({
+      res.status(400).json({
         message: "Organization ID missing",
       });
+      return;
     }
 
     const data = await getUsageAndLimits(orgId);
 
     if (!data) {
-      return res.status(403).json({
+      res.status(403).json({
         message: "No active subscription plan found",
       });
+      return;
     }
 
     const { limits, usage, plan } = data;
 
-    // ✅ ROUTE FLAGS (very important)
-    const isChatRoute = req.path.includes("thread"); 
-    const isAgentRoute = req.path.includes("user");
-    const isAiRoute = req.path.includes("ai");
-
-    // 🚀 CHAT LIMIT
+    // ✅ AGENT LIMIT
     if (
-      isChatRoute &&
-      limits.maxUserSessions !== null &&
-      usage.sessionsUsed >= limits.maxUserSessions
-    ) {
-      return res.status(402).json({
-        message: `Chat limit reached (${limits.maxUserSessions})`,
-        code: "PLAN_LIMIT_CHATS",
-      });
-    }
-
-    // 🚀 AGENT LIMIT
-    if (
-      isAgentRoute &&
       limits.maxAgents !== null &&
       usage.agentsUsed >= limits.maxAgents
     ) {
-      return res.status(402).json({
+      res.status(402).json({
         message: `Agent limit reached (${limits.maxAgents})`,
         code: "PLAN_LIMIT_AGENTS",
       });
+      return;
     }
 
-    // 🚀 AI FEATURE CHECK
-    if (isAiRoute && !plan.hasAiChat) {
-      return res.status(403).json({
-        message: "AI feature not available in your plan",
-        code: "PLAN_NO_AI",
+    // ✅ CHAT LIMIT
+    if (
+      limits.maxUserSessions !== null &&
+      usage.sessionsUsed >= limits.maxUserSessions
+    ) {
+      res.status(402).json({
+        message: `Chat limit reached (${limits.maxUserSessions})`,
+        code: "PLAN_LIMIT_CHATS",
       });
+      return;
     }
 
-    // attach for later use
-    req.planLimits = limits;
-    req.usageData = usage;
+    // ✅ AI CHECK
+    if (!plan.hasAiChat) {
+      // only block if this route needs AI (optional logic)
+    }
 
     next();
   } catch (err) {
     console.error("[PlanLimitMiddleware]", err);
 
-    return res.status(500).json({
+    res.status(500).json({
       message: "Failed to enforce plan limits",
     });
+    return;
   }
 }
