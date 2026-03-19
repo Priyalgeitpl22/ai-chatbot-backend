@@ -5,7 +5,7 @@ import { enforcePlanLimits } from "../middlewares/enforcePlanLimits";
 
 const router = Router();
 
-router.post("/chat",createChatOrTicket);
+router.post("/chat", enforcePlanLimits ,createChatOrTicket);
 router.get("/", getAllThreads);
 router.get("/search", authMiddleware,searchThreads);
 router.patch("/:threadId/assign",assignThread)

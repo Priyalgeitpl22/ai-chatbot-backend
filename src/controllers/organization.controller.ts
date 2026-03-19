@@ -7,8 +7,10 @@ import { SocksProxyAgent } from "socks-proxy-agent";
 
 import { webcrawl } from '../utils/webcrawler.util';
 import { OrganizationPlanService } from '../services/organization.plan.service';
+import { getUsageAndLimits } from '../services/organization.susbcription.usage.service';
 import { sendEmailToVerify } from '../services/transactional.email.service';
 import { isZeptoMailConfigured, sendZeptoMail } from '../services/zepto.mail.service';
+
 
 
 const prisma = new PrismaClient();
@@ -83,6 +85,26 @@ export const updateOrganization = async (req: Request, res: Response): Promise<a
         code: 400,
         message: "Organization ID is required."
       });
+    }
+
+    const isAiUpdate =
+      aiEnabled !== undefined || openAiKey !== undefined;
+
+    if (isAiUpdate) {
+      const data = await getUsageAndLimits(orgId);
+
+      if (!data?.plan?.hasAiChat) {
+        res.status(403).json({
+          success: false,
+          error: {
+            code: "PLAN_NO_AI_ACCESS",
+            message:
+              "AI feature is not enabled in your current plan. Please upgrade.",
+            upgradeRequired: true,
+          },
+        });
+        return;
+      }
     }
 
     const existingOrg = await prisma.organization.findUnique({ where: { id: orgId } });

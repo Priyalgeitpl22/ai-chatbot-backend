@@ -2,36 +2,34 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 export async function incrementUserSessions(orgId: string): Promise<void> {
-  try {
-    const activePlan = await prisma.organizationPlan.findFirst({
-      where: { orgId, isActive: true },
-      include: { plan: true },
-    });
+  const activePlan = await prisma.organizationPlan.findFirst({
+    where: { orgId, isActive: true },
+    include: { plan: true },
+  });
 
-    if (!activePlan || !activePlan.plan) return;
+  if (!activePlan || !activePlan.plan) return;
 
-    const { userSessionsUsed, plan } = activePlan;
+  const { userSessionsUsed, plan } = activePlan;
 
-    // ✅ LIMIT CHECK
-    if (
-      plan.maxUserSessions !== null &&
-      userSessionsUsed >= plan.maxUserSessions
-    ) {
-      throw new Error("Chat session limit reached");
-    }
-
-    await prisma.organizationPlan.update({
-      where: { id: activePlan.id },
-      data: {
-        userSessionsUsed: {
-          increment: 1,
-        },
-      },
-    });
-  } catch (error) {
-    console.error(`❌ incrementUserSessions error:`, error);
+  // ✅ LIMIT CHECK
+  if (
+    plan.maxUserSessions !== null &&
+    userSessionsUsed >= plan.maxUserSessions
+  ) {
+    const error: any = new Error("Chat session limit reached");
+    error.code = "PLAN_LIMIT_CHATS";
+    error.status = 429;
     throw error;
   }
+
+  await prisma.organizationPlan.update({
+    where: { id: activePlan.id },
+    data: {
+      userSessionsUsed: {
+        increment: 1,
+      },
+    },
+  });
 }
 
 export async function incrementAgentCount(orgId: string): Promise<void> {

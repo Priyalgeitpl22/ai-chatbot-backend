@@ -232,6 +232,9 @@ export const createChatOrTicket = async (req: any, res: any) => {
         if (endedThread) {
           return res.status(400).json({ code: 400, message: "Chat already ended, cannot create ticket." });
         }
+
+        await incrementUserSessions(orgId);
+
         // Create ticket thread
         const thread = await prisma.thread.create({
           data: {
@@ -249,8 +252,6 @@ export const createChatOrTicket = async (req: any, res: any) => {
             },
           },
         });
-
-        await incrementUserSessions(orgId);
 
         return res.status(200).json({
           code: 200,
