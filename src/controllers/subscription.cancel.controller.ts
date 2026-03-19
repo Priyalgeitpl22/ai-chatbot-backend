@@ -18,17 +18,14 @@ export const createCancelRequest = async (
     const {
       planCode,
       billingPeriod,
-      addOns,
       totalCost,
       name,
       email,
       phone,
       address,
       reason,
-      feedback
     } = req.body;
 
-    // ✅ Minimal validation (optional, keep light)
     if (!planCode || !billingPeriod) {
       res.status(400).json({
         code: 400,
@@ -40,7 +37,6 @@ export const createCancelRequest = async (
     const response = await SubscriptionCancelService.cancelSubscriptionRequest(
       user,
       planCode,
-      addOns,
       billingPeriod,
       totalCost,
       {
@@ -50,10 +46,8 @@ export const createCancelRequest = async (
         address
       },
       reason,
-      feedback
     );
 
-    // ✅ IMPORTANT: return correct status from service
     res.status(response.code).json(response);
 
   } catch (err) {

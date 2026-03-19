@@ -13,17 +13,16 @@ const formatPlanResponse = (plan: Plan, orgPlan?: OrganizationPlan) => ({
   priceYearly: plan.priceYearly,
   isContactSales: plan.isContactSales,
 
-  // NEW LIMITS
+  // ✅ LIMITS
   maxUserSessions: plan.maxUserSessions,
-  maxDynamicData: plan.maxDynamicData,
-  chatHistoryLimit: plan.chatHistoryLimit,
   maxAgents: plan.maxAgents,
 
-  // FEATURES
-  hasApiAccess: plan.hasApiAccess,
+  // ✅ FEATURES (IMPORTANT — ADD ALL)
+  hasAiChat: plan.hasAiChat,
   hasCustomBranding: plan.hasCustomBranding,
-  hasAnalytics: plan.hasAnalytics,
-  hasPrioritySupport: plan.hasPrioritySupport,
+  hasApiAccess: plan.hasApiAccess,
+  hasRealtimeApiData: plan.hasRealtimeApiData,
+  hasSupportTickets: plan.hasSupportTickets,
 
   createdAt: plan.createdAt,
   updatedAt: plan.updatedAt,
@@ -36,7 +35,6 @@ const formatPlanResponse = (plan: Plan, orgPlan?: OrganizationPlan) => ({
       }
     : null,
 });
-
 export const formatCurrentPlanData = (currentPlan: any, subscriptionRequest: any): CurrentPlanData => {
   return {
     basePlan: {
@@ -45,12 +43,9 @@ export const formatCurrentPlanData = (currentPlan: any, subscriptionRequest: any
       name: currentPlan.plan?.name,
 
       maxUserSessions: currentPlan.plan?.maxUserSessions,
-      maxDynamicData: currentPlan.plan?.maxDynamicData,
-      chatHistoryLimit: currentPlan.plan?.chatHistoryLimit,
       maxAgents: currentPlan.plan?.maxAgents,
 
       sessionsUsedThisPeriod: currentPlan.sessionsUsedThisPeriod,
-      dynamicDataUsedThisPeriod: currentPlan.dynamicDataUsedThisPeriod,
       agentsCount: currentPlan.agentsCount,
 
       startsAt: currentPlan.startsAt,

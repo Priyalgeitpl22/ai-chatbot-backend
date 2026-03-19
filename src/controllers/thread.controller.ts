@@ -1,6 +1,6 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 import { Request, Response } from "express";
-import { getUsageAndLimits, incrementUserSessions } from "../services/organization.susbcription.usage.service";
+import {  incrementUserSessions } from "../services/organization.susbcription.usage.service";
 
 const prisma = new PrismaClient();
 
@@ -208,7 +208,6 @@ export const createChatOrTicket = async (req: any, res: any) => {
     if (!org) {
       return res.status(404).json({ code: 404, message: "Organization not found" });
     }
-
 
     if (!org.aiEnabled) {
       const onlineAgents = await prisma.user.findMany({

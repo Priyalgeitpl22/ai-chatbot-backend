@@ -11,7 +11,7 @@ const prisma = new PrismaClient();
 
 export class AddOnRequestService {
 
-    // ✅ GET ALL
+
     static async getAllAddOnRequests() {
         return prisma.addOnRequest.findMany({
             include: {
@@ -112,8 +112,6 @@ export class AddOnRequestService {
         }
     }
 
-
-    // ✅ APPROVE
     static async approveAddOnRequest(userId: string, requestId: string) {
         try {
             const request = await prisma.addOnRequest.findUnique({
@@ -172,7 +170,7 @@ export class AddOnRequestService {
     }
 
 
-    // ❌ REJECT
+
     static async rejectAddOnRequest(userId: string, requestId: string) {
         try {
             const request = await prisma.addOnRequest.findUnique({

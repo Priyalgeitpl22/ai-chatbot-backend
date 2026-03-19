@@ -30,13 +30,10 @@ export interface CurrentPlanData {
 
     // Plan limits
     maxUserSessions: number | null;
-    maxDynamicData: number | null;
-    chatHistoryLimit: number | null;
     maxAgents: number | null;
 
     // Usage
     sessionsUsedThisPeriod: number;
-    dynamicDataUsedThisPeriod: number;
     agentsCount: number;
 
     startsAt: Date;

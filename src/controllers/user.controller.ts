@@ -67,13 +67,9 @@ export const getAuthUser = async (req: Request, res: Response): Promise<void> =>
     periodStartsAt: organizationPlan?.startsAt,
     periodEndsAt: organizationPlan?.endsAt,
     maxUserSessions: organizationPlan?.plan.maxUserSessions,
-    maxDynamicData: organizationPlan?.plan.maxDynamicData,
-    chatHistoryLimit: organizationPlan?.plan.chatHistoryLimit,
     maxAgents: organizationPlan?.plan.maxAgents,
     userSessionsUsed: organizationPlan?.userSessionsUsed,
-    dynamicDataUsed: organizationPlan?.dynamicDataUsed,
     agentsUsed: organizationPlan?.agentsUsed,
-    messagesUsed: organizationPlan?.messagesUsed,
     addOns: addOnDetails,
   };
   res.status(200).json({

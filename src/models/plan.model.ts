@@ -12,25 +12,21 @@ export interface IPlan {
   code: PlanCode;
   name: string;
   description: string | null;
-  priceMonthly: number | null; // Decimal stored as number
-  priceYearly: number | null; // Decimal stored as number
+
+  priceMonthly: number | null;
+  priceYearly: number | null;
   isContactSales: boolean;
 
-  // Limits (null = unlimited)
-  maxUsers: number | null;
-  maxSenderAccounts: number | null;
-  maxLeadsPerMonth: number | null;
-  maxEmailsPerMonth: number | null;
-  maxCampaigns: number | null;
+  // ✅ Limits (null = unlimited)
+  maxUserSessions: number | null; // chats
+  maxAgents: number | null; // human agents
 
-  // Features
-  hasEmailVerification: boolean;
-  hasEmailWarmup: boolean;
-  hasUnifiedInbox: boolean;
+  // ✅ Features
+  hasAiChat: boolean;
+  hasCustomBranding: boolean;
   hasApiAccess: boolean;
-  hasCustomDomain: boolean;
-  hasAdvancedAnalytics: boolean;
-  hasPrioritySupport: boolean;
+  hasRealtimeApiData: boolean;
+  hasSupportTickets: boolean;
 
   createdAt: Date;
   updatedAt: Date;
@@ -38,47 +34,46 @@ export interface IPlan {
   // Relations
   subscriptions?: IOrganizationPlan[];
 }
-
 // Input types for creating/updating
 export interface ICreatePlan {
   code: PlanCode;
   name: string;
   description?: string | null;
+
   priceMonthly?: number | null;
   priceYearly?: number | null;
   isContactSales?: boolean;
-  maxUsers?: number | null;
-  maxSenderAccounts?: number | null;
-  maxLeadsPerMonth?: number | null;
-  maxEmailsPerMonth?: number | null;
-  maxCampaigns?: number | null;
-  hasEmailVerification?: boolean;
-  hasEmailWarmup?: boolean;
-  hasUnifiedInbox?: boolean;
+
+  // ✅ Limits
+  maxUserSessions?: number | null; // chats
+  maxAgents?: number | null; // agents
+
+  // ✅ Features
+  hasAiChat?: boolean;
+  hasCustomBranding?: boolean;
   hasApiAccess?: boolean;
-  hasCustomDomain?: boolean;
-  hasAdvancedAnalytics?: boolean;
-  hasPrioritySupport?: boolean;
+  hasRealtimeApiData?: boolean;
+  hasSupportTickets?: boolean;
 }
 
 export interface IUpdatePlan {
   code?: PlanCode;
   name?: string;
   description?: string | null;
+
   priceMonthly?: number | null;
   priceYearly?: number | null;
   isContactSales?: boolean;
-  maxUsers?: number | null;
-  maxSenderAccounts?: number | null;
-  maxLeadsPerMonth?: number | null;
-  maxEmailsPerMonth?: number | null;
-  maxCampaigns?: number | null;
-  hasEmailVerification?: boolean;
-  hasEmailWarmup?: boolean;
-  hasUnifiedInbox?: boolean;
+
+  // ✅ Limits
+  maxUserSessions?: number | null; // chats
+  maxAgents?: number | null; // agents
+
+  // ✅ Features
+  hasAiChat?: boolean;
+  hasCustomBranding?: boolean;
   hasApiAccess?: boolean;
-  hasCustomDomain?: boolean;
-  hasAdvancedAnalytics?: boolean;
-  hasPrioritySupport?: boolean;
+  hasRealtimeApiData?: boolean;
+  hasSupportTickets?: boolean;
 }
 

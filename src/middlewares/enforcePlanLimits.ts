@@ -1,10 +1,6 @@
-import { Request, Response, NextFunction } from "express";
-import { PrismaClient } from "@prisma/client";
+import { Response, NextFunction } from "express";
 import { getUsageAndLimits } from "../services/organization.susbcription.usage.service";
 import { AuthenticatedRequest } from "../types/request.types";
-
-
-const prisma = new PrismaClient();
 
 export async function enforcePlanLimits(
   req: AuthenticatedRequest,
@@ -14,75 +10,69 @@ export async function enforcePlanLimits(
   try {
     const user: any = req.user;
     const orgId = user?.orgId;
-    // const role = user?.role;
-
-    // if (role === "SUPER_ADMIN") {
-    //   return next();
-    // }
 
     if (!orgId) {
-      res.status(400).json({
+      return res.status(400).json({
         message: "Organization ID missing",
       });
-      return;
     }
 
-    const usage = await getUsageAndLimits(orgId);
+    const data = await getUsageAndLimits(orgId);
 
-    if (!usage) {
-      res.status(403).json({
+    if (!data) {
+      return res.status(403).json({
         message: "No active subscription plan found",
       });
-      return;
     }
 
-    const { limits, usage: usageData } = usage;
+    const { limits, usage, plan } = data;
 
-    // 🚀 Check Dynamic Data Limit
+    // ✅ ROUTE FLAGS (very important)
+    const isChatRoute = req.path.includes("thread"); 
+    const isAgentRoute = req.path.includes("user");
+    const isAiRoute = req.path.includes("ai");
+
+    // 🚀 CHAT LIMIT
     if (
-      limits.maxDynamicData !== null &&
-      usageData.dynamicDataUsed >= limits.maxDynamicData
+      isChatRoute &&
+      limits.maxUserSessions !== null &&
+      usage.sessionsUsed >= limits.maxUserSessions
     ) {
-      res.status(402).json({
-        message: `Dynamic data limit reached (${limits.maxDynamicData})`,
-        code: "PLAN_LIMIT_DYNAMIC_DATA",
+      return res.status(402).json({
+        message: `Chat limit reached (${limits.maxUserSessions})`,
+        code: "PLAN_LIMIT_CHATS",
       });
-      return;
     }
 
-    // 🚀 Check Agents Limit
+    // 🚀 AGENT LIMIT
     if (
+      isAgentRoute &&
       limits.maxAgents !== null &&
-      usageData.agentsUsed >= limits.maxAgents
+      usage.agentsUsed >= limits.maxAgents
     ) {
-      res.status(402).json({
+      return res.status(402).json({
         message: `Agent limit reached (${limits.maxAgents})`,
         code: "PLAN_LIMIT_AGENTS",
       });
-      return;
     }
 
-    // 🚀 Check Sessions Limit
-    if (
-      limits.maxUserSessions !== null &&
-      usageData.sessionsUsed >= limits.maxUserSessions
-    ) {
-      res.status(402).json({
-        message: `Session limit reached (${limits.maxUserSessions})`,
-        code: "PLAN_LIMIT_SESSIONS",
+    // 🚀 AI FEATURE CHECK
+    if (isAiRoute && !plan.hasAiChat) {
+      return res.status(403).json({
+        message: "AI feature not available in your plan",
+        code: "PLAN_NO_AI",
       });
-      return;
     }
 
-    // attach plan info for later use
-    (req as any).planLimits = limits;
-    (req as any).usageData = usageData;
+    // attach for later use
+    req.planLimits = limits;
+    req.usageData = usage;
 
     next();
   } catch (err) {
     console.error("[PlanLimitMiddleware]", err);
 
-    res.status(500).json({
+    return res.status(500).json({
       message: "Failed to enforce plan limits",
     });
   }

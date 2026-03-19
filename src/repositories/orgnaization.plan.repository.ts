@@ -21,9 +21,7 @@ export const createOrganizationPlan = async (
 
       // AI BOT USAGE TRACKING
       userSessionsUsed: 0,
-      dynamicDataUsed: 0,
       agentsUsed: 0,
-      messagesUsed: 0,
     },
   });
 };

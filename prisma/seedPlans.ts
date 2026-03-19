@@ -4,86 +4,78 @@ const prisma = new PrismaClient();
 
 async function main() {
 
-  // 1️⃣ Seed Plans
+
   const plans = [
     {
       code: PlanCode.FREE,
       name: "Free",
-      description: "Basic plan for testing",
-
+      description: "Basic plan",
+  
       priceMonthly: null,
       priceYearly: null,
       isContactSales: false,
-
+  
       maxUserSessions: 100,
-      maxDynamicData: 2,
-      chatHistoryLimit: 50,
       maxAgents: 2,
-
+  
       hasApiAccess: false,
       hasCustomBranding: false,
-      hasAnalytics: false,
-      hasPrioritySupport: false,
+      hasSupportTickets: false,
+      hasRealtimeApiData: false,
       hasAiChat: false,
     },
     {
       code: PlanCode.STARTER,
       name: "Starter",
-      description: "For small teams",
-
+      description: "10 agents, unlimited chats",
+  
       priceMonthly: 10,
       priceYearly: 100,
       isContactSales: false,
-
-      maxUserSessions: null, // unlimited
-      maxDynamicData: 10,
-      chatHistoryLimit: 200,
+  
+      maxUserSessions: null,
       maxAgents: 10,
-
+  
       hasApiAccess: false,
       hasCustomBranding: false,
-      hasAnalytics: false,
-      hasPrioritySupport: false,
+      hasSupportTickets: false,
+      hasRealtimeApiData: false,
       hasAiChat: false,
     },
     {
       code: PlanCode.PROFESSIONAL,
       name: "Professional",
-      description: "Growing businesses",
-
+      description: "30 agents, AI + branding",
+  
       priceMonthly: 30,
       priceYearly: 300,
       isContactSales: false,
-
+  
       maxUserSessions: null,
-      maxDynamicData: 20,
-      chatHistoryLimit: 500,
       maxAgents: 30,
-
+  
       hasApiAccess: false,
       hasCustomBranding: true,
-      hasAnalytics: true,
-      hasPrioritySupport: false,
+      hasSupportTickets: false,
+      hasRealtimeApiData: false,
       hasAiChat: true,
     },
     {
       code: PlanCode.ENTERPRISE,
       name: "Enterprise",
-      description: "Custom solution for large orgs",
-
+      description: "Unlimited + all features",
+  
       priceMonthly: null,
       priceYearly: null,
       isContactSales: true,
-
+  
       maxUserSessions: null,
-      maxDynamicData: null,
-      chatHistoryLimit: null,
       maxAgents: null,
-
+  
       hasApiAccess: true,
       hasCustomBranding: true,
-      hasAnalytics: true,
-      hasPrioritySupport: true,
+      hasSupportTickets: true,
+      hasRealtimeApiData: true,
       hasAiChat: true,
     },
   ];
