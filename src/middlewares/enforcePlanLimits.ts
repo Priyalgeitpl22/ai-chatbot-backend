@@ -8,8 +8,14 @@ export async function enforcePlanLimits(
   next: NextFunction
 ): Promise<void> {
   try {
+
     const user = req.user as { orgId?: string };
-    const orgId = user?.orgId;
+
+    const orgId =
+      user?.orgId ||
+      (req.query.orgId as string) ||
+      (req.body?.orgId as string);
+
 
     // ❌ Missing orgId
     if (!orgId) {
@@ -17,16 +23,17 @@ export async function enforcePlanLimits(
         success: false,
         error: {
           code: "ORG_ID_MISSING",
-          message: "Organization ID missing",
+          message: "Organization ID is required",
         },
       });
       return;
     }
 
-    // 📊 Get usage + limits
+    // =========================================================
+    // 📊 Fetch ACTIVE PLAN + USAGE
+    // =========================================================
     const data = await getUsageAndLimits(orgId);
 
-    // ❌ No plan found
     if (!data) {
       res.status(403).json({
         success: false,
@@ -40,70 +47,46 @@ export async function enforcePlanLimits(
     }
 
     const { limits, usage, plan } = data;
+    
+    console.log("📏 LIMITS:", limits);
 
-    // 🧪 Debug (remove in production)
-    // console.log("PLAN:", plan);
-    // console.log("USAGE:", usage);
-    // console.log("LIMITS:", limits);
-
-    // 🔴 1. AI FEATURE CHECK (FIRST PRIORITY)
-    if (plan?.hasAiChat !== true) {
-      res.status(403).json({
-        success: false,
-        error: {
-          code: "PLAN_NO_AI_ACCESS",
-          message: "AI Chat feature is not available in your current plan.",
-          upgradeRequired: true,
-        },
-      });
-      return;
-    }
-
-    // 🔴 2. AGENT LIMIT CHECK
+    // =========================================================
+    // 🔴 GLOBAL AGENT LIMIT CHECK (NO ROUTE CHECK)
+    // =========================================================
     if (
-      limits?.maxAgents !== null &&
-      limits?.maxAgents !== undefined &&
+      limits?.maxAgents != null &&
       usage?.agentsUsed >= limits.maxAgents
     ) {
+      console.log("❌ Agent limit exceeded");
+
       res.status(402).json({
         success: false,
         error: {
           code: "PLAN_LIMIT_AGENTS",
-          message: `Agent limit reached (${limits.maxAgents})`,
+          message: `You have reached your agent limit (${limits.maxAgents}). Upgrade your plan.`,
           upgradeRequired: true,
         },
       });
       return;
     }
 
-    // 🔴 3. CHAT / SESSION LIMIT CHECK
-    if (
-      limits?.maxUserSessions !== null &&
-      limits?.maxUserSessions !== undefined &&
-      usage?.sessionsUsed >= limits.maxUserSessions
-    ) {
-      res.status(429).json({
-        success: false,
-        error: {
-          code: "PLAN_LIMIT_CHATS",
-          message: `You have reached your chat/session limit (${limits.maxUserSessions}).`,
-          upgradeRequired: true,
-        },
-      });
-      return;
-    }
+    // =========================================================
+    // ✅ SUCCESS
+    // =========================================================
+    console.log("✅ Agent check passed");
+    console.log("========== [AgentLimitMiddleware END] ==========\n");
 
-    // ✅ All checks passed
     next();
   } catch (err) {
-    console.error("[PlanLimitMiddleware]", err);
+    console.error("🔥 Middleware Error:", err);
 
     res.status(500).json({
       success: false,
       error: {
         code: "INTERNAL_SERVER_ERROR",
-        message: "Something went wrong while validating plan limits.",
+        message: "Something went wrong while validating agent limits.",
       },
     });
+    return;
   }
 }

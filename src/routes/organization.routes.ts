@@ -6,7 +6,7 @@ const router = Router();
 
 router.get("/", getOrganization);
 router.post("/", saveOrganization);
-router.put("/", enforcePlanLimits ,updateOrganization);
+router.put("/" ,updateOrganization);
 router.post("/settings/ai", createAISettings);
 router.put("/settings/ai", createAISettings);
 router.get("/settings/ai", getAISettings);
