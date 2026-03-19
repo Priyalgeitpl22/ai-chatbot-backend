@@ -9,7 +9,7 @@ async function main() {
     {
       code: PlanCode.FREE,
       name: "Free",
-      description: "Basic plan",
+      description: "Basic chat features to get starte",
   
       priceMonthly: null,
       priceYearly: null,
@@ -27,7 +27,7 @@ async function main() {
     {
       code: PlanCode.STARTER,
       name: "Starter",
-      description: "10 agents, unlimited chats",
+      description: "Reliable chat for growing teams",
   
       priceMonthly: 10,
       priceYearly: 100,
@@ -45,7 +45,7 @@ async function main() {
     {
       code: PlanCode.PROFESSIONAL,
       name: "Professional",
-      description: "30 agents, AI + branding",
+      description: "Advanced chat with AI and customization.",
   
       priceMonthly: 30,
       priceYearly: 300,
@@ -63,7 +63,7 @@ async function main() {
     {
       code: PlanCode.ENTERPRISE,
       name: "Enterprise",
-      description: "Unlimited + all features",
+      description: "Complete solution with full features and support",
   
       priceMonthly: null,
       priceYearly: null,
