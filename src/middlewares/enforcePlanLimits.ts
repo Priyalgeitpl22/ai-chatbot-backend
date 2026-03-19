@@ -46,25 +46,41 @@ export async function enforcePlanLimits(
       limits.maxUserSessions !== null &&
       usage.sessionsUsed >= limits.maxUserSessions
     ) {
-      res.status(402).json({
-        message: `Chat limit reached (${limits.maxUserSessions})`,
-        code: "PLAN_LIMIT_CHATS",
+      res.status(429).json({
+        success: false,
+        error: {
+          code: "PLAN_LIMIT_CHATS",
+          message: `You have reached your chat/session limit (${limits.maxUserSessions}).`,
+          upgradeRequired: true,
+        },
       });
       return;
     }
 
-    // ✅ AI CHECK
+    // 🔴 AI feature not allowed
     if (!plan.hasAiChat) {
-      // only block if this route needs AI (optional logic)
+      res.status(403).json({
+        success: false,
+        error: {
+          code: "PLAN_NO_AI_ACCESS",
+          message: "AI Chat feature is not available in your current plan.",
+          upgradeRequired: true,
+        },
+      });
+      return;
     }
 
+    // ✅ All good
     next();
   } catch (err) {
     console.error("[PlanLimitMiddleware]", err);
 
     res.status(500).json({
-      message: "Failed to enforce plan limits",
+      success: false,
+      error: {
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Something went wrong while validating plan limits.",
+      },
     });
-    return;
   }
 }
