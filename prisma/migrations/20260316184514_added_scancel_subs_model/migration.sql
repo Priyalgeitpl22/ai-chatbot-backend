@@ -7,11 +7,11 @@
 -- CreateEnum
 CREATE TYPE "CancelRequestStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED', 'CANCELLED');
 
--- DropForeignKey
-ALTER TABLE "ApiData" DROP CONSTRAINT "ApiData_orgId_fkey";
+-- -- DropForeignKey
+-- ALTER TABLE "ApiData" DROP CONSTRAINT "ApiData_orgId_fkey";
 
--- DropTable
-DROP TABLE "ApiData";
+-- -- DropTable
+-- DROP TABLE "ApiData";
 
 -- CreateTable
 CREATE TABLE "SubscriptionCancelRequest" (
