@@ -27,13 +27,6 @@ const formatPlanResponse = (plan: Plan, orgPlan?: OrganizationPlan) => ({
   createdAt: plan.createdAt,
   updatedAt: plan.updatedAt,
 
-  subscription: orgPlan
-    ? {
-        startsAt: orgPlan.startsAt,
-        endsAt: orgPlan.endsAt,
-        isActive: orgPlan.isActive,
-      }
-    : null,
 });
 export const formatCurrentPlanData = (currentPlan: any, subscriptionRequest: any): CurrentPlanData => {
   return {
