@@ -181,34 +181,29 @@ export class OrganizationPlanService {
     if (!currentPlan) {
       return { code: 200, message: "No plan assigned to this organization", data: [] };
     }
-
-    const subscriptionRequests = await prisma.subscriptionRequest.findMany({ where: { orgId } });
-
-    const addOns = await prisma.organizationAddOn.findMany({
+  
+    const subscriptionRequest = await prisma.subscriptionRequest.findFirst({
       where: {
         orgId,
-        isActive: true
+        status: "APPROVED"
       },
-      include: {
-        addOn: true
+      orderBy: {
+        approvedAt: "desc"
       }
     });
-
+  
+    // ✅ FIX: choose correct price
+    let totalPrice = 0;
+  
+    if (subscriptionRequest?.billingPeriod === "YEARLY") {
+      totalPrice = Number(currentPlan.plan?.priceYearly || 0);
+    } else {
+      totalPrice = Number(currentPlan.plan?.priceMonthly || 0);
+    }
+  
     const currentPlanData = {
-      ...formatCurrentPlanData(currentPlan, subscriptionRequests[0]),
-
-      // ✅ ADD THIS
-      addOns: addOns.map((a) => ({
-        // id: a.id,
-        code: a.addOn.code,
-        name: a.addOn.name,
-        limitOverride: a.limitOverride,
-        usedThisPeriod: a.usedThisPeriod,
-        periodStartAt: a.periodStartsAt,
-        periodEndsAt: a.periodEndsAt,
-        startsAt: a.periodStartsAt,
-        endsAt: a.periodEndsAt
-      }))
+      ...formatCurrentPlanData(currentPlan, subscriptionRequest),
+      totalPrice
     };
 
     return {
@@ -217,8 +212,6 @@ export class OrganizationPlanService {
       data: currentPlanData
     };
   }
-
-
   static async contactSales(
     user: { id: string; orgId: string; email: string; role: string },
     planCode: string,
