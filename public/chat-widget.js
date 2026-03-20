@@ -889,7 +889,7 @@
         this.chatHistory.forEach(msg => {
           this.appendMessage(msg.sender === 'Bot' ? "ChatBot" : msg.sender, msg.message, msg.time);
         });
-        this.threadId = data?.threadId;
+        // this.threadId = data?.threadId;
         if (!this.chatHistory || this.chatHistory.length === 0) {
           const greetingMessage =
             this.options.allowCustomGreeting && this.options.customGreetingMessage
